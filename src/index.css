@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/*
+  ============================================================
+  BOLD REDESIGN — global palette remap
+  ------------------------------------------------------------
+  The whole app is styled with hard-coded `amber-*` (brand) and
+  `stone-*` (neutral) Tailwind utilities. Instead of touching
+  2000+ class names, we re-point those two colour ramps here:
+
+    amber  ->  violet / indigo  (modern primary)
+    stone  ->  slate            (cool neutral)
+
+  Every existing `bg-amber-600`, `text-stone-700`, etc. instantly
+  picks up the new look. Semantic accents (teal / emerald / rose /
+  sky) are left alone on purpose.
+  ============================================================
+*/
+@theme {
+  /* Primary brand ramp (was amber) */
+  --color-amber-50:  #f5f3ff;
+  --color-amber-100: #ede9fe;
+  --color-amber-200: #ddd6fe;
+  --color-amber-300: #c4b5fd;
+  --color-amber-400: #a78bfa;
+  --color-amber-500: #8b5cf6;
+  --color-amber-600: #7c3aed;
+  --color-amber-700: #6d28d9;
+  --color-amber-800: #5b21b6;
+  --color-amber-900: #4c1d95;
+  --color-amber-950: #2e1065;
+
+  /* Neutral ramp (was stone) */
+  --color-stone-50:  #f8fafc;
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e2e8f0;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #64748b;
+  --color-stone-600: #475569;
+  --color-stone-700: #334155;
+  --color-stone-800: #1e293b;
+  --color-stone-900: #0f172a;
+  --color-stone-950: #020617;
+
+  /* App surface tokens (referenced by components) */
+  --color-app-bg:      #eef1f7;
+  --color-app-surface: #ffffff;
+  --color-app-rail:    #f4f6fb;
+
+  --radius-xl: 0.9rem;
+  --radius-2xl: 1.15rem;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-app-bg);
+  color: #0f172a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Quiet, modern scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
+
+/* Floating menu / speed-dial animations */
+@keyframes fabpop {
+  from { opacity: 0; transform: translateY(8px) scale(.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fab-item { animation: fabpop .16s ease-out both; }
+
+@keyframes toastin {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-in { animation: toastin .2s ease-out both; }
+
+@layer utilities {
+  @media print {
+    body {
+      background-color: white !important;
+      color: black !important;
+      font-family: ui-sans-serif, system-ui, sans-serif !important;
+    }
+
+    .no-print, header, nav, aside {
+      display: none !important;
+    }
+
+    .printable-area {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10mm !important;
+      background: white !important;
+      color: black !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+}

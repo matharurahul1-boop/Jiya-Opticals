@@ -1,0 +1,3 @@
+ItemId,Barcode,QRCode,ItemName,Brand,Model,PurchasePrice,MRP,SalePrice,StockQty
+TEST-001,0000123456,https://example.invalid/frame/AbC001,"Demo frame, black",Demo,AB-01,400,1000,850,5
+TEST-002,0000123457,,Demo sunglasses,Demo,SG-02,600,1500,1200,0

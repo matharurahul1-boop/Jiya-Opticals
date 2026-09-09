@@ -1,0 +1,81 @@
+{
+  "date": "2026-09-09T04:44:25.111Z",
+  "checks": [
+    {
+      "name": "Signup",
+      "status": "PASS"
+    },
+    {
+      "name": "Logout",
+      "status": "PASS"
+    },
+    {
+      "name": "Password login",
+      "status": "PASS"
+    },
+    {
+      "name": "User profile directory",
+      "status": "PASS"
+    },
+    {
+      "name": "Business list",
+      "status": "PASS"
+    },
+    {
+      "name": "Create isolated test business",
+      "status": "PASS"
+    },
+    {
+      "name": "Load workspace",
+      "status": "PASS"
+    },
+    {
+      "name": "Save and reload shops",
+      "status": "PASS"
+    },
+    {
+      "name": "Client and inventory record persistence",
+      "status": "PASS"
+    },
+    {
+      "name": "Purchase, stock and supplier balance persistence",
+      "status": "PASS"
+    },
+    {
+      "name": "Invoice, payment and customer balance persistence",
+      "status": "PASS"
+    },
+    {
+      "name": "Stale save rejected",
+      "status": "FAIL",
+      "error": "The input did not match the regular expression /another session/. Input:\n\n'Error: TimeoutError: The operation was aborted due to timeout'\n"
+    },
+    {
+      "name": "Member signup, assigned-shop isolation and revocation",
+      "status": "PASS"
+    },
+    {
+      "name": "Team users directory",
+      "status": "PASS"
+    },
+    {
+      "name": "Team assignments list",
+      "status": "PASS"
+    },
+    {
+      "name": "Drishti RPC availability (empty batch)",
+      "status": "PASS"
+    }
+  ],
+  "testUser": {
+    "id": "209aa35d-5660-4103-8c6c-13d6b9797f5d",
+    "email": "joy-qa-1788929065124@example.com"
+  },
+  "limitations": [
+    "API integration checks, not browser form or hardware verification."
+  ],
+  "memberUser": {
+    "id": "d73e452b-d78f-43f5-a4c6-1eb727f9cacb",
+    "email": "joy-qa-member-1788929092130@example.com"
+  }
+}

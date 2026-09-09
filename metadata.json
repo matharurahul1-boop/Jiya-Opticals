@@ -1,0 +1,6 @@
+{
+  "name": "Jiya Opticals",
+  "description": "Jiya Opticals - Optical Store ERP, Billing POS, Eye Testing & Inventory Management",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

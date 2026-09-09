@@ -1,0 +1,39 @@
+{
+  "supabaseUrl": "https://YOUR_PROJECT.supabase.co",
+  "publishableKey": "PASTE_PUBLIC_ANON_OR_PUBLISHABLE_KEY",
+  "teamOwner": "PASTE_BUSINESS_OWNER_UUID",
+  "shopId": "PASTE_SHOP_ID",
+  "sourceId": "drishti-main",
+  "pollSeconds": 30,
+  "source": {
+    "mode": "csv",
+    "path": "C:\\DrishtiExports",
+    "pattern": "items*.csv",
+    "delimiter": ",",
+    "encoding": "UTF8",
+    "query": "SELECT ItemId, Barcode, QRCode, ItemName, Brand, Model, PurchasePrice, MRP, SalePrice, StockQty FROM YOUR_ITEM_TABLE",
+    "maxRows": 50000
+  },
+  "columns": {
+    "externalId": "ItemId",
+    "barcode": "Barcode",
+    "qrCode": "QRCode",
+    "name": "ItemName",
+    "brand": "Brand",
+    "modelNo": "Model",
+    "purchasePrice": "PurchasePrice",
+    "mrp": "MRP",
+    "salePrice": "SalePrice",
+    "stockQty": "StockQty"
+  },
+  "defaults": {
+    "category": "Spectacle Frame",
+    "color": "",
+    "frameType": "N/A",
+    "size": "",
+    "hsnCode": "",
+    "gstRate": 0,
+    "minStockAlert": 0,
+    "location": ""
+  }
+}
