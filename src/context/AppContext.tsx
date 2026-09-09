@@ -474,7 +474,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   const setActiveTab = (tab: NavTab) => { if (canAccessTab(tab)) setActiveTabState(tab); };
   const assertAdmin = () => { if (ownerId && currentUser.role !== 'Admin') throw new Error('Admin access required'); };
   const resolveShop = (requested?: string) => {
-    const id=requested || (selectedShopFilter !== 'all' ? selectedShopFilter : shops[0]?.id);
+    let id = requested || (selectedShopFilter !== 'all' ? selectedShopFilter : shops[0]?.id);
+    // 'all' is a valid shared allocation locally, but a cloud workspace stores every
+    // record against one real branch, so map it to the first branch when signed in.
+    if (id === 'all') id = ownerId ? shops[0]?.id : 'all';
+    if (id === 'all') return 'all';
     if (!id || !shops.some(s=>s.id===id)) throw new Error('Create and select a shop first');
     return id;
   };

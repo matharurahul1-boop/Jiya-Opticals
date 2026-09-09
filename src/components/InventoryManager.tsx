@@ -34,8 +34,14 @@ export const InventoryManager: React.FC = () => {
     shops,
     selectedShopFilter,
     setSelectedShopFilter,
-    setActiveTab
+    setActiveTab,
+    isCloud
   } = useApp();
+
+  // Cloud workspaces store every item against one real branch; "shared / all" only
+  // exists in local mode, so fall back to the first branch when signed in to Supabase.
+  const defaultAllocationShop = () =>
+    inventoryShopFilter !== 'all' ? inventoryShopFilter : isCloud ? shops[0]?.id ?? 'all' : 'all';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -134,7 +140,7 @@ export const InventoryManager: React.FC = () => {
       stockQty: 10,
       minStockAlert: 3,
       location: 'Rack A-1',
-      shopId: inventoryShopFilter !== 'all' ? inventoryShopFilter : 'all'
+      shopId: defaultAllocationShop()
     });
     setEditingProduct(null);
     setShowAddModal(true);
@@ -170,17 +176,25 @@ export const InventoryManager: React.FC = () => {
       alert('Name and Barcode are required');
       return;
     }
-
-    if (editingProduct) {
-      updateProduct({
-        ...editingProduct,
-        ...formData,
-        id: editingProduct.id
-      });
-    } else {
-      addProduct(formData);
+    if (isCloud && (!formData.shopId || formData.shopId === 'all')) {
+      alert('Select a branch for this item. Shared "All Branches" items are only available in local mode.');
+      return;
     }
-    setShowAddModal(false);
+
+    try {
+      if (editingProduct) {
+        updateProduct({
+          ...editingProduct,
+          ...formData,
+          id: editingProduct.id
+        });
+      } else {
+        addProduct(formData);
+      }
+      setShowAddModal(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not save this item. Please try again.');
+    }
   };
 
   const handleOpenStockAdjust = (p: Product) => {
@@ -327,9 +341,15 @@ export const InventoryManager: React.FC = () => {
       return;
     }
 
+    const target = isCloud && importTargetShop === 'all' ? shops[0]?.id ?? '' : importTargetShop;
+    if (isCloud && (!target || target === 'all')) {
+      alert('Select a branch for the imported stock. Shared "All Branches" catalog is only available in local mode.');
+      return;
+    }
+
     const itemsToSave = parsedImportItems.map((p) => ({
       ...p,
-      shopId: importTargetShop
+      shopId: target
     }));
 
     addMultipleProducts(itemsToSave);
@@ -675,11 +695,11 @@ export const InventoryManager: React.FC = () => {
                 <div>
                   <label className="block text-stone-600 mb-1 font-semibold">Shop / Branch Allocation *</label>
                   <select
-                    value={formData.shopId || 'all'}
+                    value={formData.shopId || (isCloud ? shops[0]?.id ?? '' : 'all')}
                     onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
                     className="w-full bg-amber-50/60 border border-amber-300 rounded-lg p-2 text-stone-900 font-medium"
                   >
-                    <option value="all">🏢 All Branches (Shared Item)</option>
+                    {!isCloud && <option value="all">🏢 All Branches (Shared Item)</option>}
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
                         📍 {s.name} ({s.city})
@@ -989,11 +1009,11 @@ export const InventoryManager: React.FC = () => {
                     Step 2: Assign Imported Stock to Shop Branch:
                   </label>
                   <select
-                    value={importTargetShop}
+                    value={importTargetShop === 'all' && isCloud ? shops[0]?.id ?? '' : importTargetShop}
                     onChange={(e) => setImportTargetShop(e.target.value)}
                     className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900 font-medium"
                   >
-                    <option value="all">🏢 All Branches (Shared Catalog)</option>
+                    {!isCloud && <option value="all">🏢 All Branches (Shared Catalog)</option>}
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
                         📍 {s.name} ({s.city})
