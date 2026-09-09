@@ -888,7 +888,8 @@ export const BillingPOS: React.FC = () => {
                 <input
                   type="number"
                   min="0"
-                  value={fittingCharge}
+                  placeholder="0"
+                  value={fittingCharge || ''}
                   onChange={(e) => setFittingCharge(Number(e.target.value))}
                   className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
                 />
@@ -898,7 +899,8 @@ export const BillingPOS: React.FC = () => {
                 <input
                   type="number"
                   min="0"
-                  value={flatDiscount}
+                  placeholder="0"
+                  value={flatDiscount || ''}
                   onChange={(e) => setFlatDiscount(Number(e.target.value))}
                   className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
                 />

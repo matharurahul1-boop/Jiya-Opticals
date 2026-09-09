@@ -348,6 +348,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     [LOCAL_STORAGE_KEY + '_invoices']: invoices,
     [LOCAL_STORAGE_KEY + '_suppliers']: suppliers,
     [LOCAL_STORAGE_KEY + '_doctors']: doctors,
+    // `staff` is reserved by the cloud workspace schema but has no UI yet; send an
+    // empty array so optical_team_save's array validation for every key still passes.
+    [LOCAL_STORAGE_KEY + '_staff']: [],
     [LOCAL_STORAGE_KEY + '_expenses']: expenses,
     [LOCAL_STORAGE_KEY + '_purchases']: purchases,
     [LOCAL_STORAGE_KEY + '_wa_templates']: whatsappTemplates,
