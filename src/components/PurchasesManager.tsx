@@ -432,7 +432,8 @@ export const PurchasesManager: React.FC = () => {
                     type="number"
                     min="0"
                     max={purchaseGrandTotal}
-                    value={paidAmount}
+                    placeholder="0"
+                    value={paidAmount || ''}
                     onChange={(e) => setPaidAmount(Number(e.target.value))}
                     className="w-full bg-white border border-stone-200 rounded p-1 font-bold text-amber-800 text-xs"
                   />

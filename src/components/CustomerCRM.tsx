@@ -813,7 +813,8 @@ export const CustomerCRM: React.FC = () => {
                   required
                   min="1"
                   max={selectedCustomer.outstandingBalance}
-                  value={payAmount}
+                  placeholder="0"
+                  value={payAmount || ''}
                   onChange={(e) => setPayAmount(Number(e.target.value))}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-center text-lg font-bold text-emerald-700"
                 />

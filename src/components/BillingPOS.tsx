@@ -584,7 +584,8 @@ export const BillingPOS: React.FC = () => {
                             type="number"
                             min="0"
                             max="100"
-                            value={item.discountPercent}
+                            placeholder="0"
+                            value={item.discountPercent || ''}
                             onChange={(e) => updateItemDiscount(idx, Number(e.target.value))}
                             className="w-12 bg-stone-50 border border-stone-200 text-center rounded text-xs py-0.5 text-stone-800"
                           />
@@ -965,7 +966,8 @@ export const BillingPOS: React.FC = () => {
                     type="number"
                     min="0"
                     max={netPayable}
-                    value={advancePaid}
+                    placeholder="0"
+                    value={advancePaid || ''}
                     onChange={(e) => setAdvancePaid(Number(e.target.value))}
                     className="w-full bg-white border border-stone-300 rounded px-2 py-1 font-bold text-amber-800 text-xs"
                   />

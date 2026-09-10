@@ -44,8 +44,8 @@ export const EyeTesting: React.FC = () => {
 
   // Eye Power States
   const [rightEye, setRightEye] = useState<EyePower>({
-    sph: '0.00',
-    cyl: '0.00',
+    sph: '',
+    cyl: '',
     axis: '',
     add: '',
     dv: '6/6',
@@ -53,8 +53,8 @@ export const EyeTesting: React.FC = () => {
   });
 
   const [leftEye, setLeftEye] = useState<EyePower>({
-    sph: '0.00',
-    cyl: '0.00',
+    sph: '',
+    cyl: '',
     axis: '',
     add: '',
     dv: '6/6',
