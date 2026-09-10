@@ -99,6 +99,8 @@ export const Sidebar: React.FC = () => {
     products,
     customers,
     followUps,
+    invoices,
+    purchases,
     canAccessTab,
     selectedShopFilter,
     sidebarCollapsed,
@@ -116,7 +118,14 @@ export const Sidebar: React.FC = () => {
     (f) => (selectedShopFilter === 'all' || f.shopId === selectedShopFilter) && f.status === 'Pending'
   );
 
-  const lowStockCount = filteredProducts.filter((p) => p.stockQty <= p.minStockAlert).length;
+  // Ignore auto-created zero rows for shops that don't carry a shared material.
+  const carriedProductIds = new Set<string>([
+    ...invoices.flatMap((i) => i.items.map((it) => it.productId)),
+    ...purchases.flatMap((pur) => pur.items.map((it) => it.productId)),
+  ]);
+  const lowStockCount = filteredProducts.filter(
+    (p) => p.stockQty <= p.minStockAlert && (p.stockQty > 0 || carriedProductIds.has(p.id))
+  ).length;
   const pendingDuesCount = filteredCustomers.filter((c) => c.outstandingBalance > 0).length;
 
   const allNavItems: NavItem[] = [

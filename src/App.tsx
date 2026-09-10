@@ -25,7 +25,7 @@ import { FloatingMenu } from './components/FloatingMenu';
 
 const MainLayout: React.FC = () => {
   const { activeTab, canAccessTab, shops, currentUser, selectedShopFilter, setSelectedShopFilter } = useApp();
-  const needsShop = shops.length > 1 && selectedShopFilter === 'all' && ['billing', 'eyetesting', 'inventory', 'customers', 'followups', 'purchases'].includes(activeTab);
+  const needsShop = shops.length > 1 && selectedShopFilter === 'all' && ['billing', 'eyetesting', 'customers', 'followups'].includes(activeTab);
   if (!shops.length) return <div className="min-h-screen bg-[#eef1f7]">
     <div className="p-5 bg-amber-50"><h1 className="text-2xl font-bold">Welcome to your business</h1><p>{currentUser.role === 'Admin' ? 'Create your first shop below. Then use Team & Access to assign members.' : 'No shops are assigned to you yet. Ask your admin to assign a shop, then reload.'}</p></div>
     {currentUser.role === 'Admin' && <MastersConfig startTab="Shops" />}

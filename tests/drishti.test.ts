@@ -51,16 +51,18 @@ test('Drishti sync is atomic, idempotent, shop-scoped and preserves ERP stock', 
     await rpc('optical_team_save', [owner, store.version, JSON.stringify(store.data)]);
     await rpc('optical_team_assign', [owner, 'member@example.com', ['a'], false]);
     await signIn(member);
+    await assert.rejects(upload([sourceItem]), /owner login required/);
+    await signIn(owner);
     assert.equal((await upload([sourceItem])).added, 1);
     const repeated = await upload([sourceItem]); assert.equal(repeated.unchanged, 1);
     assert.equal((await upload([sourceItem])).version, repeated.version);
-    await assert.rejects(upload([sourceItem], 'b'), /not assigned/);
+    await assert.rejects(upload([sourceItem], 'missing-shop'), /Shop not found/);
     await assert.rejects(upload([{ ...sourceItem, externalId: 'D-2' }]), /already belongs/);
     await assert.rejects(upload([{ ...sourceItem, barcode: 'changed' }]), /Source code changed/);
     await assert.rejects(upload([sourceItem, sourceItem]), /Duplicate source/);
     await assert.rejects(upload([{ ...sourceItem, externalId: 'ok', barcode: 'new', qrCode: '' }, { ...sourceItem, externalId: 'bad', barcode: 'other', qrCode: '', salePrice: -1 }]), /Invalid price/);
     store = await rpc('optical_team_load', [owner]);
-    assert.equal(store.data.JIYA_OPTICALS_ERP_V2_products.length, 1, 'failed batch must roll back first item');
+    assert.equal(store.data.JIYA_OPTICALS_ERP_V2_products.length, 2, 'failed batch must roll back first item, leaving only the shared material in two shops');
     const originalId = store.data.JIYA_OPTICALS_ERP_V2_products[0].id;
     store.data.JIYA_OPTICALS_ERP_V2_products[0].stockQty = 8;
     await rpc('optical_team_save', [owner, store.version, JSON.stringify(store.data)]);
@@ -70,9 +72,14 @@ test('Drishti sync is atomic, idempotent, shop-scoped and preserves ERP stock', 
     assert.equal(product.id, originalId); assert.equal(product.barcode, '000123');
     assert.equal(product.stockQty, 8); assert.equal(product.drishtiStockQty, 99); assert.equal(product.salePrice, 220);
     await signIn(owner);
+    const allBranches=await rpc('optical_team_load',[owner]);
+    assert.equal(allBranches.data.JIYA_OPTICALS_ERP_V2_products.length,2);
+    const branchB=allBranches.data.JIYA_OPTICALS_ERP_V2_products.find((p:any)=>p.shopId==='b');
+    assert.equal(branchB.stockQty,0);assert.equal(branchB.salePrice,220);
+    assert.equal(branchB.barcode,'000123');assert.equal(branchB.catalogId,product.catalogId);
     await rpc('optical_team_assign', [owner, 'member@example.com', [], true]);
     await signIn(member);
-    await assert.rejects(upload([sourceItem]), /not assigned/);
+    await assert.rejects(upload([sourceItem]), /owner login required/);
     await db.exec('reset role; set role anon');
     await assert.rejects(upload([sourceItem]), /permission denied/);
   } finally { await db.close(); }

@@ -6,7 +6,7 @@ This is a configurable Windows connector, not a verified Drishti vendor API inte
 
 - Reads a CSV export folder/file, or polls a database through a supplied read-only ODBC connection and SELECT query.
 - Maps source columns to inventory fields, preserving original barcode/QR text, case and leading zeroes.
-- Uploads new/changed items directly to Supabase using a signed-in shop account. No service-role key or custom web server.
+- Uploads new/changed items directly to Supabase using the signed-in business owner account, because material details are shared across shops. A shop member cannot change the common catalogue through the connector. No service-role key or custom web server.
 - Matches future updates by source installation ID + source item ID + shop. Retries are idempotent. Duplicate codes and changed original codes are rejected for review.
 - Keeps the original ERP item ID and existing ERP stock on catalog updates. New items get their initial source stock; later source stock is stored separately as drishtiStockQty.
 - Runs at Windows sign-in when installed, retries failures with backoff, and checkpoints only acknowledged batches. A failed batch rolls back completely; prior successful batches remain saved.

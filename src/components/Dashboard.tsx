@@ -29,11 +29,12 @@ export const Dashboard: React.FC = () => {
     storeProfile, 
     language, 
     setActiveTab, 
-    invoices, 
+    invoices,
     payments,
-    products, 
-    customers, 
-    expenses, 
+    products,
+    purchases,
+    customers,
+    expenses,
     updateOrderStatus,
     setSelectedInvoiceForPrint,
     setSelectedPrescriptionForPrint,
@@ -92,7 +93,16 @@ export const Dashboard: React.FC = () => {
   );
 
   const readyForDeliveryInvoices = filteredInvoices.filter((i) => i.orderStatus === 'Ready for Delivery');
-  const lowStockItems = filteredProducts.filter((p) => p.stockQty <= p.minStockAlert);
+  // A shared material has a stock row in every shop; a never-stocked row (auto-created
+  // at zero for a shop that doesn't carry the item) is not a "low stock" alert. Only
+  // flag rows that are actually carried: they hold stock now, or have transaction history.
+  const carriedProductIds = new Set<string>([
+    ...filteredInvoices.flatMap((i) => i.items.map((it) => it.productId)),
+    ...purchases.flatMap((pur) => pur.items.map((it) => it.productId)),
+  ]);
+  const lowStockItems = filteredProducts.filter(
+    (p) => p.stockQty <= p.minStockAlert && (p.stockQty > 0 || carriedProductIds.has(p.id))
+  );
   const totalCustomerDues = filteredCustomers.reduce((sum, c) => sum + c.outstandingBalance, 0);
   const dueFollowupsToday = filteredFollowUps.filter((f) => f.status === 'Pending');
 
@@ -109,9 +119,9 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div id="dashboard-main-container" className="p-3 sm:p-5 md:p-6 space-y-4 max-w-7xl mx-auto">
+    <div id="dashboard-main-container" className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Shop Selector & Role Header */}
-      <div className="bg-[#f4f6fb] border border-amber-200/90 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-800 shrink-0">
             <Store className="w-5 h-5" />
@@ -165,15 +175,13 @@ export const Dashboard: React.FC = () => {
         )}
       </div>
 
-      <MonthlyRevenueChart />
-      {currentUser.role === 'Admin' && <div className="flex gap-3"><button className="px-4 py-2 bg-white border rounded-lg text-amber-800" onClick={() => setActiveTab('shops')}>Manage shops</button><button className="px-4 py-2 bg-white border rounded-lg text-amber-800" onClick={() => setActiveTab('team')}>Team & access</button></div>}
       {/* Quick Action Touch Buttons */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* Button 1: Client Entry */}
         <button
           id="btn-big-create-client"
           onClick={() => setShowQuickClientModal(true)}
-          className="p-3.5 bg-white hover:bg-amber-50/50 border border-stone-200 hover:border-amber-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
+          className="p-5 bg-white hover:bg-amber-50/50 border border-stone-200 hover:border-amber-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
         >
           <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <UserPlus className="w-5 h-5" />
@@ -185,7 +193,7 @@ export const Dashboard: React.FC = () => {
         <button
           id="btn-big-pos-bill"
           onClick={() => setActiveTab('billing')}
-          className="p-3.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95 border border-amber-600/20"
+          className="p-5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95 border border-amber-600/20"
         >
           <div className="w-10 h-10 rounded-xl bg-stone-950/10 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Receipt className="w-5 h-5" />
@@ -197,7 +205,7 @@ export const Dashboard: React.FC = () => {
         <button
           id="btn-big-eye-checkup"
           onClick={() => setActiveTab('eyetesting')}
-          className="p-3.5 bg-white hover:bg-teal-50/50 border border-stone-200 hover:border-teal-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
+          className="p-5 bg-white hover:bg-teal-50/50 border border-stone-200 hover:border-teal-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
         >
           <div className="w-10 h-10 rounded-xl bg-teal-100 border border-teal-300 text-teal-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Eye className="w-5 h-5" />
@@ -209,7 +217,7 @@ export const Dashboard: React.FC = () => {
         <button
           id="btn-big-inventory"
           onClick={() => setActiveTab('inventory')}
-          className="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 hover:border-stone-400 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
+          className="p-5 bg-white hover:bg-stone-50 border border-stone-200 hover:border-stone-400 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95"
         >
           <div className="w-10 h-10 rounded-xl bg-stone-100 border border-stone-300 text-stone-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Package className="w-5 h-5" />
@@ -221,7 +229,7 @@ export const Dashboard: React.FC = () => {
         <button
           id="btn-big-followup-broadcast"
           onClick={() => setActiveTab('followups')}
-          className="p-3.5 bg-white hover:bg-emerald-50/50 border border-stone-200 hover:border-emerald-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95 col-span-2 sm:col-span-1"
+          className="p-5 bg-white hover:bg-emerald-50/50 border border-stone-200 hover:border-emerald-500 text-stone-900 rounded-xl flex flex-col items-center justify-center text-center shadow-xs transition-all cursor-pointer group active:scale-95 col-span-2 sm:col-span-1"
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center mb-2 relative group-hover:scale-105 transition-transform">
             <Send className="w-5 h-5" />
@@ -445,7 +453,7 @@ export const Dashboard: React.FC = () => {
                   >
                     <div>
                       <div className="font-bold text-stone-900">{p.name}</div>
-                      <div className="text-stone-500 text-[10px]">{p.modelNo}</div>
+                      <div className="text-stone-500 text-[10px]">{shops.find(s=>s.id===p.shopId)?.name || 'Unallocated'} · {p.modelNo}</div>
                     </div>
                     <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold rounded text-[11px]">
                       {p.stockQty} left
@@ -457,6 +465,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      <MonthlyRevenueChart />
+      {currentUser.role === 'Admin' && <div className="flex flex-wrap gap-3"><button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-600 hover:text-amber-700" onClick={() => setActiveTab('shops')}>Manage shops</button><button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-600 hover:text-amber-700" onClick={() => setActiveTab('team')}>Team & access</button></div>}
     </div>
   );
 };

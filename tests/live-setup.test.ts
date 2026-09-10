@@ -28,8 +28,13 @@ test('complete live SQL installs twice and every required schema check passes', 
     await rpc('optical_team_create',['Store','{}']);
     let data=await rpc('optical_team_load',[owner]);
     assert.equal(data.user.name,'Changed Owner');
-    data.data.JIYA_OPTICALS_ERP_V2_shops=[{id:'a'}];
+    data.data.JIYA_OPTICALS_ERP_V2_shops=[{id:'a'},{id:'b'}];
+    data.data.JIYA_OPTICALS_ERP_V2_products=[{id:'frame-a',catalogId:'shared-frame',shopId:'a',name:'Shared frame',barcode:'0001',stockQty:10,salePrice:200}];
     await rpc('optical_team_save',[owner,data.version,JSON.stringify(data.data)]);
+    data=await rpc('optical_team_load',[owner]);
+    assert.equal(data.data.JIYA_OPTICALS_ERP_V2_products.length,2);
+    assert.equal(data.data.JIYA_OPTICALS_ERP_V2_products.find((p:any)=>p.shopId==='b').stockQty,0);
+    await assert.rejects(rpc('optical_team_save',[owner,data.version-1,JSON.stringify(data.data)]),(error:any)=>error.code==='PT409');
     await rpc('optical_team_assign',[owner,'member@example.com',['a'],false]);
     await rpc('optical_member_set_role',[owner,'member@example.com','Cashier']);
     await assert.rejects(rpc('optical_member_set_role',[owner,'member@example.com','Admin']),/Unknown role/);
@@ -39,6 +44,9 @@ test('complete live SQL installs twice and every required schema check passes', 
     await rpc('optical_user_sync',['Member','member','']);
     data=await rpc('optical_team_load',[owner]);
     assert.equal(data.user.role,'Cashier');assert.equal(data.user.name,'Member');
+    assert.equal(data.data.JIYA_OPTICALS_ERP_V2_products.length,1);
+    const tampered=structuredClone(data.data);tampered.JIYA_OPTICALS_ERP_V2_products[0].name='Member changed global name';
+    await assert.rejects(rpc('optical_team_save',[owner,data.version,JSON.stringify(tampered)]),/Only admin/);
     await assert.rejects(rpc('optical_team_users',[owner]),/Admin access/);
   }finally{await db.close();}
 });

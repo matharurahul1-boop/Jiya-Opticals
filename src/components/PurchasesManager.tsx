@@ -17,10 +17,14 @@ export const PurchasesManager: React.FC = () => {
   const { 
     purchases, 
     suppliers, 
-    products, 
+    allProducts,
+    shops,
+    selectedShopFilter,
     addPurchase, 
     addSupplier 
   } = useApp();
+  const [receivingShopId,setReceivingShopId]=useState(selectedShopFilter!=='all'?selectedShopFilter:shops.length===1?shops[0].id:'');
+  const products=allProducts.filter(p=>p.shopId===receivingShopId);
 
   const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
@@ -91,6 +95,7 @@ export const PurchasesManager: React.FC = () => {
 
   const handleSavePurchase = (e: React.FormEvent) => {
     e.preventDefault();
+    if(!receivingShopId){alert('Choose the shop receiving this purchase.');return;}
     if (!selectedSupplierId) {
       alert('Please select a supplier');
       return;
@@ -103,7 +108,8 @@ export const PurchasesManager: React.FC = () => {
     const supp = suppliers.find((s) => s.id === selectedSupplierId);
     if (!supp) return;
 
-    addPurchase({
+    try { addPurchase({
+      shopId:receivingShopId,
       supplierId: supp.id,
       supplierName: supp.name,
       supplierBillNo,
@@ -115,7 +121,7 @@ export const PurchasesManager: React.FC = () => {
       paidAmount,
       balanceDue,
       paymentMode
-    });
+    }); } catch(error) {alert(error instanceof Error?error.message:'Could not record purchase');return;}
 
     alert('Purchase recorded! Product inventory stocks updated.');
     setShowAddPurchaseModal(false);
@@ -250,7 +256,7 @@ export const PurchasesManager: React.FC = () => {
             <tbody className="divide-y divide-stone-100">
               {filteredPurchases.map((pur) => (
                 <tr key={pur.id} className="hover:bg-stone-50 transition-colors">
-                  <td className="py-3 px-3 font-bold text-stone-900 font-mono">{pur.purchaseNo}</td>
+                  <td className="py-3 px-3 font-bold text-stone-900 font-mono">{pur.purchaseNo}<span className="block mt-1 font-sans font-normal text-xs text-stone-500">{shops.find(s=>s.id===pur.shopId)?.name || 'Unallocated'}</span></td>
                   <td className="py-3 px-2 text-stone-500">{pur.billDate}</td>
                   <td className="py-3 px-2 font-semibold text-stone-800">{pur.supplierName}</td>
                   <td className="py-3 px-2 font-mono text-stone-600">{pur.supplierBillNo}</td>
@@ -282,6 +288,10 @@ export const PurchasesManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleSavePurchase} className="space-y-4 text-xs">
+              <label className="block p-4 bg-amber-50 rounded-xl text-amber-900 font-semibold">Receiving shop
+                <select required value={receivingShopId} onChange={e=>{setReceivingShopId(e.target.value);setPurchaseItems([]);setPickedProductId('');}} className="mt-2 w-full rounded-lg border border-amber-200 bg-white p-2.5"><option value="">Choose a shop</option>{shops.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                <span className="block mt-2 font-normal">Stock increases only in this shop. Changing shops clears the selected items.</span>
+              </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-stone-600 mb-1">Select Supplier *</label>

@@ -1,5 +1,15 @@
 # Live setup
 
+## Shared materials update
+
+Run the updated LIVE_SETUP.sql before using this build. It includes the non-retrying PT409 save-conflict fix and the private shared-catalogue helper. Then reload as the admin and wait for Saved to Supabase: matching legacy materials are linked without changing historical stock-row IDs or quantities. Identical codes within the same shop, or conflicting descriptions, are not automatically merged.
+
+Create Material is an admin action performed once. Each material has a common catalogId and a stock row in each shop; new shop rows start at zero. Barcode, name, brand, specifications and selling price are shared; stock quantity, purchase cost and rack are per shop. Invoice/purchase item IDs still identify the correct shop stock row. Existing JSON storage remains in use; catalogId is a product JSON field, not a missing SQL column.
+
+Inventory shows a consolidated material row with per-shop quantities. Select the billing shop before selling, and the receiving shop on the purchase form. Stock transfer changes both quantities together. Members can operate only assigned shops and cannot edit shared material definitions. Drishti imports make the common material available across shops while only the source shop receives opening stock.
+
+The previous live API smoke test passed normal persistence and assigned-shop isolation but timed out on the old conflict SQL. This newer shared-material build and PT409 fix have local test coverage; they have not been applied or retested on the live project through the unavailable management connection.
+
 1. Paste the complete LIVE_SETUP.sql into Supabase SQL Editor and run it. It combines team-access.sql, users-directory.sql and drishti-sync.sql in one transaction. Existing data is preserved; run this bundle last, not the older scripts afterwards.
 2. Run VERIFY_LIVE.sql. All 30 checks should say PASS. If any row says MISSING, TYPE MISMATCH or a permission error, resolve that result before going live. This is a read-only check; it cannot test email delivery, sign-in flows or Drishti hardware.
 3. Enable the Email auth provider/sign-ups and configure the Site URL plus allowed confirmation redirect URLs for the real hosted app. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the hosting environment and rebuild. Never use a service-role/secret key.

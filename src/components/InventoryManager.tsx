@@ -21,27 +21,41 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
+import { catalogKey } from '../lib/catalog';
 
 export const InventoryManager: React.FC = () => {
   const { 
-    products, 
+    allProducts: products,
     addProduct, 
     addMultipleProducts,
     updateProduct, 
     deleteProduct, 
     adjustStock, 
+    transferStock,
+    currentUser,
     setSelectedProductForBarcode,
     shops,
     selectedShopFilter,
     setSelectedShopFilter,
     setActiveTab,
-    isCloud
+    isCloud,
+    invoices,
+    purchases
   } = useApp();
 
-  // Cloud workspaces store every item against one real branch; "shared / all" only
-  // exists in local mode, so fall back to the first branch when signed in to Supabase.
+  // A shared material auto-gets a zero-stock row in every shop; a row for a shop that
+  // never carried the item is not "low stock". Only rows with stock now, or with sale/
+  // purchase history, count as genuine low-stock alerts.
+  const carriedProductIds = new Set<string>([
+    ...invoices.flatMap((i) => i.items.map((it) => it.productId)),
+    ...purchases.flatMap((pur) => pur.items.map((it) => it.productId)),
+  ]);
+  const isLowStockRow = (p: Product) =>
+    p.stockQty <= p.minStockAlert && (p.stockQty > 0 || carriedProductIds.has(p.id));
+
+  // Material is common; this branch receives the opening quantity only.
   const defaultAllocationShop = () =>
-    inventoryShopFilter !== 'all' ? inventoryShopFilter : isCloud ? shops[0]?.id ?? 'all' : 'all';
+    inventoryShopFilter !== 'all' ? inventoryShopFilter : shops[0]?.id ?? '';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -111,15 +125,18 @@ export const InventoryManager: React.FC = () => {
       p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.modelNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.barcode.includes(searchQuery);
-    const matchesLowStock = !showLowStockOnly || p.stockQty <= p.minStockAlert;
+    const matchesLowStock = !showLowStockOnly || isLowStockRow(p);
 
     return matchesShop && matchesCategory && matchesSearch && matchesLowStock;
   });
+  const materialGroups = Array.from(new Set(filteredProducts.map(catalogKey))).map(id=>({
+    id, rows:filteredProducts.filter(p=>catalogKey(p)===id),
+  }));
 
   const totalStockCount = filteredProducts.reduce((sum, p) => sum + p.stockQty, 0);
   const totalStockValuation = filteredProducts.reduce((sum, p) => sum + p.purchasePrice * p.stockQty, 0);
   const totalRetailValuation = filteredProducts.reduce((sum, p) => sum + p.salePrice * p.stockQty, 0);
-  const lowStockCount = filteredProducts.filter((p) => p.stockQty <= p.minStockAlert).length;
+  const lowStockCount = filteredProducts.filter(isLowStockRow).length;
 
   const handleOpenAdd = () => {
     const randomBarcode = `890${Math.floor(100000000 + Math.random() * 900000000)}`;
@@ -165,7 +182,7 @@ export const InventoryManager: React.FC = () => {
       stockQty: p.stockQty,
       minStockAlert: p.minStockAlert,
       location: p.location || 'Rack 1',
-      shopId: p.shopId || 'all'
+      shopId: shops.some(s=>s.id===p.shopId)?p.shopId:shops[0]?.id || ''
     });
     setShowAddModal(true);
   };
@@ -176,8 +193,8 @@ export const InventoryManager: React.FC = () => {
       alert('Name and Barcode are required');
       return;
     }
-    if (isCloud && (!formData.shopId || formData.shopId === 'all')) {
-      alert('Select a branch for this item. Shared "All Branches" items are only available in local mode.');
+    if (!formData.shopId || formData.shopId === 'all') {
+      alert('Select the shop receiving the opening stock. Material details are shared across all shops.');
       return;
     }
 
@@ -205,8 +222,8 @@ export const InventoryManager: React.FC = () => {
   const handleSaveStockAdjust = (e: React.FormEvent) => {
     e.preventDefault();
     if (!adjustingProduct) return;
-    adjustStock(adjustingProduct.id, newStockInput);
-    setAdjustingProduct(null);
+    try { adjustStock(adjustingProduct.id, newStockInput); setAdjustingProduct(null); }
+    catch(error) { alert(error instanceof Error?error.message:'Could not adjust stock'); }
   };
 
   // Stock Transfer between Shops
@@ -225,23 +242,8 @@ export const InventoryManager: React.FC = () => {
       return;
     }
 
-    // Deduct from source product
-    adjustStock(transferProduct.id, transferProduct.stockQty - transferQty);
-
-    // Create / Add stock in destination shop
-    const existingInDest = products.find(
-      (p) => p.barcode === transferProduct.barcode && p.shopId === transferToShopId
-    );
-
-    if (existingInDest) {
-      adjustStock(existingInDest.id, existingInDest.stockQty + transferQty);
-    } else {
-      addProduct({
-        ...transferProduct,
-        stockQty: transferQty,
-        shopId: transferToShopId
-      });
-    }
+    try { transferStock(transferProduct.id,transferToShopId,transferQty); }
+    catch(error) { alert(error instanceof Error?error.message:'Could not transfer stock');return; }
 
     const destShopName = shops.find((s) => s.id === transferToShopId)?.name || transferToShopId;
     alert(`Successfully transferred ${transferQty} unit(s) of "${transferProduct.name}" to ${destShopName}!`);
@@ -341,9 +343,9 @@ export const InventoryManager: React.FC = () => {
       return;
     }
 
-    const target = isCloud && importTargetShop === 'all' ? shops[0]?.id ?? '' : importTargetShop;
-    if (isCloud && (!target || target === 'all')) {
-      alert('Select a branch for the imported stock. Shared "All Branches" catalog is only available in local mode.');
+    const target = importTargetShop === 'all' ? shops[0]?.id ?? '' : importTargetShop;
+    if (!target || target === 'all') {
+      alert('Select the shop receiving the imported stock. Material details will be available in all shops.');
       return;
     }
 
@@ -352,7 +354,8 @@ export const InventoryManager: React.FC = () => {
       shopId: target
     }));
 
-    addMultipleProducts(itemsToSave);
+    try { addMultipleProducts(itemsToSave); }
+    catch(error) {alert(error instanceof Error?error.message:'Could not import materials.');return;}
     setImportSuccessMsg(`Successfully imported ${itemsToSave.length} material(s) into inventory!`);
     setTimeout(() => {
       setShowImportModal(false);
@@ -412,7 +415,7 @@ export const InventoryManager: React.FC = () => {
               Item Master & Material Inventory
             </h1>
             <p className="text-xs text-stone-500">
-              Create materials, import CSV, track shop-wise stock & manage transfers.
+              One material catalogue. Separate stock, purchases and sales for each shop.
             </p>
           </div>
         </div>
@@ -420,6 +423,7 @@ export const InventoryManager: React.FC = () => {
         <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
           <button
             onClick={() => setShowImportModal(true)}
+            disabled={currentUser.role!=='Admin'}
             className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-stone-300 cursor-pointer shadow-xs"
             title="Import materials via CSV / Excel"
           >
@@ -438,6 +442,7 @@ export const InventoryManager: React.FC = () => {
 
           <button
             onClick={handleOpenAdd}
+            disabled={currentUser.role!=='Admin'}
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Create Material
@@ -465,7 +470,7 @@ export const InventoryManager: React.FC = () => {
         </div>
 
         <div className="text-[11px] text-stone-600">
-          Showing <span className="font-bold text-stone-900">{filteredProducts.length}</span> SKUs in{' '}
+          Showing <span className="font-bold text-stone-900">{materialGroups.length}</span> materials in{' '}
           <span className="font-bold text-amber-800">
             {inventoryShopFilter === 'all'
               ? 'All Branches'
@@ -478,7 +483,7 @@ export const InventoryManager: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold text-stone-500">Unique SKUs</span>
-          <div className="text-xl font-bold text-stone-900 mt-1">{filteredProducts.length} Products</div>
+          <div className="text-xl font-bold text-stone-900 mt-1">{materialGroups.length} Materials</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
           <span className="text-[10px] uppercase font-bold text-stone-500">Physical Stock</span>
@@ -505,7 +510,7 @@ export const InventoryManager: React.FC = () => {
                 : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
             }`}
           >
-            All ({filteredProducts.length})
+            All ({materialGroups.length})
           </button>
           {categories.map((cat) => (
             <button
@@ -566,100 +571,29 @@ export const InventoryManager: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-200">
-              {filteredProducts.map((p) => {
-                const isLow = p.stockQty <= p.minStockAlert;
-                const shopObj = shops.find((s) => s.id === p.shopId);
-                const shopLabel = shopObj ? shopObj.name : 'All Branches';
-
-                return (
-                  <tr key={p.id} className="hover:bg-amber-50/40 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-stone-900">{p.name}</div>
-                      <div className="text-[10px] text-stone-500">
-                        {p.brand} • {p.modelNo} • Color: {p.color} {p.frameType ? `(${p.frameType})` : ''} • Loc: {p.location || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-stone-100 text-stone-700 font-medium whitespace-nowrap">
-                        {p.category}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 font-mono text-[11px] text-stone-800">
-                      {p.barcode}
-                      {p.drishtiItemId && <span className="block text-[10px] text-sky-700">Drishti linked · {p.drishtiItemId}</span>}
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${
-                        p.shopId === 'shop-1' 
-                          ? 'bg-blue-50 text-blue-800 border border-blue-200' 
-                          : p.shopId === 'shop-2' 
-                          ? 'bg-purple-50 text-purple-800 border border-purple-200' 
-                          : p.shopId === 'shop-3' 
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-                          : 'bg-amber-50 text-amber-800 border border-amber-200'
-                      }`}>
-                        {shopLabel}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right text-stone-600">
-                      ₹{p.purchasePrice}
-                    </td>
-                    <td className="py-3 px-2 text-right font-bold text-stone-900">
-                      ₹{p.salePrice}
-                    </td>
-                    <td className="py-3 px-2 text-center text-stone-600">
-                      {p.gstRate}%
-                    </td>
-                    <td className="py-3 px-2 text-center">
-                      <button
-                        onClick={() => handleOpenStockAdjust(p)}
-                        className={`px-2.5 py-0.5 rounded text-xs font-bold transition-transform hover:scale-105 cursor-pointer ${
-                          isLow
-                            ? 'bg-rose-50 text-rose-700 border border-rose-300'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
-                        }`}
-                        title="Click to adjust physical stock count"
-                      >
-                        {p.stockQty} Qty
-                      </button>
-                    </td>
-                    <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap">
-                      <button
-                        onClick={() => handleOpenTransfer(p)}
-                        className="p-1.5 bg-stone-100 hover:bg-amber-100 text-stone-700 hover:text-amber-800 rounded cursor-pointer"
-                        title="Transfer stock to another Shop Branch"
-                      >
-                        <ArrowLeftRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setSelectedProductForBarcode(p)}
-                        className="p-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded cursor-pointer"
-                        title="Print Barcode Tag"
-                      >
-                        <Tag className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEdit(p)}
-                        className="p-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded cursor-pointer"
-                        title="Edit Master Product"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete material ${p.name}?`)) {
-                            deleteProduct(p.id);
-                          }
-                        }}
-                        className="p-1.5 bg-stone-100 hover:bg-rose-50 text-stone-400 hover:text-rose-600 rounded cursor-pointer"
-                        title="Delete Product"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
+              {materialGroups.map(({id,rows}) => {
+                const p=rows[0],total=rows.reduce((sum,row)=>sum+row.stockQty,0);
+                return <tr key={id} className="hover:bg-stone-50/80 transition-colors">
+                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo} · {p.color}</div></td>
+                  <td className="px-2 text-xs text-stone-500">{p.category}</td>
+                  <td className="px-2 font-mono text-xs">{p.barcode}</td>
+                  <td className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
+                    <button onClick={()=>handleOpenStockAdjust(row)} className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 hover:border-amber-400" title="Adjust this shop's stock">
+                      <span className="text-xs whitespace-nowrap">{(shops.find(s=>s.id===row.shopId)?.name || 'Unallocated').split(' - ')[0]}</span><strong className={isLowStockRow(row)?'text-rose-600':row.stockQty===0?'text-stone-400':'text-emerald-700'}>{row.stockQty}</strong>
+                    </button>
+                    <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30" title="Transfer from this shop"><ArrowLeftRight className="w-4 h-4"/></button>
+                  </div>)}</div></td>
+                  <td className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:'Shop-wise'}</td>
+                  <td className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:'Varies'}</td>
+                  <td className="px-2 text-center">{p.gstRate}%</td>
+                  <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">TOTAL UNITS</span></td>
+                  <td className="px-3 text-right whitespace-nowrap">
+                    <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title="Print material code"><Tag className="w-4 h-4"/></button>
+                    {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title="Edit shared material"><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title="Delete material"><Trash2 className="w-4 h-4"/></button></>}
+                  </td>
+                </tr>;
               })}
+              {materialGroups.length===0 && <tr><td colSpan={9} className="p-12 text-center text-stone-500">No materials yet. Create a material once to make it available in every shop.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -677,7 +611,7 @@ export const InventoryManager: React.FC = () => {
               <button onClick={() => setShowAddModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer text-base">✕</button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-3 text-xs">
+            <form onSubmit={handleSubmitForm} className="space-y-3 text-xs"><p className="bg-amber-50 text-amber-800 rounded-xl p-3 leading-relaxed">Material details and selling price are shared across shops. Opening quantity, cost and rack belong to the selected shop.</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-stone-600 mb-1 font-semibold">Category *</label>
@@ -693,13 +627,12 @@ export const InventoryManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Shop / Branch Allocation *</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">Opening stock shop *</label>
                   <select
-                    value={formData.shopId || (isCloud ? shops[0]?.id ?? '' : 'all')}
+                    disabled={!!editingProduct && shops.some(s=>s.id===editingProduct.shopId)} value={formData.shopId || shops[0]?.id || ''}
                     onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
                     className="w-full bg-amber-50/60 border border-amber-300 rounded-lg p-2 text-stone-900 font-medium"
                   >
-                    {!isCloud && <option value="all">🏢 All Branches (Shared Item)</option>}
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
                         📍 {s.name} ({s.city})
@@ -1009,11 +942,10 @@ export const InventoryManager: React.FC = () => {
                     Step 2: Assign Imported Stock to Shop Branch:
                   </label>
                   <select
-                    value={importTargetShop === 'all' && isCloud ? shops[0]?.id ?? '' : importTargetShop}
+                    value={importTargetShop === 'all' ? shops[0]?.id ?? '' : importTargetShop}
                     onChange={(e) => setImportTargetShop(e.target.value)}
                     className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900 font-medium"
                   >
-                    {!isCloud && <option value="all">🏢 All Branches (Shared Catalog)</option>}
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
                         📍 {s.name} ({s.city})

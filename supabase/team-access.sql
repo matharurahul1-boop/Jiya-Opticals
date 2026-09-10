@@ -95,6 +95,26 @@ begin
       'role',case when team_owner=auth.uid() then 'Admin' else 'Shop Manager' end,'shopId','all','phone',''));
 end $$;
 
+-- Common material identity, separate stock rows. Never duplicate physical quantity.
+create or replace function optical_private.expand_catalog(payload jsonb) returns jsonb
+language plpgsql immutable security invoker set search_path='' as $$
+declare result jsonb:=coalesce(payload->'JIYA_OPTICALS_ERP_V2_products','[]'); source jsonb; shop jsonb; new_row jsonb;
+begin
+  for source in select distinct on(p->>'catalogId') p from jsonb_array_elements(result) p
+    where coalesce(p->>'catalogId','')<>'' order by p->>'catalogId',p->>'id'
+  loop
+    for shop in select s from jsonb_array_elements(coalesce(payload->'JIYA_OPTICALS_ERP_V2_shops','[]')) s loop
+      if not exists(select 1 from jsonb_array_elements(result) p where p->>'catalogId'=source->>'catalogId' and p->>'shopId'=shop->>'id') then
+        new_row := (source - array['drishtiSourceId','drishtiItemId','drishtiHash','drishtiStockQty','drishtiSyncedAt']) || jsonb_build_object(
+          'id','stock:'||(source->>'catalogId')||':'||(shop->>'id'),'shopId',shop->>'id','stockQty',0,'location','');
+        result:=result||jsonb_build_array(new_row);
+      end if;
+    end loop;
+  end loop;
+  return jsonb_set(payload,'{JIYA_OPTICALS_ERP_V2_products}',result);
+end $$;
+revoke all on function optical_private.expand_catalog(jsonb) from public,anon,authenticated;
+
 create or replace function optical_private.team_save(team_owner uuid, expected_version integer, payload jsonb) returns integer
 language plpgsql security definer set search_path = '' as $$
 declare w public.optical_workspaces; allowed text[]; d jsonb; k text; incoming jsonb; preserved jsonb; all_shops text[];
@@ -121,6 +141,10 @@ begin
     foreach k in array array['products','customers','invoices','expenses','purchases','followups','payments'] loop
       incoming := payload->('JIYA_OPTICALS_ERP_V2_'||k);
       if jsonb_typeof(incoming) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
+      if k='products' and exists(
+        select 1 from jsonb_array_elements(incoming) a left join jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b on a->>'id'=b->>'id'
+        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId'])
+      ) then raise exception 'Only admin may edit shared material details' using errcode='42501'; end if;
       if exists(select 1 from jsonb_array_elements(incoming) e where not coalesce(e->>'shopId'=any(allowed),false) or coalesce(e->>'id','')='') then
         raise exception 'Record outside assigned shops' using errcode='42501';
       end if;
@@ -156,6 +180,7 @@ begin
   end loop;
   -- Keep historical data attached: a shop with records or assignments cannot be removed.
   if exists(select 1 from public.optical_team_members m, unnest(m.shop_ids) sid where m.owner_id=team_owner and not(sid=any(all_shops))) then raise exception 'Remove team assignments before deleting a shop'; end if;
+  if team_owner=auth.uid() then d:=optical_private.expand_catalog(d); end if;
   update public.optical_workspaces set data=d, version=version+1 where owner_id=team_owner;
   return w.version+1;
 end $$;

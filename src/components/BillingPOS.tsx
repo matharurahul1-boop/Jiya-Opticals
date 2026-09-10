@@ -1,5 +1,6 @@
 import { findScannedProduct } from '../lib/barcodes';
-import React, { useEffect, useState } from 'react';
+import { applyStockMovement } from '../lib/catalog';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Calculator, 
   Check, 
@@ -44,6 +45,7 @@ export const BillingPOS: React.FC = () => {
     selectedCustomerForAction,
     setSelectedCustomerForAction,
     selectedShopFilter,
+    setSelectedShopFilter,
     promptShopSelect,
     currentUser,
     shops
@@ -73,6 +75,12 @@ export const BillingPOS: React.FC = () => {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const previousBillingShop=useRef(selectedShopFilter);
+  useEffect(()=>{
+    if(previousBillingShop.current===selectedShopFilter)return;
+    previousBillingShop.current=selectedShopFilter;
+    setCartItems([]); setSelectedCustomerId(''); setBarcodeInput(''); setProductSearch('');
+  },[selectedShopFilter]);
 
   // Doctor & Sales Staff
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
@@ -312,6 +320,8 @@ export const BillingPOS: React.FC = () => {
     }
 
     const status: OrderStatus = orderType === 'Direct' ? 'Direct Sale' : 'Order Booked';
+    try { applyStockMovement(products,billingShopId,cartItems,-1); }
+    catch(error) {alert(error instanceof Error?error.message:'Check shop stock before billing.');return;}
 
     const invoice = createInvoice({
       shopId: billingShopId,
@@ -366,6 +376,8 @@ export const BillingPOS: React.FC = () => {
     'Lens Solution',
     'Optical Accessory'
   ];
+
+  if(selectedShopFilter==='all' && shops.length>1) return <div className="max-w-3xl mx-auto p-8 space-y-5"><h1 className="text-2xl font-semibold text-stone-900">Which shop is making this sale?</h1><p className="text-stone-500">The material catalogue is shared. Stock and revenue will be recorded against the shop you choose.</p><div className="grid sm:grid-cols-2 gap-4">{shops.map(shop=><button key={shop.id} onClick={()=>setSelectedShopFilter(shop.id)} className="p-6 bg-white border border-stone-200 hover:border-amber-400 rounded-2xl text-left shadow-sm"><strong className="block text-lg">{shop.name}</strong><span className="text-sm text-stone-500">{shop.address}</span></button>)}</div></div>;
 
   return (
     <div id="billing-pos-container" className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">

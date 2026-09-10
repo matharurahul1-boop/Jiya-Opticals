@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { monthlyRevenue } from '../lib/revenue';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
-const series = [{ key: 'revenue', label: 'Revenue', color: '#b45309' }, { key: 'received', label: 'Received', color: '#0f766e' }, { key: 'pending', label: 'Pending now', color: '#e11d48' }] as const;
+const series = [{ key: 'revenue', label: 'Revenue', color: '#7c3aed' }, { key: 'received', label: 'Received', color: '#0d9488' }, { key: 'pending', label: 'Pending now', color: '#f59e0b' }] as const;
 export function MonthlyRevenueChart() {
   const { invoices, payments, selectedShopFilter, shops } = useApp();
   const [year, setYear] = useState(new Date().getFullYear());

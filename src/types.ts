@@ -53,6 +53,8 @@ export type ProductCategory =
 
 export interface Product {
   id: string;
+  /** Shared material identity. id continues identifying this shop's stock row. */
+  catalogId?: string;
   shopId?: string;
   barcode: string;
   qrCode?: string;

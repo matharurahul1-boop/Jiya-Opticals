@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { applyStockMovement, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
 import { Snapshot, useCloudSave } from '../lib/workspace';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
@@ -85,11 +86,13 @@ interface AppContextType {
   storeProfile: StoreProfile;
   updateStoreProfile: (profile: StoreProfile) => void;
   products: Product[];
+  allProducts: Product[];
   addProduct: (product: Omit<Product, 'id'>) => Product;
   addMultipleProducts: (newProductsList: Omit<Product, 'id'>[]) => number;
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   adjustStock: (id: string, newQty: number) => void;
+  transferStock: (id: string, targetShopId: string, qty: number) => void;
 
   customers: Customer[];
   addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'totalSpent' | 'outstandingBalance' | 'prescriptions'>) => Customer;
@@ -337,6 +340,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   const [payments, setPayments] = useState<PaymentReceipt[]>(() => {
     const saved=readSaved(LOCAL_STORAGE_KEY+'_payments'); return saved ? JSON.parse(saved) : [];
   });
+  useEffect(() => {
+    if(currentUser.role!=='Admin')return;
+    const expanded=expandCatalog(products,shops.map(s=>s.id));
+    if(JSON.stringify(expanded)!==JSON.stringify(products))setProducts(expanded);
+  },[products,shops,currentUser.role]);
   useEffect(() => { if (!ownerId) localStorage.setItem(LOCAL_STORAGE_KEY+'_payments',JSON.stringify(payments)); },[payments]);
 
   const cloud = useCloudSave(ownerId, initialVersion, {
@@ -581,6 +589,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
       id: `shop-${Date.now()}`
     };
     setShops((prev) => [...prev, newShop]);
+    setProducts(prev=>expandCatalog(prev,[...shops.map(s=>s.id),newShop.id]));
     return newShop;
   };
 
@@ -622,37 +631,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   };
 
   const addProduct = (productData: Omit<Product, 'id'>): Product => {
+    assertAdmin();
+    if(products.some(p=>p.barcode===productData.barcode)) throw new Error('This barcode already exists in the shared catalogue. Select the shop to receive or adjust its stock.');
     const newProduct: Product = {
       ...productData,
       id: `prod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       shopId: resolveShop(productData.shopId)
     };
-    setProducts((prev) => [newProduct, ...prev]);
+    newProduct.catalogId = `catalog-${newProduct.id}`;
+    setProducts((prev) => expandCatalog([newProduct, ...prev],shops.map(s=>s.id)));
     return newProduct;
   };
 
   const addMultipleProducts = (newProductsList: Omit<Product, 'id'>[]): number => {
+    assertAdmin();
+    const seen = new Set(products.map(p=>p.barcode));
+    for(const p of newProductsList) { if(seen.has(p.barcode)) throw new Error(`Barcode ${p.barcode} already exists. Import only new materials.`); seen.add(p.barcode); }
     const formatted: Product[] = newProductsList.map((p, idx) => ({
       ...p,
       id: `prod-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
       shopId: resolveShop(p.shopId)
     }));
-    setProducts((prev) => [...formatted, ...prev]);
+    setProducts((prev) => expandCatalog([...formatted, ...prev],shops.map(s=>s.id)));
     return formatted.length;
   };
 
   const updateProduct = (product: Product) => {
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)));
+    assertAdmin();
+    if(products.some(p=>catalogKey(p)!==catalogKey(product)&&p.barcode===product.barcode))throw new Error('Barcode belongs to another material.');
+    const updated=updateCatalogProduct(products,product);
+    setProducts(updated);
   };
 
   const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    assertAdmin();
+    const material=products.find(p=>p.id===id); if(!material)return;
+    const ids=products.filter(p=>catalogKey(p)===catalogKey(material)).map(p=>p.id);
+    if(products.some(p=>ids.includes(p.id)&&p.stockQty!==0)||[...invoices,...purchases].some(doc=>doc.items.some(i=>ids.includes(i.productId)))){
+      alert('Material with stock or transaction history cannot be deleted.');return;
+    }
+    setProducts(prev=>prev.filter(p=>!ids.includes(p.id)));
   };
 
   const adjustStock = (id: string, newQty: number) => {
+    if(!Number.isInteger(newQty)||newQty<0)throw new Error('Stock must be a non-negative whole number.');
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, stockQty: Math.max(0, newQty) } : p))
     );
+  };
+
+  const transferStock = (id:string,targetShopId:string,qty:number) => {
+    const updated=transferCatalogStock(products,id,targetShopId,qty);
+    setProducts(updated);
   };
 
   const addCustomer = (customerData: Omit<Customer, 'id' | 'createdAt' | 'totalSpent' | 'outstandingBalance' | 'prescriptions'>): Customer => {
@@ -738,6 +768,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     const timeStr = now.toTimeString().slice(0, 5);
     const invoiceNo = ownerId ? `${storeProfile.invoicePrefix}${crypto.randomUUID().slice(0,8).toUpperCase()}` : generateNextInvoiceNo();
     const chosenShopId = resolveShop(invoiceData.shopId);
+    const stockAfterSale=applyStockMovement(products,chosenShopId,invoiceData.items,-1);
     if (!customers.some(c => c.id === invoiceData.customerId && c.shopId === chosenShopId) || invoiceData.items.some(item => !products.some(p => p.id === item.productId && p.shopId === chosenShopId))) {
       throw new Error('Invoice customer and products must belong to the billing shop');
     }
@@ -754,18 +785,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     };
 
     // 1. Deduct Product stock
-    setProducts((prev) =>
-      prev.map((p) => {
-        const item = invoiceData.items.find((it) => it.productId === p.id);
-        if (item) {
-          return {
-            ...p,
-            stockQty: Math.max(0, p.stockQty - item.qty)
-          };
-        }
-        return p;
-      })
-    );
+    setProducts(stockAfterSale);
 
     // 2. Update customer spent & balance
     setCustomers((prev) =>
@@ -882,24 +902,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   };
 
   const addPurchase = (purchaseData: Omit<Purchase, 'id' | 'purchaseNo'>) => {
+    const shopId=resolveShop(purchaseData.shopId);
+    const received=applyStockMovement(products,shopId,purchaseData.items,1);
     const purchaseNo = `PUR-${new Date().getFullYear()}-${String(purchases.length + 1).padStart(4, '0')}`;
     const newPurchase: Purchase = {
       ...purchaseData,
       id: `pur-${Date.now()}`,
-      shopId: resolveShop(purchaseData.shopId),
+      shopId,
       purchaseNo
     };
 
-    setProducts((prev) =>
-      prev.map((p) => {
+    setProducts(
+      received.map((p) => {
         const item = purchaseData.items.find((it) => it.productId === p.id);
         if (item) {
           return {
             ...p,
-            stockQty: p.stockQty + item.qty,
             purchasePrice: item.purchaseRate,
-            mrp: item.mrp || p.mrp,
-            salePrice: item.salePrice || p.salePrice
           };
         }
         return p;
@@ -1015,11 +1034,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         storeProfile,
         updateStoreProfile,
         products:scoped(products),
+        allProducts:products,
         addProduct,
         addMultipleProducts,
         updateProduct,
         deleteProduct,
         adjustStock,
+        transferStock,
         customers:scoped(customers),
         addCustomer,
         updateCustomer,
