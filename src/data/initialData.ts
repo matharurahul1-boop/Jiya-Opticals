@@ -192,6 +192,7 @@ export const initialStoreProfile: StoreProfile = {
   bankAccountNo: '50200088997766',
   bankIfsc: 'HDFC0001234',
   invoicePrefix: 'JIYA/25-26/',
+  openAccess: true,
   currencySymbol: '₹',
   termsAndConditions: [
     'Goods once sold cannot be returned. Frame exchange permitted within 7 days in original condition.',

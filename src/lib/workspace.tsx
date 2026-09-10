@@ -12,12 +12,14 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const [attempt, setAttempt] = useState(0);
   const [businessName, setBusinessName] = useState('');
   const [busy, setBusy] = useState(false);
+  // One store per deployment. Whichever store the account can reach is opened straight away —
+  // there is no "organisation" to choose. Shop selection happens inside the app.
   useEffect(() => {
     let active = true; setError('');
     supabase!.rpc('optical_team_list').then(({data,error}) => {
       if (!active) return;
       if (error) setError(error.message);
-      else { setTeams(data); if (data.length === 1) setSelected(data[0].ownerId); }
+      else { setTeams(data); if (data.length) setSelected(data[0].ownerId); }
     });
     return () => { active=false; };
   }, [ownerId,attempt]);
@@ -31,21 +33,23 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
     return () => { active=false; };
   },[selected,attempt]);
   if (row) return <>{children(row.data,row.version,row)}</>;
+  const noAccess = teams && teams.length === 0;
   return <div className="min-h-screen bg-[#eef1f7] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
-    <h1 className="text-2xl font-bold">Your shops & team</h1>
-    {error && <div role="alert" className="text-red-700">{error}<p className="text-sm">If the team functions are missing, run supabase/team-access.sql in Supabase SQL Editor.</p></div>}
-    {!teams && !error && <p>Loading your access…</p>}
+    <h1 className="text-2xl font-bold">Jiya Opticals</h1>
+    {error && <div role="alert" className="text-red-700">{error}<p className="text-sm">If the store functions are missing, run supabase/LIVE_SETUP.sql in the Supabase SQL Editor.</p></div>}
+    {!teams && !error && <p>Opening your store…</p>}
     {selected && !error && <p>Loading store…</p>}
-    {teams?.map(team => <button key={team.ownerId} onClick={() => {setSelected(team.ownerId);setAttempt(n=>n+1);}} className="w-full text-left p-3 border rounded-lg"><strong>{team.name}</strong><span className="block text-sm">{team.role === 'Admin' ? 'Admin — all shops' : 'Team member — assigned shops'}</span></button>)}
-    {teams && !teams.some(t=>t.ownerId===ownerId) && <form className="space-y-3 border-t pt-4" onSubmit={async e=>{
-      e.preventDefault(); if(busy)return; setBusy(true); setError('');
-      try {
-        const {data,error}=await supabase!.rpc('optical_team_create',{business_name:businessName.trim(),profile:initialStoreProfile});
-        if(error)throw error; setSelected(data);setAttempt(n=>n+1);
-      }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
-    }}><h2 className="font-bold">Business owner? Create your business</h2><label className="block">Business name<input className="w-full border rounded p-2" required minLength={2} value={businessName} onChange={e=>setBusinessName(e.target.value)} /></label><button disabled={busy} className="bg-amber-700 text-white p-3 rounded">{busy?'Creating…':'Create business'}</button></form>}
-    <p className="text-sm text-stone-600">Team member? Ask your admin to assign shops to your verified sign-up email, then refresh access.</p>
-    <button className="underline mr-4" onClick={()=>setAttempt(n=>n+1)}>Refresh access</button>
+    {noAccess && !error && <p className="text-stone-600">You're signed in, but this account isn't part of the store yet. Ask the owner to add your sign-up email under <strong>Team &amp; Access</strong>, then refresh.</p>}
+    {noAccess && <details className="border-t pt-4"><summary className="cursor-pointer text-sm text-stone-500">First-time setup (only if no store exists yet)</summary>
+      <form className="space-y-3 pt-3" onSubmit={async e=>{
+        e.preventDefault(); if(busy)return; setBusy(true); setError('');
+        try {
+          const {data,error}=await supabase!.rpc('optical_team_create',{business_name:businessName.trim(),profile:initialStoreProfile});
+          if(error)throw error; setSelected(data);setAttempt(n=>n+1);
+        }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
+      }}><label className="block text-sm">Store name<input className="w-full border rounded p-2" required minLength={2} value={businessName} onChange={e=>setBusinessName(e.target.value)} /></label><button disabled={busy} className="bg-amber-700 text-white p-3 rounded">{busy?'Creating…':'Create the store'}</button></form>
+    </details>}
+    <button className="underline mr-4" onClick={()=>setAttempt(n=>n+1)}>Refresh</button>
     <button className="underline" onClick={()=>void supabase!.auth.signOut()}>Sign out</button>
   </div></div>;
 }

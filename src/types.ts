@@ -262,6 +262,9 @@ export interface StoreProfile {
   bankAccountNo: string;
   bankIfsc: string;
   invoicePrefix: string;
+  /** When true, any confirmed sign-in joins this store with access to every shop
+   *  (no per-person setup). Turn off to grant access shop-by-shop from Team & Access. */
+  openAccess?: boolean;
   termsAndConditions: string[];
   currencySymbol: string;
   /** Default GST % per product category. Used as the billing/stock default; per-item value can still be overridden. */

@@ -50,7 +50,9 @@ begin
     'role', case when w.owner_id=auth.uid() then 'Admin' else 'Shop Manager' end)), '[]') into result
   from public.optical_workspaces w where w.owner_id=auth.uid() or exists (
     select 1 from public.optical_team_members m where m.owner_id=w.owner_id and m.email=optical_private.session_email()
-  );
+  )
+  -- "Open access" store: any confirmed sign-in joins it with every shop, no per-person setup.
+  or (coalesce(w.data #>> '{JIYA_OPTICALS_ERP_V2_profile,openAccess}','') = 'true' and optical_private.session_email() is not null);
   return result;
 end $$;
 
@@ -59,6 +61,10 @@ language plpgsql security definer set search_path = '' as $$
 declare d jsonb := '{}'; k text;
 begin
   if auth.uid() is null then raise exception 'Sign in required' using errcode='42501'; end if;
+  -- One store per deployment. Extra sign-ins join the existing store, they do not start their own.
+  if exists(select 1 from public.optical_workspaces) then
+    raise exception 'This store is already set up. Ask the owner to add you under Team & Access.' using errcode='42501';
+  end if;
   if length(trim(business_name)) < 2 or jsonb_typeof(profile) is distinct from 'object' then raise exception 'Enter a business name'; end if;
   foreach k in array array['shops','users','products','customers','invoices','suppliers','doctors','staff','expenses','purchases','wa_templates','followups','payments'] loop
     d := jsonb_set(d, array['JIYA_OPTICALS_ERP_V2_'||k], '[]');
@@ -79,7 +85,13 @@ begin
   if team_owner=auth.uid() then d := w.data;
   else
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=actor_email;
-    if not found then raise exception 'Store access removed or email not confirmed' using errcode='42501'; end if;
+    if not found then
+      -- Open-access store: any confirmed sign-in works every shop until the admin assigns specific shops.
+      if actor_email is null or coalesce(w.data #>> '{JIYA_OPTICALS_ERP_V2_profile,openAccess}','') <> 'true' then
+        raise exception 'Store access removed or email not confirmed' using errcode='42501';
+      end if;
+      select coalesce(array_agg(e->>'id'), '{}') into allowed from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_shops','[]')) e;
+    end if;
     foreach k in array array['products','customers','invoices','expenses','purchases','followups','payments'] loop
       select coalesce(jsonb_agg(case when k='customers' then
         jsonb_set(e, '{prescriptions}', (select coalesce(jsonb_agg(rx),'[]') from jsonb_array_elements(coalesce(e->'prescriptions','[]')) rx
@@ -132,7 +144,12 @@ begin
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
   if team_owner<>auth.uid() then
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=optical_private.session_email();
-    if not found then raise exception 'Store access removed' using errcode='42501'; end if;
+    if not found then
+      if optical_private.session_email() is null or coalesce(w.data #>> '{JIYA_OPTICALS_ERP_V2_profile,openAccess}','') <> 'true' then
+        raise exception 'Store access removed' using errcode='42501';
+      end if;
+      select coalesce(array_agg(e->>'id'), '{}') into allowed from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_shops','[]')) e;
+    end if;
   end if;
   -- errcode PT409 (not 40001): PostgREST auto-retries serialization_failure (40001) until upstream timeout, so a version conflict must use a non-retryable SQLSTATE.
   if w.version<>expected_version then raise exception 'Store changed in another session. Download unsaved data, then reload.' using errcode='PT409'; end if;

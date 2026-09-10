@@ -107,6 +107,13 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
   const [profileForm, setProfileForm] = useState<StoreProfile>({ ...storeProfile });
   const [termsText, setTermsText] = useState(storeProfile.termsAndConditions.join('\n'));
   const [qrError, setQrError] = useState('');
+  // Re-sync the form when the profile actually changes (e.g. cloud data hydrates
+  // after mount, or another admin session saves). Without this the form keeps the
+  // value captured at first mount, so edits appear to "not stick".
+  useEffect(() => {
+    setProfileForm({ ...storeProfile });
+    setTermsText(storeProfile.termsAndConditions.join('\n'));
+  }, [storeProfile]);
 
   // Doctor Form State
   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
@@ -352,6 +359,22 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               />
             </div>
           </div>
+
+          {isCloud && (
+            <label className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 w-4 h-4 accent-amber-600"
+                checked={profileForm.openAccess ?? false}
+                onChange={(e) => setProfileForm({ ...profileForm, openAccess: e.target.checked })}
+              />
+              <span className="text-xs text-stone-700">
+                <strong className="block text-stone-900">Let any signed-in staff use this store</strong>
+                Anyone who signs up and confirms their email can open the store and work every shop — no per-person setup.
+                Turn this off to grant access shop-by-shop from Team &amp; Access instead.
+              </span>
+            </label>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="sm:col-span-2">

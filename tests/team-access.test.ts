@@ -73,3 +73,52 @@ test('team RPCs isolate shops, preserve other branches, and revoke access', asyn
     await assert.rejects(rpc('optical_team_list'), /permission denied/);
   } finally { await db.close(); }
 });
+
+test('open-access store lets any confirmed sign-in join every shop, and cannot be duplicated', async () => {
+  const db = new PGlite();
+  const owner = '00000000-0000-0000-0000-000000000001';
+  const staff = '00000000-0000-0000-0000-000000000002';
+  const other = '00000000-0000-0000-0000-000000000003';
+  const unverified = '00000000-0000-0000-0000-000000000004';
+  const key = (s: string) => `JIYA_OPTICALS_ERP_V2_${s}`;
+  const rpc = async (name: string, args: unknown[] = []) => (await db.query<{ result: any }>(`select public.${name}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as result`, args)).rows[0].result;
+  const signIn = async (id: string) => { await db.exec('reset role; set role authenticated;'); await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]); };
+  try {
+    await db.exec(`create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz);
+      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+      grant usage on schema auth, public to authenticated; grant execute on function auth.uid() to authenticated;`);
+    await db.query('insert into auth.users values ($1,$2,now()),($3,$4,now()),($5,$6,now()),($7,$8,null)', [owner, 'owner@example.com', staff, 'staff@example.com', other, 'other@example.com', unverified, 'later@example.com']);
+    const schema = readFileSync('supabase/team-access.sql', 'utf8');
+    await db.exec(schema);
+    await signIn(owner);
+    await rpc('optical_team_create', ['Jiya Opticals', JSON.stringify({ name: 'Jiya Opticals', openAccess: true })]);
+    // A second store cannot be started once one exists.
+    await signIn(staff);
+    await assert.rejects(rpc('optical_team_create', ['Another', JSON.stringify({ name: 'Another' })]), /already set up/);
+    await signIn(owner);
+    let loaded = await rpc('optical_team_load', [owner]);
+    loaded.data[key('shops')] = [{ id: 'a', name: 'Shop A' }, { id: 'b', name: 'Shop B' }];
+    await rpc('optical_team_save', [owner, loaded.version, JSON.stringify(loaded.data)]);
+    // Confirmed staff with no membership row: sees the store, gets every shop, can bill.
+    await signIn(staff);
+    assert.equal((await rpc('optical_team_list')).length, 1);
+    let staffView = await rpc('optical_team_load', [owner]);
+    assert.deepEqual(staffView.data[key('shops')].map((s: any) => s.id).sort(), ['a', 'b']);
+    staffView.data[key('customers')] = [{ id: 'c1', shopId: 'b', name: 'Walk-in' }];
+    await rpc('optical_team_save', [owner, staffView.version, JSON.stringify(staffView.data)]);
+    await signIn(owner);
+    assert.equal((await rpc('optical_team_load', [owner])).data[key('customers')][0].name, 'Walk-in');
+    // Unconfirmed users are still excluded.
+    await signIn(unverified);
+    assert.equal((await rpc('optical_team_list')).length, 0);
+    await assert.rejects(rpc('optical_team_load', [owner]), /access removed|not confirmed/);
+    // Turning open access off restores per-person control.
+    await signIn(owner);
+    loaded = await rpc('optical_team_load', [owner]);
+    loaded.data[key('profile')].openAccess = false;
+    await rpc('optical_team_save', [owner, loaded.version, JSON.stringify(loaded.data)]);
+    await signIn(other);
+    assert.equal((await rpc('optical_team_list')).length, 0);
+    await assert.rejects(rpc('optical_team_load', [owner]), /access removed/);
+  } finally { await db.close(); }
+});

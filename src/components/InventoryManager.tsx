@@ -150,9 +150,9 @@ export const InventoryManager: React.FC = () => {
       frameType: 'Full Rim',
       size: '52-18-140',
       hsnCode: '90031100',
-      purchasePrice: 1000,
-      mrp: 2499,
-      salePrice: 1999,
+      purchasePrice: 0,
+      mrp: 0,
+      salePrice: 0,
       gstRate: 12,
       stockQty: 10,
       minStockAlert: 3,
@@ -195,6 +195,10 @@ export const InventoryManager: React.FC = () => {
     }
     if (!formData.shopId || formData.shopId === 'all') {
       alert('Select the shop receiving the opening stock. Material details are shared across all shops.');
+      return;
+    }
+    if (!formData.salePrice || formData.salePrice <= 0) {
+      alert('Enter the sale price for this material.');
       return;
     }
 
@@ -739,7 +743,8 @@ export const InventoryManager: React.FC = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.purchasePrice}
+                    placeholder="0"
+                    value={formData.purchasePrice || ''}
                     onChange={(e) => setFormData({ ...formData, purchasePrice: Number(e.target.value) })}
                     className="w-full bg-white border border-stone-300 rounded p-1.5 text-stone-900"
                   />
@@ -749,7 +754,8 @@ export const InventoryManager: React.FC = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.mrp}
+                    placeholder="0"
+                    value={formData.mrp || ''}
                     onChange={(e) => setFormData({ ...formData, mrp: Number(e.target.value) })}
                     className="w-full bg-white border border-stone-300 rounded p-1.5 text-stone-900"
                   />
@@ -759,7 +765,8 @@ export const InventoryManager: React.FC = () => {
                   <input
                     type="number"
                     min="0"
-                    value={formData.salePrice}
+                    placeholder="0"
+                    value={formData.salePrice || ''}
                     onChange={(e) => setFormData({ ...formData, salePrice: Number(e.target.value) })}
                     className="w-full bg-white border border-stone-300 rounded p-1.5 text-emerald-700 font-bold"
                   />
