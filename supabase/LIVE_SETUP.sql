@@ -48,9 +48,10 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('ownerId', w.owner_id,
     'name', coalesce(w.data->'JIYA_OPTICALS_ERP_V2_profile'->>'name','Optical store'),
     'role', case when w.owner_id=auth.uid() then 'Admin' else 'Shop Manager' end)), '[]') into result
-  from public.optical_workspaces w where w.owner_id=auth.uid() or exists (
-    select 1 from public.optical_team_members m where m.owner_id=w.owner_id and m.email=optical_private.session_email()
-  );
+  from public.optical_workspaces w
+  left join public.optical_team_members m
+    on m.owner_id = w.owner_id and m.email = optical_private.session_email()
+  where w.owner_id = auth.uid() or m.owner_id is not null;
   return result;
 end $$;
 
