@@ -2,6 +2,7 @@ import { t } from '../lib/i18n';
 import { NumberInput } from './NumberInput';
 import React, { useEffect, useState } from 'react';
 import {
+  BookOpenCheck,
   Building2,
   Check,
   Edit,
@@ -23,6 +24,7 @@ import { useApp } from '../context/AppContext';
 import { Doctor, ShopBranch, StoreProfile, UserAccount } from '../types';
 import { fileToQrDataUrl } from '../lib/upiQr';
 import { PRODUCT_CATEGORIES } from '../lib/gst';
+import { SetupGuide } from './SetupGuide';
 
 export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = ({ startTab = 'StoreProfile' }) => {
   const {
@@ -45,7 +47,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
     setActiveTab: goToTab
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'StoreProfile' | 'Shops' | 'Doctors' | 'Users'>(startTab);
+  const [activeTab, setActiveTab] = useState<'StoreProfile' | 'Shops' | 'Doctors' | 'Users' | 'Guide'>(startTab);
 
   // App Users Form State
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -297,7 +299,19 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           <Users className="w-3.5 h-3.5" />
           {t("Users (")}{users.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('Guide')}
+          className={`px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            activeTab === 'Guide' ? 'bg-amber-600 text-white' : 'text-stone-700 hover:bg-stone-100'
+          }`}
+        >
+          <BookOpenCheck className="w-3.5 h-3.5" />
+          {t("Setup Guide")}
+        </button>
       </div>
+
+      {activeTab === 'Guide' && <SetupGuide isCloud={isCloud} />}
 
       {/* Tab 1: Store Profile & GSTIN Master */}
       {activeTab === 'StoreProfile' && (
@@ -463,7 +477,11 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                         setQrError('');
                         try {
                           const dataUrl = await fileToQrDataUrl(file);
-                          setProfileForm((f) => ({ ...f, upiQrDataUrl: dataUrl }));
+                          // Save immediately — this is the exact image "Show QR" reads on
+                          // billing, so it must not depend on the separate form Save button.
+                          const updated = { ...profileForm, upiQrDataUrl: dataUrl };
+                          setProfileForm(updated);
+                          updateStoreProfile(updated);
                         } catch (err) {
                           setQrError(err instanceof Error ? err.message : 'Could not use that image.');
                         }
@@ -473,7 +491,11 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   {profileForm.upiQrDataUrl && (
                     <button
                       type="button"
-                      onClick={() => setProfileForm((f) => ({ ...f, upiQrDataUrl: undefined }))}
+                      onClick={() => {
+                        const updated = { ...profileForm, upiQrDataUrl: undefined };
+                        setProfileForm(updated);
+                        updateStoreProfile(updated);
+                      }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" /> {t("Remove ")}</button>
