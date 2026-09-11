@@ -68,6 +68,7 @@ html {
 .optical-auth-form button:not([type=button]) {border-radius:10px;min-height:48px;font-size:14px;font-weight:600;background:#0d5750;box-shadow:0 5px 12px #124b4015;}
 .auth-footnote {margin-top:60px;font-size:10px;color:#84938d;letter-spacing:.04em;}
 .auth-footnote span {margin:0 8px;}
+.auth-credit,.app-credit {margin-top:6px;font-size:10px;color:#84938d;letter-spacing:.02em;}
 .optical-dashboard-hero {background:#e5f0e9;position:relative;isolation:isolate;overflow:hidden;min-height:270px;}
 .optical-dashboard-hero::before {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#e5f0e9 0%,#e5f0e9 40%,transparent 80%),url('/brand/optical-studio.png') right 59%/60% auto no-repeat;}
 .optical-dashboard-intro h2 {font-size:clamp(24px,2.5vw,34px);font-weight:500;letter-spacing:-.04em;line-height:1.2;color:#183f38;margin:8px 0;}

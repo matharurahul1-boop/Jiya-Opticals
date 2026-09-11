@@ -95,6 +95,7 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
       {mode === 'signup' && <p className="text-sm text-stone-500">{t("After sign-in, select your shop and request access. Your workspace opens after the admin approves.")}</p>}
     </form>
     <p className="auth-footnote">JIYA OPTICALS <span>•</span> Designed around better eye care</p>
+    <p className="auth-credit">Made with ❤️ by Handysolver © 2026</p>
     </section>
   </div>;
 }
