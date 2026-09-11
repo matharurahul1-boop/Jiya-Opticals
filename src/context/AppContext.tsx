@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { getLanguage,setLocale } from '../lib/i18n';
 import { applyStockMovement, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
 import { Snapshot, useCloudSave } from '../lib/workspace';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -37,6 +38,7 @@ import {
 } from '../data/initialData';
 
 export type NavTab = 
+  | 'profile'
   | 'dashboard'
   | 'billing'
   | 'eyetesting'
@@ -53,6 +55,7 @@ export type NavTab =
   | 'drishti';
 
 interface AppContextType {
+  saveMyProfile: (details:{name:string;username:string;phone:string}) => Promise<void>;
   ownerId?: string;
   isCloud: boolean;
   saveStatus: string;
@@ -211,7 +214,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     return localStorage.getItem(key);
   };
   const [activeTab, setActiveTabState] = useState<NavTab>('dashboard');
-  const [language, setLanguage] = useState<'EN' | 'HI'>('EN');
+  const [language, setLanguageState] = useState<'EN' | 'HI'>(getLanguage);
+  const setLanguage=(value:'EN'|'HI')=>{setLocale(value);setLanguageState(value);};
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(() => {
     try { return localStorage.getItem('JIYA_SIDEBAR_COLLAPSED') === '1'; } catch { return false; }
@@ -461,6 +465,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     shops.find((s) => s.id === selectedShopFilter) || shops[0] || initialShops[0];
 
   const canAccessTab = (tab: NavTab): boolean => {
+    if(tab==='profile')return true;
     const role = currentUser.role;
     if (ownerId && role !== 'Admin') return ['dashboard','billing','eyetesting','inventory','customers','followups','daybook'].includes(tab);
     if (role === 'Admin') return true;
@@ -628,6 +633,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     if (currentUser.id === user.id) {
       setCurrentUser(user);
     }
+  };
+
+  const saveMyProfile = async (details:{name:string;username:string;phone:string}) => {
+    const clean={name:details.name.trim(),username:details.username.trim(),phone:details.phone.trim()};
+    if(!clean.name||!clean.username)throw new Error('Name and username are required.');
+    if(ownerId && supabase){const {error}=await supabase.rpc('optical_user_sync',{display_name:clean.name,uname:clean.username,phone:clean.phone});if(error)throw error;}
+    const updated={...currentUser,...clean};setCurrentUser(updated);
+    if(!ownerId)setUsers(prev=>prev.map(u=>u.id===updated.id?updated:u));
   };
 
   const addProduct = (productData: Omit<Product, 'id'>): Product => {
@@ -1007,6 +1020,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     <AppContext.Provider
       value={{
         ownerId, isCloud:!!ownerId, saveStatus:cloud.status, payments:scoped(payments),
+        saveMyProfile,
         activeTab,
         setActiveTab,
         language,

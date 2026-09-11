@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Printer, Tag, X } from 'lucide-react';
@@ -50,11 +51,10 @@ export const BarcodePrintModal: React.FC = () => {
           <div className="flex items-center space-x-3 text-xs">
             <span className="font-bold text-stone-900 flex items-center gap-1.5">
               <Tag className="w-4 h-4 text-amber-600" />
-              Frame Tags / Barcode Sticker Print
-            </span>
+              {t("Frame Tags / Barcode Sticker Print ")}</span>
 
             <div className="flex items-center space-x-2">
-              <label className="text-stone-500 text-[11px]">Qty:</label>
+              <label className="text-stone-500 text-[11px]">{t("Qty:")}</label>
               <input
                 type="number"
                 min="1"
@@ -73,8 +73,7 @@ export const BarcodePrintModal: React.FC = () => {
               className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs"
             >
               <Printer className="w-3.5 h-3.5" />
-              Print Stickers
-            </button>
+              {t("Print Stickers ")}</button>
             <button
               onClick={() => setSelectedProductForBarcode(null)}
               className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 rounded-lg"
@@ -84,7 +83,7 @@ export const BarcodePrintModal: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-3 text-xs bg-amber-50 space-y-2 no-print"><p>QR reprint uses the original code value. Existing Drishti stickers can still be scanned. Select the TSC driver in the print dialog; set 100% scale and match your actual label roll.</p><div className="flex gap-3"><label>Width (mm) <input className="border w-14" type="number" min="25" max="110" value={labelWidth} onChange={e => setLabelWidth(Math.min(110,Math.max(25,Number(e.target.value)||60)))} /></label><label>Height (mm) <input className="border w-14" type="number" min="30" max="150" value={labelHeight} onChange={e => setLabelHeight(Math.min(150,Math.max(30,Number(e.target.value)||40)))} /></label></div>{qrError && <p role="alert" className="text-red-700">{qrError}</p>}</div>
+        <div className="p-3 text-xs bg-amber-50 space-y-2 no-print"><p>{t("QR reprint uses the original code value. Existing Drishti stickers can still be scanned. Select the TSC driver in the print dialog; set 100% scale and match your actual label roll.")}</p><div className="flex gap-3"><label>{t("Width (mm) ")}<input className="border w-14" type="number" min="25" max="110" value={labelWidth} onChange={e => setLabelWidth(Math.min(110,Math.max(25,Number(e.target.value)||60)))} /></label><label>{t("Height (mm) ")}<input className="border w-14" type="number" min="30" max="150" value={labelHeight} onChange={e => setLabelHeight(Math.min(150,Math.max(30,Number(e.target.value)||40)))} /></label></div>{qrError && <p role="alert" className="text-red-700">{qrError}</p>}</div>
 
         {/* Printable Stickers Sheet */}
         <div className="p-6 overflow-y-auto flex-1 bg-stone-100 text-stone-900 printable-area">
@@ -113,14 +112,14 @@ export const BarcodePrintModal: React.FC = () => {
 
                 {/* Barcode visual representation */}
                 <div className="text-center py-0.5 bg-stone-50 border border-stone-200 rounded">
-                  {qrImage ? <img src={qrImage} alt={`QR code for ${product.barcode}`} className="w-24 h-24 mx-auto" /> : <span>Generating QR…</span>}
+                  {qrImage ? <img src={qrImage} alt={`QR code for ${product.barcode}`} className="w-24 h-24 mx-auto" /> : <span>{t("Generating QR…")}</span>}
                   <span className="text-[9px] font-bold text-stone-700 block">
                     {product.barcode}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center pt-0.5 border-t border-stone-200 text-stone-900 font-sans">
-                  <span className="text-[9px] font-bold text-stone-500">MRP:</span>
+                  <span className="text-[9px] font-bold text-stone-500">{t("MRP:")}</span>
                   <span className="text-xs font-black text-stone-900 font-mono">
                     ₹{product.mrp || product.salePrice}
                   </span>

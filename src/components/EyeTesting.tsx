@@ -1,4 +1,6 @@
+import { t } from '../lib/i18n';
 import React, { useState } from 'react';
+import { QuickAddPerson } from './QuickAddPerson';
 import { 
   CheckCircle2, 
   Eye, 
@@ -17,6 +19,7 @@ import { useApp } from '../context/AppContext';
 import { EyePower, LensCoating, LensType, Prescription } from '../types';
 
 export const EyeTesting: React.FC = () => {
+  const [quickAdd,setQuickAdd]=useState<'patient'|'doctor'|null>(null);
   const { 
     customers, 
     doctors, 
@@ -32,8 +35,8 @@ export const EyeTesting: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState(
     () => selectedCustomerForAction?.id || ''
   );
-  const [doctorName, setDoctorName] = useState('Suresh Kumar (B.Optom)');
-  const [optometristName, setOptometristName] = useState('In-House Optometrist');
+  const [doctorName, setDoctorName] = useState('');
+  const [optometristName, setOptometristName] = useState('');
 
   // Auto sync if selected customer changed
   React.useEffect(() => {
@@ -61,8 +64,8 @@ export const EyeTesting: React.FC = () => {
     nv: 'N6'
   });
 
-  const [pdMm, setPdMm] = useState('62');
-  const [fittingHeight, setFittingHeight] = useState('18mm');
+  const [pdMm, setPdMm] = useState('');
+  const [fittingHeight, setFittingHeight] = useState('');
   const [lensType, setLensType] = useState<LensType>('Single Vision');
   const [lensCoating, setLensCoating] = useState<LensCoating>('Blue Cut / Blue Block');
   const [lensIndex, setLensIndex] = useState('1.56');
@@ -156,15 +159,15 @@ export const EyeTesting: React.FC = () => {
       `MOBILE: +91 ${rx.customerMobile}\n\n` +
       `--- VISION REFRACTION DATA ---\n` +
       `👁️ RIGHT EYE (OD):\n` +
-      `  • Spherical (SPH): ${rx.rightEye.sph || '0.00'}\n` +
-      `  • Cylindrical (CYL): ${rx.rightEye.cyl || '0.00'}\n` +
+      `  • Spherical (SPH): ${rx.rightEye.sph || '—'}\n` +
+      `  • Cylindrical (CYL): ${rx.rightEye.cyl || '—'}\n` +
       `  • Axis: ${rx.rightEye.axis || '-'}\n` +
       `  • Add (Near): ${rx.rightEye.add || '-'}\n` +
       `  • Distant Vision: ${rx.rightEye.dv || '6/6'}\n` +
       `  • Near Vision: ${rx.rightEye.nv || 'N6'}\n\n` +
       `👁️ LEFT EYE (OS):\n` +
-      `  • Spherical (SPH): ${rx.leftEye.sph || '0.00'}\n` +
-      `  • Cylindrical (CYL): ${rx.leftEye.cyl || '0.00'}\n` +
+      `  • Spherical (SPH): ${rx.leftEye.sph || '—'}\n` +
+      `  • Cylindrical (CYL): ${rx.leftEye.cyl || '—'}\n` +
       `  • Axis: ${rx.leftEye.axis || '-'}\n` +
       `  • Add (Near): ${rx.leftEye.add || '-'}\n` +
       `  • Distant Vision: ${rx.leftEye.dv || '6/6'}\n` +
@@ -198,11 +201,9 @@ export const EyeTesting: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              Eye Testing & Refraction
-            </h1>
+              {t("Eye Testing & Refraction ")}</h1>
             <p className="text-xs text-stone-500">
-              Record autorefractor and trial refraction readings.
-            </p>
+              {t("Record autorefractor and trial refraction readings. ")}</p>
           </div>
         </div>
 
@@ -211,7 +212,7 @@ export const EyeTesting: React.FC = () => {
           className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-xs"
         >
           <Glasses className="w-3.5 h-3.5" />
-          <span>Billing POS</span>
+          <span>{t("Billing POS")}</span>
         </button>
       </div>
 
@@ -223,22 +224,21 @@ export const EyeTesting: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <span className="text-xs font-bold text-amber-900 uppercase flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                Refraction Details
-              </span>
-              <span className="text-[11px] text-stone-500">Date: {new Date().toISOString().split('T')[0]}</span>
+                {t("Refraction Details ")}</span>
+              <span className="text-[11px] text-stone-500">{t("Date: ")}{new Date().toISOString().split('T')[0]}</span>
             </div>
 
             {/* Customer & Optometrist Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="text-stone-700 font-semibold block mb-1">Customer / Patient *</label>
+                <div className="flex items-center justify-between mb-1"><label className="text-stone-700 font-semibold">{t("Patient *")}</label><button type="button" aria-label={t("Add patient")} onClick={()=>setQuickAdd('patient')} className="p-1.5 rounded-lg bg-amber-50 text-amber-700"><Plus className="w-4 h-4"/></button></div>
                 <select
                   required
                   value={selectedCustomerId}
                   onChange={(e) => setSelectedCustomerId(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 outline-none focus:border-amber-600 font-medium"
                 >
-                  <option value="">-- Choose Patient --</option>
+                  <option value="">{t("-- Choose Patient --")}</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} (📱 {c.mobile})
@@ -248,12 +248,13 @@ export const EyeTesting: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-stone-700 font-semibold block mb-1">Optometrist / Doctor</label>
+                <div className="flex items-center justify-between mb-1"><label className="text-stone-700 font-semibold">{t("Optometrist / Doctor")}</label><button type="button" aria-label={t("Add doctor")} onClick={()=>setQuickAdd('doctor')} className="p-1.5 rounded-lg bg-amber-50 text-amber-700"><Plus className="w-4 h-4"/></button></div>
                 <select
                   value={doctorName}
                   onChange={(e) => setDoctorName(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 outline-none focus:border-amber-600"
                 >
+                  <option value="">{t("Choose doctor")}</option>
                   {doctors.map((d) => (
                     <option key={d.id} value={d.name}>
                       {d.name} ({d.qualification})
@@ -266,29 +267,28 @@ export const EyeTesting: React.FC = () => {
             {/* Power Input Grid */}
             <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-3">
               <div className="text-[11px] uppercase font-bold text-stone-600 flex justify-between">
-                <span>Vision Power Matrix</span>
-                <span className="text-amber-800">Snellen Acuity</span>
+                <span>{t("Vision Power Matrix")}</span>
+                <span className="text-amber-800">{t("Snellen Acuity")}</span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-center text-xs">
                   <thead className="bg-stone-100 text-stone-700 uppercase text-[10px]">
                     <tr>
-                      <th className="py-2 px-2 text-left">Eye</th>
-                      <th className="py-2 px-1">Sphere (SPH)</th>
-                      <th className="py-2 px-1">Cylinder (CYL)</th>
-                      <th className="py-2 px-1">Axis (°)</th>
-                      <th className="py-2 px-1">Addition (ADD)</th>
-                      <th className="py-2 px-1">DV</th>
-                      <th className="py-2 px-1">NV</th>
+                      <th className="py-2 px-2 text-left">{t("Eye")}</th>
+                      <th className="py-2 px-1">{t("Sphere (SPH)")}</th>
+                      <th className="py-2 px-1">{t("Cylinder (CYL)")}</th>
+                      <th className="py-2 px-1">{t("Axis (°)")}</th>
+                      <th className="py-2 px-1">{t("Addition (ADD)")}</th>
+                      <th className="py-2 px-1">{t("DV")}</th>
+                      <th className="py-2 px-1">{t("NV")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200">
                     {/* Right Eye */}
                     <tr>
                       <td className="py-2 px-2 text-left font-bold text-amber-900">
-                        Right (OD)
-                      </td>
+                        {t("Right (OD) ")}</td>
                       <td className="py-1 px-1">
                         <input
                           type="text"
@@ -346,11 +346,11 @@ export const EyeTesting: React.FC = () => {
                           onChange={(e) => setRightEye({ ...rightEye, nv: e.target.value })}
                           className="bg-white border border-stone-300 rounded p-1.5 text-stone-900 text-xs"
                         >
-                          <option value="N6">N6</option>
-                          <option value="N8">N8</option>
-                          <option value="N10">N10</option>
-                          <option value="N12">N12</option>
-                          <option value="N18">N18</option>
+                          <option value="N6">{t("N6")}</option>
+                          <option value="N8">{t("N8")}</option>
+                          <option value="N10">{t("N10")}</option>
+                          <option value="N12">{t("N12")}</option>
+                          <option value="N18">{t("N18")}</option>
                         </select>
                       </td>
                     </tr>
@@ -358,8 +358,7 @@ export const EyeTesting: React.FC = () => {
                     {/* Left Eye */}
                     <tr>
                       <td className="py-2 px-2 text-left font-bold text-amber-800">
-                        Left (OS)
-                      </td>
+                        {t("Left (OS) ")}</td>
                       <td className="py-1 px-1">
                         <input
                           type="text"
@@ -417,11 +416,11 @@ export const EyeTesting: React.FC = () => {
                           onChange={(e) => setLeftEye({ ...leftEye, nv: e.target.value })}
                           className="bg-white border border-stone-300 rounded p-1.5 text-stone-900 text-xs"
                         >
-                          <option value="N6">N6</option>
-                          <option value="N8">N8</option>
-                          <option value="N10">N10</option>
-                          <option value="N12">N12</option>
-                          <option value="N18">N18</option>
+                          <option value="N6">{t("N6")}</option>
+                          <option value="N8">{t("N8")}</option>
+                          <option value="N10">{t("N10")}</option>
+                          <option value="N12">{t("N12")}</option>
+                          <option value="N18">{t("N18")}</option>
                         </select>
                       </td>
                     </tr>
@@ -433,43 +432,43 @@ export const EyeTesting: React.FC = () => {
             {/* Lens Type & Recommendation Settings */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="text-stone-600 block mb-1">Recommended Lens Type</label>
+                <label className="text-stone-600 block mb-1">{t("Recommended Lens Type")}</label>
                 <select
                   value={lensType}
                   onChange={(e) => setLensType(e.target.value as LensType)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                 >
-                  <option value="Single Vision">Single Vision</option>
-                  <option value="Bifocal">Bifocal</option>
-                  <option value="Progressive">Progressive / Multifocal</option>
-                  <option value="Zero Power / Plano">Plano / Zero Power</option>
-                  <option value="Contact Lens">Contact Lens</option>
+                  <option value="Single Vision">{t("Single Vision")}</option>
+                  <option value="Bifocal">{t("Bifocal")}</option>
+                  <option value="Progressive">{t("Progressive / Multifocal")}</option>
+                  <option value="Zero Power / Plano">{t("Plano / Zero Power")}</option>
+                  <option value="Contact Lens">{t("Contact Lens")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-stone-600 block mb-1">Lens Coating</label>
+                <label className="text-stone-600 block mb-1">{t("Lens Coating")}</label>
                 <select
                   value={lensCoating}
                   onChange={(e) => setLensCoating(e.target.value as LensCoating)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                 >
-                  <option value="Blue Cut / Blue Block">Blue Cut / Blue Block</option>
-                  <option value="HMC (Anti-Reflective)">Anti-Reflective HMC</option>
-                  <option value="Photochromic / Transition">Photochromic Day/Night</option>
-                  <option value="Blue Cut + Photochromic">Blue Cut + Photochromic</option>
-                  <option value="Polycarbonate Anti-Impact">Polycarbonate</option>
-                  <option value="Drivewear / Polarized">Polarized</option>
+                  <option value="Blue Cut / Blue Block">{t("Blue Cut / Blue Block")}</option>
+                  <option value="HMC (Anti-Reflective)">{t("Anti-Reflective HMC")}</option>
+                  <option value="Photochromic / Transition">{t("Photochromic Day/Night")}</option>
+                  <option value="Blue Cut + Photochromic">{t("Blue Cut + Photochromic")}</option>
+                  <option value="Polycarbonate Anti-Impact">{t("Polycarbonate")}</option>
+                  <option value="Drivewear / Polarized">{t("Polarized")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-stone-600 block mb-1">PD (mm)</label>
+                <label className="text-stone-600 block mb-1">{t("PD (mm)")}</label>
                 <input
                   type="text"
                   value={pdMm}
                   onChange={(e) => setPdMm(e.target.value)}
-                  placeholder="e.g. 62"
+                  placeholder={t("e.g. 62")}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono"
                 />
               </div>
@@ -478,26 +477,26 @@ export const EyeTesting: React.FC = () => {
             {/* Clinical Remarks & Checkup Interval */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="sm:col-span-2">
-                <label className="text-stone-600 block mb-1">Notes / Remarks</label>
+                <label className="text-stone-600 block mb-1">{t("Notes / Remarks")}</label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Night driving glare"
+                  placeholder={t("e.g. Night driving glare")}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                 />
               </div>
 
               <div>
-                <label className="text-stone-600 block mb-1">Next Checkup</label>
+                <label className="text-stone-600 block mb-1">{t("Next Checkup")}</label>
                 <select
                   value={nextCheckupMonths}
                   onChange={(e) => setNextCheckupMonths(Number(e.target.value))}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                 >
-                  <option value={6}>6 Months</option>
-                  <option value={12}>12 Months (1 Year)</option>
-                  <option value={24}>24 Months (2 Years)</option>
+                  <option value={6}>{t("6 Months")}</option>
+                  <option value={12}>{t("12 Months (1 Year)")}</option>
+                  <option value={24}>{t("24 Months (2 Years)")}</option>
                 </select>
               </div>
             </div>
@@ -508,8 +507,7 @@ export const EyeTesting: React.FC = () => {
               className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              Save Prescription
-            </button>
+              {t("Save Prescription ")}</button>
           </form>
         </div>
 
@@ -521,39 +519,38 @@ export const EyeTesting: React.FC = () => {
               <div className="flex items-center justify-between border-b border-stone-200 pb-2">
                 <span className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-amber-600" />
-                  Prescription Card
-                </span>
-                <span className="text-[10px] text-stone-500 font-mono">Date: {selectedRxForCard.date}</span>
+                  {t("Prescription Card ")}</span>
+                <span className="text-[10px] text-stone-500 font-mono">{t("Date: ")}{selectedRxForCard.date}</span>
               </div>
 
               <div className="p-3 bg-stone-50 border border-stone-200 rounded-lg space-y-2 text-xs">
                 <div className="border-b border-stone-200 pb-1 flex justify-between items-start">
                   <div>
                     <h4 className="font-bold text-stone-900 uppercase text-xs">{storeProfile.name}</h4>
-                    <p className="text-[10px] text-stone-500">Optometrist: {selectedRxForCard.doctorName}</p>
+                    <p className="text-[10px] text-stone-500">{t("Optometrist: ")}{selectedRxForCard.doctorName}</p>
                   </div>
                 </div>
 
                 <div className="text-[11px] font-semibold text-stone-800">
-                  Patient: {selectedRxForCard.customerName} (📱 {selectedRxForCard.customerMobile})
+                  {t("Patient: ")}{selectedRxForCard.customerName} (📱 {selectedRxForCard.customerMobile})
                 </div>
 
                 {/* Power Grid */}
                 <table className="w-full text-center text-[10px] border border-stone-300 bg-white">
                   <thead className="bg-stone-100 font-bold text-stone-700">
                     <tr>
-                      <th className="py-0.5 text-left pl-1">Eye</th>
-                      <th className="py-0.5">SPH</th>
-                      <th className="py-0.5">CYL</th>
-                      <th className="py-0.5">AXIS</th>
-                      <th className="py-0.5">ADD</th>
-                      <th className="py-0.5">DV</th>
-                      <th className="py-0.5">NV</th>
+                      <th className="py-0.5 text-left pl-1">{t("Eye")}</th>
+                      <th className="py-0.5">{t("SPH")}</th>
+                      <th className="py-0.5">{t("CYL")}</th>
+                      <th className="py-0.5">{t("AXIS")}</th>
+                      <th className="py-0.5">{t("ADD")}</th>
+                      <th className="py-0.5">{t("DV")}</th>
+                      <th className="py-0.5">{t("NV")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200">
                     <tr>
-                      <td className="py-0.5 text-left pl-1 font-bold">OD (R)</td>
+                      <td className="py-0.5 text-left pl-1 font-bold">{t("OD (R)")}</td>
                       <td className="py-0.5 font-bold">{selectedRxForCard.rightEye.sph}</td>
                       <td className="py-0.5">{selectedRxForCard.rightEye.cyl}</td>
                       <td className="py-0.5">{selectedRxForCard.rightEye.axis || '-'}</td>
@@ -562,7 +559,7 @@ export const EyeTesting: React.FC = () => {
                       <td className="py-0.5">{selectedRxForCard.rightEye.nv}</td>
                     </tr>
                     <tr>
-                      <td className="py-0.5 text-left pl-1 font-bold">OS (L)</td>
+                      <td className="py-0.5 text-left pl-1 font-bold">{t("OS (L)")}</td>
                       <td className="py-0.5 font-bold">{selectedRxForCard.leftEye.sph}</td>
                       <td className="py-0.5">{selectedRxForCard.leftEye.cyl}</td>
                       <td className="py-0.5">{selectedRxForCard.leftEye.axis || '-'}</td>
@@ -574,8 +571,8 @@ export const EyeTesting: React.FC = () => {
                 </table>
 
                 <div className="text-[10px] text-stone-600 flex justify-between">
-                  <span>Lens: {selectedRxForCard.lensType} ({selectedRxForCard.lensCoating})</span>
-                  <span>PD: {selectedRxForCard.pdMm}mm</span>
+                  <span>{t("Lens: ")}{selectedRxForCard.lensType} ({selectedRxForCard.lensCoating})</span>
+                  <span>{t("PD: ")}{selectedRxForCard.pdMm}{t("mm")}</span>
                 </div>
               </div>
 
@@ -585,19 +582,19 @@ export const EyeTesting: React.FC = () => {
                   id="btn-whatsapp-rx"
                   onClick={() => handleWhatsAppRx(selectedRxForCard)}
                   className="py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                  title="Send Rx via WhatsApp"
+                  title={t("Send Rx via WhatsApp")}
                 >
                   <MessageSquare className="w-3.5 h-3.5" /> 
-                  <span>WhatsApp</span>
+                  <span>{t("WhatsApp")}</span>
                 </button>
                 <button
                   id="btn-email-rx"
                   onClick={() => handleEmailRx(selectedRxForCard)}
                   className="py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                  title="Send Rx via Email"
+                  title={t("Send Rx via Email")}
                 >
                   <Mail className="w-3.5 h-3.5" /> 
-                  <span>Email</span>
+                  <span>{t("Email")}</span>
                 </button>
                 <button
                   id="btn-bill-glasses-from-rx"
@@ -605,7 +602,7 @@ export const EyeTesting: React.FC = () => {
                   className="py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Glasses className="w-3.5 h-3.5" /> 
-                  <span>Bill POS</span>
+                  <span>{t("Bill POS")}</span>
                 </button>
               </div>
             </div>
@@ -614,12 +611,12 @@ export const EyeTesting: React.FC = () => {
           {/* Past Refraction History Search */}
           <div className="bg-white border border-amber-200/80 rounded-xl p-4 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-800 uppercase">Recent Tests ({filteredRx.length})</span>
+              <span className="text-xs font-bold text-stone-800 uppercase">{t("Recent Tests (")}{filteredRx.length})</span>
             </div>
 
             <input
               type="text"
-              placeholder="Search patient name or mobile..."
+              placeholder={t("Search patient name or mobile...")}
               value={rxSearch}
               onChange={(e) => setRxSearch(e.target.value)}
               className="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs text-stone-900 outline-none focus:border-amber-600"
@@ -637,11 +634,11 @@ export const EyeTesting: React.FC = () => {
                     <span className="text-[10px] text-stone-500">{rx.date}</span>
                   </div>
                   <div className="text-[11px] text-stone-600">
-                    📱 {rx.customerMobile} • OD: {rx.rightEye.sph} / OS: {rx.leftEye.sph}
+                    📱 {rx.customerMobile} {t("• OD: ")}{rx.rightEye.sph} {t("/ OS: ")}{rx.leftEye.sph}
                   </div>
                   <div className="text-[10px] text-amber-800 font-medium flex items-center justify-between pt-1">
                     <span>{rx.lensType} • {rx.lensCoating}</span>
-                    <span className="underline">View Card →</span>
+                    <span className="underline">{t("View Card →")}</span>
                   </div>
                 </div>
               ))}
@@ -649,6 +646,7 @@ export const EyeTesting: React.FC = () => {
           </div>
         </div>
       </div>
+      {quickAdd && <QuickAddPerson kind={quickAdd} onClose={()=>setQuickAdd(null)} onAdded={value=>quickAdd==='patient'?setSelectedCustomerId(value):setDoctorName(value)} />}
     </div>
   );
 };

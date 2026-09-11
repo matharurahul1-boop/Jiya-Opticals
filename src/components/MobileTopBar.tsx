@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React from 'react';
 import { Glasses } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -17,7 +18,7 @@ export const MobileTopBar: React.FC = () => {
         <Glasses className="w-5 h-5" />
       </button>
       <div className="flex-1 min-w-0">
-        <GlobalSearch placeholder="Search…" />
+        <GlobalSearch placeholder={t("Search…")} />
       </div>
       <ProfileMenu variant="bar" />
     </header>

@@ -1,3 +1,6 @@
+import { t } from '../lib/i18n';
+import { NumberInput } from './NumberInput';
+import { QuickAddPerson } from './QuickAddPerson';
 import { findScannedProduct } from '../lib/barcodes';
 import { applyStockMovement } from '../lib/catalog';
 import React, { useEffect, useRef, useState } from 'react';
@@ -84,12 +87,13 @@ export const BillingPOS: React.FC = () => {
 
   // Doctor & Sales Staff
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
+  const [showQuickDoctor, setShowQuickDoctor] = useState(false);
 
   // Prescription Attachment
   const [attachPrescription, setAttachPrescription] = useState(false);
   const [rightEye, setRightEye] = useState<EyePower>({ sph: '', cyl: '', axis: '', add: '', dv: '6/6', nv: 'N6' });
   const [leftEye, setLeftEye] = useState<EyePower>({ sph: '', cyl: '', axis: '', add: '', dv: '6/6', nv: 'N6' });
-  const [pdMm, setPdMm] = useState('62');
+  const [pdMm, setPdMm] = useState('');
   const [lensNotes, setLensNotes] = useState('');
 
   // Order Details & Payment
@@ -377,7 +381,7 @@ export const BillingPOS: React.FC = () => {
     'Optical Accessory'
   ];
 
-  if(selectedShopFilter==='all' && shops.length>1) return <div className="max-w-3xl mx-auto p-8 space-y-5"><h1 className="text-2xl font-semibold text-stone-900">Which shop is making this sale?</h1><p className="text-stone-500">The material catalogue is shared. Stock and revenue will be recorded against the shop you choose.</p><div className="grid sm:grid-cols-2 gap-4">{shops.map(shop=><button key={shop.id} onClick={()=>setSelectedShopFilter(shop.id)} className="p-6 bg-white border border-stone-200 hover:border-amber-400 rounded-2xl text-left shadow-sm"><strong className="block text-lg">{shop.name}</strong><span className="text-sm text-stone-500">{shop.address}</span></button>)}</div></div>;
+  if(selectedShopFilter==='all' && shops.length>1) return <div className="max-w-3xl mx-auto p-8 space-y-5"><h1 className="text-2xl font-semibold text-stone-900">{t("Which shop is making this sale?")}</h1><p className="text-stone-500">{t("The material catalogue is shared. Stock and revenue will be recorded against the shop you choose.")}</p><div className="grid sm:grid-cols-2 gap-4">{shops.map(shop=><button key={shop.id} onClick={()=>setSelectedShopFilter(shop.id)} className="p-6 bg-white border border-stone-200 hover:border-amber-400 rounded-2xl text-left shadow-sm"><strong className="block text-lg">{shop.name}</strong><span className="text-sm text-stone-500">{shop.address}</span></button>)}</div></div>;
 
   return (
     <div id="billing-pos-container" className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
@@ -389,14 +393,11 @@ export const BillingPOS: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              Billing POS Counter
-              <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
-                GST BILLING
-              </span>
+              {t("Billing POS Counter ")}<span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
+                {t("GST BILLING ")}</span>
             </h1>
             <p className="text-xs text-stone-500">
-              Scan barcode or select frames, lenses, and attach prescription.
-            </p>
+              {t("Scan barcode or select frames, lenses, and attach prescription. ")}</p>
           </div>
         </div>
 
@@ -416,10 +417,10 @@ export const BillingPOS: React.FC = () => {
               });
             }}
             className="px-3 py-2 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-stone-700 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-xs cursor-pointer transition-colors"
-            title="Scan with Camera"
+            title={t("Scan with Camera")}
           >
             <QrCode className="w-4 h-4" />
-            <span>Scan Camera</span>
+            <span>{t("Scan Camera")}</span>
           </button>
 
           <form onSubmit={handleBarcodeSubmit} className="flex items-center space-x-2">
@@ -429,7 +430,7 @@ export const BillingPOS: React.FC = () => {
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder="Scan Barcode..."
+                placeholder={t("Scan Barcode...")}
                 className="bg-stone-50 border border-stone-200 focus:border-amber-500 text-xs rounded-lg pl-8 pr-3 py-2 text-stone-800 placeholder-stone-400 w-36 md:w-56 outline-none font-mono"
               />
             </div>
@@ -437,8 +438,7 @@ export const BillingPOS: React.FC = () => {
               type="submit"
               className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs"
             >
-              Add
-            </button>
+              {t("Add ")}</button>
           </form>
         </div>
       </div>
@@ -452,14 +452,13 @@ export const BillingPOS: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2 text-xs font-bold text-stone-700 uppercase">
                 <User className="w-4 h-4 text-amber-600" />
-                <span>Customer & Patient</span>
+                <span>{t("Customer & Patient")}</span>
               </div>
               <button
                 onClick={() => setShowNewCustomerModal(true)}
                 className="text-xs text-amber-700 hover:text-amber-800 hover:underline flex items-center gap-1 font-semibold"
               >
-                <UserPlus className="w-3.5 h-3.5" /> + New Customer
-              </button>
+                <UserPlus className="w-3.5 h-3.5" /> {t("+ New Customer ")}</button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -468,7 +467,7 @@ export const BillingPOS: React.FC = () => {
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
                 className="bg-stone-50 border border-stone-200 text-xs text-stone-800 rounded-lg p-2.5 outline-none focus:border-amber-500 font-medium"
               >
-                <option value="">-- Select Customer --</option>
+                <option value="">{t("-- Select Customer --")}</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.mobile}) {c.outstandingBalance > 0 ? `[Dues: ₹${c.outstandingBalance}]` : ''}
@@ -482,13 +481,14 @@ export const BillingPOS: React.FC = () => {
                   onChange={(e) => setSelectedDoctor(e.target.value)}
                   className="bg-stone-50 border border-stone-200 text-xs text-stone-700 rounded-lg p-2.5 outline-none focus:border-amber-500 flex-1"
                 >
-                  <option value="">-- Attending Doctor / Optometrist --</option>
+                  <option value="">{t("-- Attending Doctor / Optometrist --")}</option>
                   {doctors.map((d) => (
                     <option key={d.id} value={d.name}>
                       {d.name} ({d.qualification})
                     </option>
                   ))}
                 </select>
+                <button type="button" aria-label={t('Add doctor')} title={t('Add doctor')} onClick={() => setShowQuickDoctor(true)} className="shrink-0 rounded-lg bg-amber-100 text-amber-800 p-2.5 hover:bg-amber-200"><Plus className="w-4 h-4" /></button>
               </div>
             </div>
 
@@ -508,7 +508,7 @@ export const BillingPOS: React.FC = () => {
                 </div>
                 {selectedCustomer.outstandingBalance > 0 && (
                   <span className="text-[11px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-bold">
-                    Khata Balance: ₹{selectedCustomer.outstandingBalance}
+                    {t("Khata Balance: ₹")}{selectedCustomer.outstandingBalance}
                   </span>
                 )}
               </div>
@@ -520,33 +520,31 @@ export const BillingPOS: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700 uppercase flex items-center gap-1.5">
                 <Receipt className="w-4 h-4 text-amber-600" />
-                Cart Items ({cartItems.length})
+                {t("Cart Items (")}{cartItems.length})
               </span>
               {cartItems.length > 0 && (
                 <button
                   onClick={() => setCartItems([])}
                   className="text-[11px] text-rose-600 hover:underline font-medium"
                 >
-                  Clear Cart
-                </button>
+                  {t("Clear Cart ")}</button>
               )}
             </div>
 
             {cartItems.length === 0 ? (
               <div className="py-8 text-center text-stone-400 text-xs border border-dashed border-stone-200 rounded-lg">
-                No items added yet. Click any product from catalog or scan barcode.
-              </div>
+                {t("No items added yet. Click any product from catalog or scan barcode. ")}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-stone-700">
                   <thead className="bg-stone-50 text-stone-600 uppercase text-[10px] border-b border-stone-200">
                     <tr>
-                      <th className="py-2 px-2">Item Description</th>
-                      <th className="py-2 px-2 text-center">Qty</th>
-                      <th className="py-2 px-2 text-right">Rate</th>
-                      <th className="py-2 px-2 text-center">Disc %</th>
-                      <th className="py-2 px-2 text-right">GST %</th>
-                      <th className="py-2 px-2 text-right">Total</th>
+                      <th className="py-2 px-2">{t("Item Description")}</th>
+                      <th className="py-2 px-2 text-center">{t("Qty")}</th>
+                      <th className="py-2 px-2 text-right">{t("Rate")}</th>
+                      <th className="py-2 px-2 text-center">{t("Disc %")}</th>
+                      <th className="py-2 px-2 text-right">{t("GST %")}</th>
+                      <th className="py-2 px-2 text-right">{t("Total")}</th>
                       <th className="py-2 px-1 text-center"></th>
                     </tr>
                   </thead>
@@ -556,7 +554,7 @@ export const BillingPOS: React.FC = () => {
                         <td className="py-2.5 px-2">
                           <div className="font-semibold text-stone-900">{item.name}</div>
                           <div className="text-[10px] text-stone-400 font-mono">
-                            HSN: {item.hsnCode} • Barcode: {item.barcode}
+                            {t("HSN: ")}{item.hsnCode} {t("• Barcode: ")}{item.barcode}
                           </div>
                         </td>
                         <td className="py-2.5 px-2 text-center">
@@ -580,7 +578,7 @@ export const BillingPOS: React.FC = () => {
                           ₹{item.unitPrice}
                         </td>
                         <td className="py-2.5 px-2 text-center">
-                          <input
+                          <NumberInput
                             type="number"
                             min="0"
                             max="100"
@@ -624,8 +622,7 @@ export const BillingPOS: React.FC = () => {
                 />
                 <span className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
                   <Glasses className="w-4 h-4 text-amber-600" />
-                  Attach Eye Power / Prescription to this Bill (OD / OS)
-                </span>
+                  {t("Attach Eye Power / Prescription to this Bill (OD / OS) ")}</span>
               </label>
             </div>
 
@@ -635,18 +632,18 @@ export const BillingPOS: React.FC = () => {
                   <table className="w-full text-center text-xs">
                     <thead>
                       <tr className="bg-stone-50 text-stone-600 uppercase text-[10px] border-b border-stone-200">
-                        <th className="py-1.5 px-2 text-left">Eye</th>
-                        <th className="py-1.5 px-1">SPH</th>
-                        <th className="py-1.5 px-1">CYL</th>
-                        <th className="py-1.5 px-1">AXIS</th>
-                        <th className="py-1.5 px-1">ADD</th>
-                        <th className="py-1.5 px-1">DV</th>
-                        <th className="py-1.5 px-1">NV</th>
+                        <th className="py-1.5 px-2 text-left">{t("Eye")}</th>
+                        <th className="py-1.5 px-1">{t("SPH")}</th>
+                        <th className="py-1.5 px-1">{t("CYL")}</th>
+                        <th className="py-1.5 px-1">{t("AXIS")}</th>
+                        <th className="py-1.5 px-1">{t("ADD")}</th>
+                        <th className="py-1.5 px-1">{t("DV")}</th>
+                        <th className="py-1.5 px-1">{t("NV")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
                       <tr>
-                        <td className="py-1.5 px-2 text-left font-bold text-amber-800">Right (OD)</td>
+                        <td className="py-1.5 px-2 text-left font-bold text-amber-800">{t("Right (OD)")}</td>
                         <td className="py-1 px-1">
                           <input
                             type="text"
@@ -701,7 +698,7 @@ export const BillingPOS: React.FC = () => {
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-1.5 px-2 text-left font-bold text-amber-800">Left (OS)</td>
+                        <td className="py-1.5 px-2 text-left font-bold text-amber-800">{t("Left (OS)")}</td>
                         <td className="py-1 px-1">
                           <input
                             type="text"
@@ -762,14 +759,14 @@ export const BillingPOS: React.FC = () => {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Pupillary Distance (PD mm) e.g. 62"
+                    placeholder={t("Pupillary Distance (PD mm) e.g. 62")}
                     value={pdMm}
                     onChange={(e) => setPdMm(e.target.value)}
                     className="w-48 bg-stone-50 border border-stone-200 rounded px-2 py-1 text-stone-800 text-xs"
                   />
                   <input
                     type="text"
-                    placeholder="Lens instructions / Remarks"
+                    placeholder={t("Lens instructions / Remarks")}
                     value={lensNotes}
                     onChange={(e) => setLensNotes(e.target.value)}
                     className="flex-1 bg-stone-50 border border-stone-200 rounded px-2 py-1 text-stone-800 text-xs"
@@ -785,8 +782,8 @@ export const BillingPOS: React.FC = () => {
           {/* Product Quick Pick Grid */}
           <div className="bg-white border border-amber-200/80 rounded-xl p-4 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700 uppercase">Quick Add Products</span>
-              <span className="text-[10px] text-amber-700 font-medium">{filteredProducts.length} Items</span>
+              <span className="text-xs font-bold text-stone-700 uppercase">{t("Quick Add Products")}</span>
+              <span className="text-[10px] text-amber-700 font-medium">{filteredProducts.length} {t("Items")}</span>
             </div>
 
             {/* Category pills */}
@@ -799,8 +796,7 @@ export const BillingPOS: React.FC = () => {
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                 }`}
               >
-                All
-              </button>
+                {t("All ")}</button>
               {categoriesList.map((cat) => (
                 <button
                   key={cat}
@@ -819,7 +815,7 @@ export const BillingPOS: React.FC = () => {
             {/* Search Input */}
             <input
               type="text"
-              placeholder="Search brand, model, barcode..."
+              placeholder={t("Search brand, model, barcode...")}
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
               className="w-full bg-stone-50 border border-stone-200 text-xs rounded-lg px-3 py-1.5 text-stone-800 outline-none focus:border-amber-500"
@@ -836,12 +832,12 @@ export const BillingPOS: React.FC = () => {
                   <div>
                     <div className="font-semibold text-xs text-stone-800">{p.name}</div>
                     <div className="text-[10px] text-stone-500">
-                      {p.brand} • Stock: <span className={p.stockQty <= p.minStockAlert ? 'text-amber-600 font-bold' : 'text-emerald-600'}>{p.stockQty}</span>
+                      {p.brand} {t("• Stock: ")}<span className={p.stockQty <= p.minStockAlert ? 'text-amber-600 font-bold' : 'text-emerald-600'}>{p.stockQty}</span>
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="font-bold text-xs text-stone-900">₹{p.salePrice}</span>
-                    <span className="text-[10px] text-amber-700 block font-medium">+ Add</span>
+                    <span className="text-[10px] text-amber-700 block font-medium">{t("+ Add")}</span>
                   </div>
                 </div>
               ))}
@@ -851,8 +847,7 @@ export const BillingPOS: React.FC = () => {
           {/* Payment & Invoice Generation Panel */}
           <div className="bg-white border border-amber-200/80 rounded-xl p-4 space-y-4 shadow-xs">
             <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block border-b border-stone-200 pb-2">
-              Payment & Checkout Summary
-            </span>
+              {t("Payment & Checkout Summary ")}</span>
 
             {/* Sale Type Selector: Direct vs Order */}
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -865,8 +860,7 @@ export const BillingPOS: React.FC = () => {
                     : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
                 }`}
               >
-                Direct Sale (Delivered)
-              </button>
+                {t("Direct Sale (Delivered) ")}</button>
               <button
                 type="button"
                 onClick={() => setOrderType('Order')}
@@ -876,14 +870,13 @@ export const BillingPOS: React.FC = () => {
                     : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
                 }`}
               >
-                Advance / Delivery Order
-              </button>
+                {t("Advance / Delivery Order ")}</button>
             </div>
 
             {orderType === 'Order' && (
               <div className="p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg text-xs space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-amber-900 font-medium">Estimated Delivery Date:</span>
+                  <span className="text-amber-900 font-medium">{t("Estimated Delivery Date:")}</span>
                   <input
                     type="date"
                     value={deliveryDate}
@@ -897,8 +890,8 @@ export const BillingPOS: React.FC = () => {
             {/* Discount & Fitting adjustments */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="text-stone-500 text-[11px] block mb-1">Fitting Charges (₹)</label>
-                <input
+                <label className="text-stone-500 text-[11px] block mb-1">{t("Fitting Charges (₹)")}</label>
+                <NumberInput
                   type="number"
                   min="0"
                   placeholder="0"
@@ -908,8 +901,8 @@ export const BillingPOS: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="text-stone-500 text-[11px] block mb-1">Flat Discount (₹)</label>
-                <input
+                <label className="text-stone-500 text-[11px] block mb-1">{t("Flat Discount (₹)")}</label>
+                <NumberInput
                   type="number"
                   min="0"
                   placeholder="0"
@@ -922,7 +915,7 @@ export const BillingPOS: React.FC = () => {
 
             {/* Payment Mode */}
             <div className="space-y-1.5 text-xs">
-              <label className="text-stone-500 text-[11px] block">Payment Method</label>
+              <label className="text-stone-500 text-[11px] block">{t("Payment Method")}</label>
               <div className="grid grid-cols-3 gap-1.5">
                 {(['UPI / QR', 'Cash', 'Credit / Debit Card'] as PaymentMode[]).map((mode) => (
                   <button
@@ -944,16 +937,15 @@ export const BillingPOS: React.FC = () => {
             {paymentMode === 'UPI / QR' && (
               <div className="p-2.5 bg-stone-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-stone-800 font-bold block">UPI ID: {storeProfile.upiId}</span>
-                  <span className="text-stone-500 text-[10px]">Show Dynamic QR to Customer</span>
+                  <span className="text-stone-800 font-bold block">{t("UPI ID: ")}{storeProfile.upiId}</span>
+                  <span className="text-stone-500 text-[10px]">{t("Show Dynamic QR to Customer")}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowUpiModal(true)}
                   className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 shadow-xs"
                 >
-                  <QrCode className="w-3.5 h-3.5" /> Show QR
-                </button>
+                  <QrCode className="w-3.5 h-3.5" /> {t("Show QR ")}</button>
               </div>
             )}
 
@@ -961,8 +953,8 @@ export const BillingPOS: React.FC = () => {
             {orderType === 'Order' && (
               <div className="grid grid-cols-2 gap-2 text-xs bg-stone-50 p-2.5 rounded-lg border border-stone-200">
                 <div>
-                  <label className="text-stone-600 text-[10px] block font-semibold">Advance Token (₹)</label>
-                  <input
+                  <label className="text-stone-600 text-[10px] block font-semibold">{t("Advance Token (₹)")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     max={netPayable}
@@ -973,7 +965,7 @@ export const BillingPOS: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-stone-600 text-[10px] block font-semibold">Balance Due</label>
+                  <label className="text-stone-600 text-[10px] block font-semibold">{t("Balance Due")}</label>
                   <div className="font-bold text-rose-600 text-sm mt-1">₹{balanceDue}</div>
                 </div>
               </div>
@@ -982,21 +974,21 @@ export const BillingPOS: React.FC = () => {
             {/* Financial Totals */}
             <div className="space-y-1.5 text-xs border-t border-stone-200 pt-3 text-stone-600">
               <div className="flex justify-between">
-                <span>Items Subtotal:</span>
+                <span>{t("Items Subtotal:")}</span>
                 <span>₹{itemsSubtotal.toFixed(2)}</span>
               </div>
               {itemsDiscountTotal + flatDiscount > 0 && (
                 <div className="flex justify-between text-amber-700">
-                  <span>Total Discount:</span>
+                  <span>{t("Total Discount:")}</span>
                   <span>-₹{(itemsDiscountTotal + flatDiscount).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-stone-500 text-[11px]">
-                <span>Total GST Included:</span>
+                <span>{t("Total GST Included:")}</span>
                 <span>₹{totalTax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-base font-bold text-stone-900 border-t border-stone-200 pt-2">
-                <span>Net Payable:</span>
+                <span>{t("Net Payable:")}</span>
                 <span className="text-amber-800">₹{netPayable}</span>
               </div>
             </div>
@@ -1010,8 +1002,7 @@ export const BillingPOS: React.FC = () => {
                 className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2"
               >
                 <Printer className="w-4 h-4" />
-                SAVE & PRINT TAX INVOICE
-              </button>
+                {t("SAVE & PRINT TAX INVOICE ")}</button>
 
               <button
                 type="button"
@@ -1019,8 +1010,7 @@ export const BillingPOS: React.FC = () => {
                 disabled={cartItems.length === 0}
                 className="w-full py-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 rounded-lg text-xs font-semibold"
               >
-                Save Bill Only (Without Print)
-              </button>
+                {t("Save Bill Only (Without Print) ")}</button>
             </div>
           </div>
         </div>
@@ -1033,8 +1023,7 @@ export const BillingPOS: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-amber-600" />
-                Register New Customer / Patient
-              </h3>
+                {t("Register New Customer / Patient ")}</h3>
               <button
                 onClick={() => setShowNewCustomerModal(false)}
                 className="text-stone-400 hover:text-stone-600"
@@ -1045,11 +1034,11 @@ export const BillingPOS: React.FC = () => {
 
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-600 mb-1">Customer Full Name *</label>
+                <label className="block text-stone-600 mb-1">{t("Customer Full Name *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Ramesh Chandra"
+                  placeholder={t("e.g. Ramesh Chandra")}
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
@@ -1057,11 +1046,11 @@ export const BillingPOS: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">Mobile Number *</label>
+                <label className="block text-stone-600 mb-1">{t("Mobile Number *")}</label>
                 <input
                   type="tel"
                   required
-                  placeholder="10-digit mobile number"
+                  placeholder={t("10-digit mobile number")}
                   value={newCustMobile}
                   onChange={(e) => setNewCustMobile(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
@@ -1070,11 +1059,11 @@ export const BillingPOS: React.FC = () => {
 
               <div>
                 <label className="block text-stone-600 mb-1">
-                  Email Address <span className="text-[10px] text-stone-400 font-normal">(for Digital Tax Invoices & Rx)</span>
+                  {t("Email Address ")}<span className="text-[10px] text-stone-400 font-normal">{t("(for Digital Tax Invoices & Rx)")}</span>
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. client@gmail.com"
+                  placeholder={t("e.g. client@gmail.com")}
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
@@ -1083,20 +1072,20 @@ export const BillingPOS: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1">City</label>
+                  <label className="block text-stone-600 mb-1">{t("City")}</label>
                   <input
                     type="text"
-                    placeholder="e.g. New Delhi"
+                    placeholder={t("e.g. New Delhi")}
                     value={newCustCity}
                     onChange={(e) => setNewCustCity(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1">Address / Landmark</label>
+                  <label className="block text-stone-600 mb-1">{t("Address / Landmark")}</label>
                   <input
                     type="text"
-                    placeholder="Locality"
+                    placeholder={t("Locality")}
                     value={newCustAddress}
                     onChange={(e) => setNewCustAddress(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
@@ -1110,14 +1099,12 @@ export const BillingPOS: React.FC = () => {
                   onClick={() => setShowNewCustomerModal(false)}
                   className="px-3 py-2 bg-stone-100 text-stone-700 hover:bg-stone-200 rounded-lg text-xs"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold"
                 >
-                  Save & Select Customer
-                </button>
+                  {t("Save & Select Customer ")}</button>
               </div>
             </form>
           </div>
@@ -1129,7 +1116,7 @@ export const BillingPOS: React.FC = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-stone-200 rounded-xl p-5 max-w-xs w-full shadow-xl space-y-4 text-center">
             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-              <span className="text-xs font-bold text-amber-800">Scan to Pay via UPI</span>
+              <span className="text-xs font-bold text-amber-800">{t("Scan to Pay via UPI")}</span>
               <button onClick={() => setShowUpiModal(false)} className="text-stone-400 hover:text-stone-600">✕</button>
             </div>
 
@@ -1146,24 +1133,24 @@ export const BillingPOS: React.FC = () => {
               </div>
             </div>
             {storeProfile.upiQrDataUrl && (
-              <p className="text-[10px] text-stone-400 -mt-2">Enter ₹{upiAmount} in your UPI app after scanning.</p>
+              <p className="text-[10px] text-stone-400 -mt-2">{t("Enter ₹")}{upiAmount} {t("in your UPI app after scanning.")}</p>
             )}
 
             <div className="text-xs text-stone-700 space-y-0.5">
               <div className="font-bold text-stone-900">{storeProfile.upiName}</div>
               <div className="text-amber-800 font-mono text-[11px]">{storeProfile.upiId}</div>
-              <div className="text-[10px] text-stone-500">Supports GPay, PhonePe, Paytm & any UPI app</div>
+              <div className="text-[10px] text-stone-500">{t("Supports GPay, PhonePe, Paytm & any UPI app")}</div>
             </div>
 
             <button
               onClick={() => setShowUpiModal(false)}
               className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs"
             >
-              Payment Confirmed
-            </button>
+              {t("Payment Confirmed ")}</button>
           </div>
         </div>
       )}
+      {showQuickDoctor && <QuickAddPerson kind="doctor" onClose={() => setShowQuickDoctor(false)} onAdded={setSelectedDoctor} />}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { Download, Mail, MessageSquare, Printer, Share2, X, ImageDown, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -170,7 +171,7 @@ export const InvoicePrintModal: React.FC = () => {
         {/* Top Control Bar (Hidden in @media print) */}
         <div className="p-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2 no-print shrink-0 flex-wrap">
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-stone-700">Print Format:</span>
+            <span className="text-xs font-bold text-stone-700">{t("Print Format:")}</span>
             <div className="flex bg-stone-200 border border-stone-300 rounded-lg p-0.5 text-xs">
               <button
                 onClick={() => setPrintFormat('A4')}
@@ -178,16 +179,14 @@ export const InvoicePrintModal: React.FC = () => {
                   printFormat === 'A4' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-700 hover:text-stone-900'
                 }`}
               >
-                A4 / A5 Laser Tax Invoice
-              </button>
+                {t("A4 / A5 Laser Tax Invoice ")}</button>
               <button
                 onClick={() => setPrintFormat('Thermal')}
                 className={`px-3 py-1 rounded font-semibold transition-colors cursor-pointer ${
                   printFormat === 'Thermal' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-700 hover:text-stone-900'
                 }`}
               >
-                80mm Thermal POS Slip
-              </button>
+                {t("80mm Thermal POS Slip ")}</button>
             </div>
           </div>
 
@@ -197,10 +196,10 @@ export const InvoicePrintModal: React.FC = () => {
               onClick={handleWhatsApp}
               disabled={busyImg}
               className="px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
-              title="Copies the invoice image to the clipboard, then opens WhatsApp — paste the image with Ctrl/Cmd + V"
+              title={t("Copies the invoice image to the clipboard, then opens WhatsApp — paste the image with Ctrl/Cmd + V")}
             >
               {busyImg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
-              <span>WhatsApp</span>
+              <span>{t("WhatsApp")}</span>
             </button>
 
             <button
@@ -208,20 +207,20 @@ export const InvoicePrintModal: React.FC = () => {
               onClick={handleCopyImage}
               disabled={busyImg}
               className="px-2.5 sm:px-3 py-1.5 bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
-              title="Copy the invoice as an image to the clipboard"
+              title={t("Copy the invoice as an image to the clipboard")}
             >
               <ImageDown className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Copy image</span>
+              <span className="hidden sm:inline">{t("Copy image")}</span>
             </button>
 
             <button
               id="btn-email-invoice"
               onClick={handleEmailInvoice}
               className="px-2.5 sm:px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
-              title="Send invoice via Email (Gmail, Outlook, Default Mail)"
+              title={t("Send invoice via Email (Gmail, Outlook, Default Mail)")}
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Email</span>
+              <span>{t("Email")}</span>
             </button>
 
             <button
@@ -230,7 +229,7 @@ export const InvoicePrintModal: React.FC = () => {
               className="px-3 sm:px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print</span>
+              <span>{t("Print")}</span>
             </button>
 
             <button
@@ -261,20 +260,19 @@ export const InvoicePrintModal: React.FC = () => {
                     📱 {storeProfile.phone} | ✉️ {storeProfile.email}
                   </p>
                   <div className="flex gap-3 text-[11px] font-bold text-stone-800 mt-1">
-                    <span>GSTIN: {storeProfile.gstin}</span>
-                    <span>PAN: {storeProfile.panNo}</span>
+                    <span>{t("GSTIN: ")}{storeProfile.gstin}</span>
+                    <span>{t("PAN: ")}{storeProfile.panNo}</span>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <div className="inline-block bg-stone-900 text-white text-[10px] uppercase font-bold px-2.5 py-1 rounded">
-                    Tax Invoice / Bill of Supply
-                  </div>
+                    {t("Tax Invoice / Bill of Supply ")}</div>
                   <div className="mt-2 text-xs space-y-0.5">
-                    <p className="font-bold text-stone-900 text-sm">Invoice #: {inv.invoiceNo}</p>
-                    <p className="text-stone-600">Date: {inv.date} ({inv.time})</p>
+                    <p className="font-bold text-stone-900 text-sm">{t("Invoice #: ")}{inv.invoiceNo}</p>
+                    <p className="text-stone-600">{t("Date: ")}{inv.date} ({inv.time})</p>
                     {inv.doctorName && (
-                      <p className="text-stone-700 font-medium">Ref. Doctor: {inv.doctorName}</p>
+                      <p className="text-stone-700 font-medium">{t("Ref. Doctor: ")}{inv.doctorName}</p>
                     )}
                   </div>
                 </div>
@@ -283,26 +281,26 @@ export const InvoicePrintModal: React.FC = () => {
               {/* Customer & Order Status Box */}
               <div className="grid grid-cols-2 gap-4 bg-stone-50 border border-stone-300 p-2.5 rounded">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-500 block">Billed To (Customer):</span>
+                  <span className="text-[10px] uppercase font-bold text-stone-500 block">{t("Billed To (Customer):")}</span>
                   <div className="font-bold text-stone-900 text-sm">{inv.customerName}</div>
-                  <div className="text-stone-700 text-xs">Mobile: +91 {inv.customerMobile}</div>
+                  <div className="text-stone-700 text-xs">{t("Mobile: +91 ")}{inv.customerMobile}</div>
                   {inv.customerAddress && (
                     <div className="text-stone-600 text-[11px]">{inv.customerAddress}</div>
                   )}
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-stone-500 block">Order & Delivery Details:</span>
+                  <span className="text-[10px] uppercase font-bold text-stone-500 block">{t("Order & Delivery Details:")}</span>
                   <div className="font-bold text-stone-900 text-xs">
-                    Type: <span className="text-amber-800">{inv.orderStatus}</span>
+                    {t("Type: ")}<span className="text-amber-800">{inv.orderStatus}</span>
                   </div>
                   {inv.deliveryDate && (
                     <div className="text-stone-700 text-xs font-semibold">
-                      Delivery Target: {inv.deliveryDate}
+                      {t("Delivery Target: ")}{inv.deliveryDate}
                     </div>
                   )}
                   <div className="text-stone-600 text-[11px]">
-                    Sales Executive: {inv.salesmanName || 'Store Counter'}
+                    {t("Sales Executive: ")}{inv.salesmanName || 'Store Counter'}
                   </div>
                 </div>
               </div>
@@ -311,35 +309,35 @@ export const InvoicePrintModal: React.FC = () => {
               {inv.prescription && (
                 <div className="border border-stone-300 rounded overflow-hidden">
                   <div className="bg-stone-100 px-2 py-1 text-[10px] uppercase font-bold text-stone-700 border-b border-stone-300 flex justify-between items-center">
-                    <span>Optical Refraction / Prescription Details (Power)</span>
-                    <span>PD: {inv.prescription.pdMm} mm</span>
+                    <span>{t("Optical Refraction / Prescription Details (Power)")}</span>
+                    <span>{t("PD: ")}{inv.prescription.pdMm} {t("mm")}</span>
                   </div>
                   <table className="w-full text-center text-[11px]">
                     <thead className="bg-stone-50 text-stone-600 font-semibold border-b border-stone-200">
                       <tr>
-                        <th className="py-1 px-2 text-left">Eye</th>
-                        <th className="py-1 px-1">SPH</th>
-                        <th className="py-1 px-1">CYL</th>
-                        <th className="py-1 px-1">AXIS</th>
-                        <th className="py-1 px-1">ADD</th>
-                        <th className="py-1 px-1">DV</th>
-                        <th className="py-1 px-1">NV</th>
+                        <th className="py-1 px-2 text-left">{t("Eye")}</th>
+                        <th className="py-1 px-1">{t("SPH")}</th>
+                        <th className="py-1 px-1">{t("CYL")}</th>
+                        <th className="py-1 px-1">{t("AXIS")}</th>
+                        <th className="py-1 px-1">{t("ADD")}</th>
+                        <th className="py-1 px-1">{t("DV")}</th>
+                        <th className="py-1 px-1">{t("NV")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-200">
                       <tr>
-                        <td className="py-1 px-2 text-left font-bold text-stone-800">Right (OD)</td>
-                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.rightEye.sph || '0.00'}</td>
-                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.rightEye.cyl || '0.00'}</td>
+                        <td className="py-1 px-2 text-left font-bold text-stone-800">{t("Right (OD)")}</td>
+                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.rightEye.sph || '—'}</td>
+                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.rightEye.cyl || '—'}</td>
                         <td className="py-1 px-1 font-mono">{inv.prescription.rightEye.axis || '-'}</td>
                         <td className="py-1 px-1 font-mono">{inv.prescription.rightEye.add || '-'}</td>
                         <td className="py-1 px-1">{inv.prescription.rightEye.dv}</td>
                         <td className="py-1 px-1">{inv.prescription.rightEye.nv}</td>
                       </tr>
                       <tr>
-                        <td className="py-1 px-2 text-left font-bold text-stone-800">Left (OS)</td>
-                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.leftEye.sph || '0.00'}</td>
-                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.leftEye.cyl || '0.00'}</td>
+                        <td className="py-1 px-2 text-left font-bold text-stone-800">{t("Left (OS)")}</td>
+                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.leftEye.sph || '—'}</td>
+                        <td className="py-1 px-1 font-mono font-bold">{inv.prescription.leftEye.cyl || '—'}</td>
                         <td className="py-1 px-1 font-mono">{inv.prescription.leftEye.axis || '-'}</td>
                         <td className="py-1 px-1 font-mono">{inv.prescription.leftEye.add || '-'}</td>
                         <td className="py-1 px-1">{inv.prescription.leftEye.dv}</td>
@@ -349,7 +347,7 @@ export const InvoicePrintModal: React.FC = () => {
                   </table>
                   {inv.prescription.notes && (
                     <div className="bg-stone-50 px-2 py-0.5 text-[10px] text-stone-600 border-t border-stone-200">
-                      Lens / Coating: {inv.prescription.notes}
+                      {t("Lens / Coating: ")}{inv.prescription.notes}
                     </div>
                   )}
                 </div>
@@ -360,12 +358,12 @@ export const InvoicePrintModal: React.FC = () => {
                 <thead className="bg-stone-100 text-stone-800 text-[10px] uppercase font-bold border-b border-stone-300">
                   <tr>
                     <th className="py-1.5 px-2">#</th>
-                    <th className="py-1.5 px-2">Description</th>
-                    <th className="py-1.5 px-2 text-center">HSN</th>
-                    <th className="py-1.5 px-2 text-center">Qty</th>
-                    <th className="py-1.5 px-2 text-right">Rate (₹)</th>
-                    <th className="py-1.5 px-2 text-center">GST</th>
-                    <th className="py-1.5 px-2 text-right">Total (₹)</th>
+                    <th className="py-1.5 px-2">{t("Description")}</th>
+                    <th className="py-1.5 px-2 text-center">{t("HSN")}</th>
+                    <th className="py-1.5 px-2 text-center">{t("Qty")}</th>
+                    <th className="py-1.5 px-2 text-right">{t("Rate (₹)")}</th>
+                    <th className="py-1.5 px-2 text-center">{t("GST")}</th>
+                    <th className="py-1.5 px-2 text-right">{t("Total (₹)")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-200">
@@ -375,7 +373,7 @@ export const InvoicePrintModal: React.FC = () => {
                       <td className="py-1.5 px-2">
                         <div className="font-semibold text-stone-900">{item.name}</div>
                         {item.frameModel && (
-                          <div className="text-[10px] text-stone-500">Model: {item.frameModel}</div>
+                          <div className="text-[10px] text-stone-500">{t("Model: ")}{item.frameModel}</div>
                         )}
                       </td>
                       <td className="py-1.5 px-2 text-center font-mono text-[10px] text-stone-600">
@@ -395,8 +393,7 @@ export const InvoicePrintModal: React.FC = () => {
                     <tr>
                       <td className="py-1.5 px-2 text-stone-500">*</td>
                       <td colSpan={5} className="py-1.5 px-2 font-medium text-stone-800">
-                        Optical Fitting & Glazing Lab Charges
-                      </td>
+                        {t("Optical Fitting & Glazing Lab Charges ")}</td>
                       <td className="py-1.5 px-2 text-right font-bold text-stone-900">
                         {inv.fittingTotal.toFixed(2)}
                       </td>
@@ -411,21 +408,21 @@ export const InvoicePrintModal: React.FC = () => {
                 <div className="space-y-2 text-[10px] text-stone-600">
                   <div className="bg-stone-50 border border-stone-200 p-2 rounded flex gap-2">
                     <div className="flex-1">
-                      <span className="font-bold text-stone-800 block uppercase">Bank & UPI Details:</span>
-                      <p>Bank: {storeProfile.bankName} | A/c: {storeProfile.bankAccountNo}</p>
-                      <p>IFSC: {storeProfile.bankIfsc}</p>
-                      <p>UPI ID: <strong className="text-stone-800">{storeProfile.upiId}</strong></p>
+                      <span className="font-bold text-stone-800 block uppercase">{t("Bank & UPI Details:")}</span>
+                      <p>{t("Bank: ")}{storeProfile.bankName} {t("| A/c: ")}{storeProfile.bankAccountNo}</p>
+                      <p>{t("IFSC: ")}{storeProfile.bankIfsc}</p>
+                      <p>{t("UPI ID: ")}<strong className="text-stone-800">{storeProfile.upiId}</strong></p>
                     </div>
                     {upiQrSrc && (
                       <div className="text-center shrink-0">
                         <img src={upiQrSrc} alt="UPI QR" className="w-16 h-16 object-contain border border-stone-300 rounded bg-white" />
-                        <span className="block text-[8px] text-stone-500 mt-0.5">Scan to Pay</span>
+                        <span className="block text-[8px] text-stone-500 mt-0.5">{t("Scan to Pay")}</span>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <span className="font-bold text-stone-800 block">Terms & Conditions:</span>
+                    <span className="font-bold text-stone-800 block">{t("Terms & Conditions:")}</span>
                     <ul className="list-disc pl-3.5 space-y-0.5 text-[9px]">
                       {storeProfile.termsAndConditions.slice(0, 3).map((term, i) => (
                         <li key={i}>{term}</li>
@@ -437,47 +434,45 @@ export const InvoicePrintModal: React.FC = () => {
                 {/* Amount Totals */}
                 <div className="space-y-1 text-xs text-stone-800">
                   <div className="flex justify-between">
-                    <span>Taxable Subtotal:</span>
+                    <span>{t("Taxable Subtotal:")}</span>
                     <span>₹{inv.subtotal.toFixed(2)}</span>
                   </div>
                   {inv.totalDiscount > 0 && (
                     <div className="flex justify-between text-amber-800">
-                      <span>Discount:</span>
+                      <span>{t("Discount:")}</span>
                       <span>-₹{inv.totalDiscount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-stone-600 text-[11px]">
-                    <span>CGST:</span>
+                    <span>{t("CGST:")}</span>
                     <span>₹{inv.cgstTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-stone-600 text-[11px]">
-                    <span>SGST:</span>
+                    <span>{t("SGST:")}</span>
                     <span>₹{inv.sgstTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-300 pt-1.5">
-                    <span>Grand Total:</span>
+                    <span>{t("Grand Total:")}</span>
                     <span>₹{inv.netPayable.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-medium text-amber-900 bg-amber-50 p-1 rounded">
-                    <span>Advance / Amount Paid:</span>
+                    <span>{t("Advance / Amount Paid:")}</span>
                     <span>₹{inv.advancePaid.toFixed(2)} ({inv.paymentMode})</span>
                   </div>
                   {inv.balanceDue > 0 ? (
                     <div className="flex justify-between font-bold text-rose-700 bg-rose-50 p-1 rounded">
-                      <span>Balance Due:</span>
+                      <span>{t("Balance Due:")}</span>
                       <span>₹{inv.balanceDue.toFixed(2)}</span>
                     </div>
                   ) : (
                     <div className="text-right text-[10px] font-bold text-emerald-700">
-                      ✔ FULLY PAID & SETTLED
-                    </div>
+                      {t("✔ FULLY PAID & SETTLED ")}</div>
                   )}
 
                   <div className="pt-8 text-right">
-                    <span className="text-[10px] text-stone-500 block">For {storeProfile.name}</span>
+                    <span className="text-[10px] text-stone-500 block">{t("For ")}{storeProfile.name}</span>
                     <span className="text-[10px] font-bold text-stone-800 border-t border-stone-400 pt-1 inline-block mt-4">
-                      Authorised Signatory
-                    </span>
+                      {t("Authorised Signatory ")}</span>
                   </div>
                 </div>
               </div>
@@ -488,30 +483,30 @@ export const InvoicePrintModal: React.FC = () => {
               <div className="text-center border-b border-dashed border-stone-400 pb-2">
                 <h2 className="font-black text-sm uppercase">{storeProfile.name}</h2>
                 <p className="text-[10px] text-stone-600">{storeProfile.addressLine1}</p>
-                <p className="text-[10px] text-stone-600">Ph: {storeProfile.phone}</p>
-                <p className="text-[10px] font-bold mt-0.5">GSTIN: {storeProfile.gstin}</p>
+                <p className="text-[10px] text-stone-600">{t("Ph: ")}{storeProfile.phone}</p>
+                <p className="text-[10px] font-bold mt-0.5">{t("GSTIN: ")}{storeProfile.gstin}</p>
               </div>
 
               <div className="text-[11px] space-y-0.5 border-b border-dashed border-stone-400 pb-1.5">
                 <div className="flex justify-between">
-                  <span>Bill: <strong>{inv.invoiceNo}</strong></span>
+                  <span>{t("Bill: ")}<strong>{inv.invoiceNo}</strong></span>
                   <span>{inv.date}</span>
                 </div>
-                <div>Cust: {inv.customerName} ({inv.customerMobile})</div>
-                <div>Status: <strong>{inv.orderStatus}</strong></div>
+                <div>{t("Cust: ")}{inv.customerName} ({inv.customerMobile})</div>
+                <div>{t("Status: ")}<strong>{inv.orderStatus}</strong></div>
               </div>
 
               {/* Items List */}
               <div className="space-y-1 text-[11px] border-b border-dashed border-stone-400 pb-2">
                 {inv.items.map((item, i) => (
                   <div key={i} className="flex justify-between">
-                    <span className="truncate max-w-[170px]">{item.name} x{item.qty}</span>
+                    <span className="truncate max-w-[170px]">{item.name} {t("x")}{item.qty}</span>
                     <span className="font-bold">₹{item.totalAmount}</span>
                   </div>
                 ))}
                 {inv.fittingTotal > 0 && (
                   <div className="flex justify-between">
-                    <span>Fitting Glazing</span>
+                    <span>{t("Fitting Glazing")}</span>
                     <span>₹{inv.fittingTotal}</span>
                   </div>
                 )}
@@ -520,24 +515,24 @@ export const InvoicePrintModal: React.FC = () => {
               {/* Totals */}
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between font-bold text-sm">
-                  <span>NET TOTAL:</span>
+                  <span>{t("NET TOTAL:")}</span>
                   <span>₹{inv.netPayable}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>PAID:</span>
+                  <span>{t("PAID:")}</span>
                   <span>₹{inv.advancePaid} ({inv.paymentMode})</span>
                 </div>
                 {inv.balanceDue > 0 && (
                   <div className="flex justify-between font-bold text-rose-700">
-                    <span>BALANCE DUE:</span>
+                    <span>{t("BALANCE DUE:")}</span>
                     <span>₹{inv.balanceDue}</span>
                   </div>
                 )}
               </div>
 
               <div className="text-center pt-2 border-t border-dashed border-stone-400 text-[10px] text-stone-600">
-                <p>Thank you for choosing us!</p>
-                <p>Please preserve this receipt for delivery.</p>
+                <p>{t("Thank you for choosing us!")}</p>
+                <p>{t("Please preserve this receipt for delivery.")}</p>
               </div>
             </div>
           )}

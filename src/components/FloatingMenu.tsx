@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Plus,
@@ -68,12 +69,11 @@ export const FloatingMenu: React.FC = () => {
     { id: 'billing', label: 'POS Billing', labelHi: 'बिलिंग', icon: Receipt },
     { id: 'eyetesting', label: 'Eye Testing', labelHi: 'नेत्र परीक्षण', icon: Eye },
     { id: 'inventory', label: 'Inventory', labelHi: 'स्टॉक', icon: Package, badge: lowStock },
-    { id: 'customers', label: 'Customers', labelHi: 'ग्राहक', icon: Users, badge: dues },
+    { id: 'customers', label: 'Clients', labelHi: 'ग्राहक', icon: Users, badge: dues },
     { id: 'followups', label: 'Follow-ups', labelHi: 'फॉलोअप', icon: Send, badge: pendingFollowUps },
     { id: 'purchases', label: 'Purchases', labelHi: 'खरीद', icon: Truck },
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet },
     { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine },
-    { id: 'shops', label: 'Shops', labelHi: 'दुकानें', icon: Building },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings }
   ];
@@ -90,14 +90,14 @@ export const FloatingMenu: React.FC = () => {
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end" ref={wrapRef}>
           <button
-            aria-label="Close menu"
+            aria-label={t("Close menu")}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-stone-900/40 backdrop-blur-[2px]"
           />
           <div className="relative bg-white rounded-t-3xl border-t border-stone-200 shadow-2xl max-h-[80vh] flex flex-col pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between px-5 pt-3 pb-2">
               <span className="h-1.5 w-10 rounded-full bg-stone-300 absolute left-1/2 -translate-x-1/2 top-2" />
-              <span className="text-sm font-bold text-stone-800 mt-2">{language === 'EN' ? 'Menu' : 'मेन्यू'}</span>
+              <span className="text-sm font-bold text-stone-800 mt-2">{language === 'EN' ? t("Menu") : 'मेन्यू'}</span>
               <button
                 onClick={() => setOpen(false)}
                 className="mt-2 p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 cursor-pointer"
@@ -144,7 +144,7 @@ export const FloatingMenu: React.FC = () => {
                   >
                     <ScanBarcode className="w-6 h-6 text-amber-700" />
                     <span className="text-[11px] font-semibold leading-tight">
-                      {language === 'EN' ? 'Scan Code' : 'कोड स्कैन'}
+                      {language === 'EN' ? t("Scan Code") : 'कोड स्कैन'}
                     </span>
                   </button>
                 )}
@@ -157,7 +157,7 @@ export const FloatingMenu: React.FC = () => {
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label="Menu"
+        aria-label={t("Menu")}
         className={`fixed right-4 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-[55] w-14 h-14 rounded-full text-white flex items-center justify-center shadow-xl shadow-amber-600/40 transition-all cursor-pointer ${
           open ? 'bg-stone-800 rotate-90' : 'bg-amber-600 hover:bg-amber-700'
         }`}

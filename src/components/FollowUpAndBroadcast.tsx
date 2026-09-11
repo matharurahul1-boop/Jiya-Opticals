@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useState } from 'react';
 import { 
   Send, 
@@ -234,14 +235,11 @@ export const FollowUpAndBroadcast: React.FC = () => {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-stone-900 flex items-center gap-2">
-              Follow-ups & WhatsApp Broadcast
-              <span className="text-[11px] bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-semibold">
-                6M / 1Y Reminders
-              </span>
+              {t("Follow-ups & WhatsApp Broadcast ")}<span className="text-[11px] bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-semibold">
+                {t("6M / 1Y Reminders ")}</span>
             </h1>
             <p className="text-xs text-stone-500">
-              Vision checkup reminders & delivery notifications
-            </p>
+              {t("Vision checkup reminders & delivery notifications ")}</p>
           </div>
         </div>
 
@@ -256,7 +254,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
         >
           <Smartphone className="w-3.5 h-3.5" />
           <span>
-            {notificationPermission === 'granted' ? 'Push Alerts Active' : 'Enable Push Alerts'}
+            {notificationPermission === 'granted' ? t("Push Alerts Active") : t("Enable Push Alerts")}
           </span>
         </button>
       </div>
@@ -264,7 +262,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
       {notificationStatusMsg && (
         <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg flex items-center justify-between">
           <span>{notificationStatusMsg}</span>
-          <button onClick={() => setNotificationStatusMsg(null)} className="font-bold underline text-xs cursor-pointer">Dismiss</button>
+          <button onClick={() => setNotificationStatusMsg(null)} className="font-bold underline text-xs cursor-pointer">{t("Dismiss")}</button>
         </div>
       )}
 
@@ -280,7 +278,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>Follow-ups</span>
+          <span>{t("Follow-ups")}</span>
           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">
             {followUps.filter((f) => f.status === 'Pending').length}
           </span>
@@ -296,7 +294,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
           }`}
         >
           <Send className="w-4 h-4" />
-          <span>Broadcast</span>
+          <span>{t("Broadcast")}</span>
         </button>
 
         <button
@@ -309,7 +307,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
           }`}
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Templates ({whatsappTemplates.length})</span>
+          <span>{t("Templates (")}{whatsappTemplates.length})</span>
         </button>
       </div>
 
@@ -321,7 +319,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-stone-500 flex items-center space-x-1">
                 <Filter className="w-3.5 h-3.5" />
-                <span>Filter:</span>
+                <span>{t("Filter:")}</span>
               </span>
 
               {['All', '6-Month Vision Review', 'Annual Eye Checkup', 'Spectacle Delivery', 'Balance Payment'].map((t) => (
@@ -346,10 +344,10 @@ export const FollowUpAndBroadcast: React.FC = () => {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-3 py-1.5 bg-stone-100 border border-stone-200 rounded-lg text-xs font-medium text-stone-700"
               >
-                <option value="All">All Statuses</option>
-                <option value="Pending">Pending Only</option>
-                <option value="Sent">Sent / Contacted</option>
-                <option value="Completed">Completed</option>
+                <option value="All">{t("All Statuses")}</option>
+                <option value="Pending">{t("Pending Only")}</option>
+                <option value="Sent">{t("Sent / Contacted")}</option>
+                <option value="Completed">{t("Completed")}</option>
               </select>
             </div>
           </div>
@@ -359,8 +357,8 @@ export const FollowUpAndBroadcast: React.FC = () => {
             {filteredFollowUps.length === 0 ? (
               <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-stone-200">
                 <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
-                <h4 className="font-bold text-stone-800 text-sm">No Pending Follow-ups</h4>
-                <p className="text-xs text-stone-500 mt-1">All follow-ups for this branch are up to date!</p>
+                <h4 className="font-bold text-stone-800 text-sm">{t("No Pending Follow-ups")}</h4>
+                <p className="text-xs text-stone-500 mt-1">{t("All follow-ups for this branch are up to date!")}</p>
               </div>
             ) : (
               filteredFollowUps.map((fol) => {
@@ -389,13 +387,11 @@ export const FollowUpAndBroadcast: React.FC = () => {
                             <span className="font-bold text-sm text-stone-900">{fol.customerName}</span>
                             {isToday && (
                               <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
-                                Due Today
-                              </span>
+                                {t("Due Today ")}</span>
                             )}
                             {isOverdue && fol.status === 'Pending' && (
                               <span className="px-1.5 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded">
-                                Overdue
-                              </span>
+                                {t("Overdue ")}</span>
                             )}
                           </div>
                           <p className="text-xs text-stone-500 font-mono">📞 {fol.customerMobile}</p>
@@ -419,8 +415,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
                         </div>
                         {fol.notes && (
                           <p className="text-xs text-stone-500 italic line-clamp-2">
-                            &ldquo;{fol.notes}&rdquo;
-                          </p>
+                            {t("&ldquo;")}{fol.notes}{t("&rdquo; ")}</p>
                         )}
                         {shopObj && (
                           <div className="text-[11px] text-stone-400 flex items-center space-x-1 pt-1">
@@ -438,20 +433,20 @@ export const FollowUpAndBroadcast: React.FC = () => {
                           id={`btn-send-wa-${fol.id}`}
                           onClick={() => sendFollowUpWhatsApp(fol)}
                           className="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center space-x-1 transition-colors shadow-xs"
-                          title="Send WhatsApp follow-up"
+                          title={t("Send WhatsApp follow-up")}
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
+                          <span>{t("WhatsApp")}</span>
                         </button>
 
                         <button
                           id={`btn-send-email-${fol.id}`}
                           onClick={() => sendFollowUpEmail(fol)}
                           className="py-1.5 px-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-xs flex items-center justify-center space-x-1 transition-colors shadow-xs"
-                          title="Send Email follow-up"
+                          title={t("Send Email follow-up")}
                         >
                           <Mail className="w-3.5 h-3.5" />
-                          <span>Email</span>
+                          <span>{t("Email")}</span>
                         </button>
                       </div>
 
@@ -460,11 +455,11 @@ export const FollowUpAndBroadcast: React.FC = () => {
                           <button
                             id={`btn-complete-fol-${fol.id}`}
                             onClick={() => updateFollowUpStatus(fol.id, 'Completed')}
-                            title="Mark as Completed"
+                            title={t("Mark as Completed")}
                             className="flex-1 py-1 px-2 bg-stone-100 hover:bg-emerald-100 text-stone-700 hover:text-emerald-800 text-[11px] font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
                           >
                             <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Mark Completed</span>
+                            <span>{t("Mark Completed")}</span>
                           </button>
                         )}
 
@@ -475,7 +470,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
                               deleteFollowUp(fol.id);
                             }
                           }}
-                          title="Delete"
+                          title={t("Delete")}
                           className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -497,13 +492,12 @@ export const FollowUpAndBroadcast: React.FC = () => {
           <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-4">
             <h3 className="font-bold text-stone-900 text-sm flex items-center space-x-2">
               <Send className="w-4 h-4 text-amber-600" />
-              <span>Broadcast Campaign</span>
+              <span>{t("Broadcast Campaign")}</span>
             </h3>
 
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">
-                Select WhatsApp Template
-              </label>
+                {t("Select WhatsApp Template ")}</label>
               <select
                 id="select-broadcast-template"
                 value={selectedTemplateId}
@@ -520,17 +514,16 @@ export const FollowUpAndBroadcast: React.FC = () => {
 
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">
-                Target Audience Group
-              </label>
+                {t("Target Audience Group ")}</label>
               <select
                 id="select-broadcast-target"
                 value={broadcastTarget}
                 onChange={(e) => setBroadcastTarget(e.target.value as 'all' | 'due_checkup' | 'has_balance')}
                 className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 focus:outline-none focus:border-amber-500"
               >
-                <option value="due_checkup">👓 All Clients Due For Vision Check ({customers.length})</option>
-                <option value="has_balance">💰 Clients With Balance Due ({customers.filter((c) => c.outstandingBalance > 0).length})</option>
-                <option value="all">👥 All Registered Clients in Branch ({targetCustomers.length})</option>
+                <option value="due_checkup">{t("👓 All Clients Due For Vision Check (")}{customers.length})</option>
+                <option value="has_balance">{t("💰 Clients With Balance Due (")}{customers.filter((c) => c.outstandingBalance > 0).length})</option>
+                <option value="all">{t("👥 All Registered Clients in Branch (")}{targetCustomers.length})</option>
               </select>
             </div>
 
@@ -538,7 +531,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
             <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-2">
               <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center space-x-1">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Message Preview</span>
+                <span>{t("Message Preview")}</span>
               </div>
               <p className="text-xs text-stone-700 font-sans leading-relaxed whitespace-pre-wrap">
                 {selectedTemplate
@@ -547,15 +540,14 @@ export const FollowUpAndBroadcast: React.FC = () => {
                       amount: 1450,
                       dueDate: '2026-09-01'
                     })
-                  : 'Select a template'}
+                  : t("Select a template")}
               </p>
             </div>
 
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
-              <p className="font-bold">📱 WhatsApp Direct Protocol</p>
+              <p className="font-bold">{t("📱 WhatsApp Direct Protocol")}</p>
               <p className="text-[11px] text-amber-800 leading-snug">
-                Clicking send for each client opens WhatsApp Web / Mobile app with personalized tags ready to send with 1 tap.
-              </p>
+                {t("Clicking send for each client opens WhatsApp Web / Mobile app with personalized tags ready to send with 1 tap. ")}</p>
             </div>
           </div>
 
@@ -564,11 +556,10 @@ export const FollowUpAndBroadcast: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-stone-900 text-sm">
-                  Campaign Recipients ({targetCustomers.length})
+                  {t("Campaign Recipients (")}{targetCustomers.length})
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Showing clients matching current shop and criteria
-                </p>
+                  {t("Showing clients matching current shop and criteria ")}</p>
               </div>
             </div>
 
@@ -585,7 +576,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
                       <span>📞 {c.mobile}</span>
                       {c.outstandingBalance > 0 && (
                         <span className="text-red-600 font-semibold font-sans">
-                          Due: ₹{c.outstandingBalance}
+                          {t("Due: ₹")}{c.outstandingBalance}
                         </span>
                       )}
                     </div>
@@ -596,20 +587,20 @@ export const FollowUpAndBroadcast: React.FC = () => {
                       id={`btn-send-broadcast-wa-${c.id}`}
                       onClick={() => handleSendSingleBroadcast(c)}
                       className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center space-x-1 shadow-xs transition-colors"
-                      title="Send WhatsApp message"
+                      title={t("Send WhatsApp message")}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
+                      <span>{t("WhatsApp")}</span>
                     </button>
 
                     <button
                       id={`btn-send-broadcast-email-${c.id}`}
                       onClick={() => handleSendSingleBroadcastEmail(c)}
                       className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-xs flex items-center space-x-1 shadow-xs transition-colors"
-                      title="Send Email message"
+                      title={t("Send Email message")}
                     >
                       <Mail className="w-3.5 h-3.5" />
-                      <span>Email</span>
+                      <span>{t("Email")}</span>
                     </button>
                   </div>
                 </div>
@@ -624,9 +615,9 @@ export const FollowUpAndBroadcast: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-stone-900 text-sm">WhatsApp Message Templates</h3>
+              <h3 className="font-bold text-stone-900 text-sm">{t("WhatsApp Message Templates")}</h3>
               <p className="text-xs text-stone-500">
-                Variables: {'{name}'}, {'{store_name}'}, {'{shop_name}'}, {'{invoice_no}'}, {'{amount}'}, {'{due_date}'}, {'{phone}'}
+                {t("Variables: ")}{t("{name}")}, {t("{store_name}")}, {t("{shop_name}")}, {t("{invoice_no}")}, {t("{amount}")}, {t("{due_date}")}, {t("{phone}")}
               </p>
             </div>
             <button
@@ -635,7 +626,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-xs flex items-center space-x-1.5 shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>+ New Template</span>
+              <span>{t("+ New Template")}</span>
             </button>
           </div>
 
@@ -664,7 +655,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
                     className="p-1.5 text-stone-600 hover:text-amber-700 hover:bg-stone-100 rounded-lg text-xs font-semibold flex items-center space-x-1"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit</span>
+                    <span>{t("Edit")}</span>
                   </button>
                   {!tmpl.isDefault && (
                     <button
@@ -691,7 +682,7 @@ export const FollowUpAndBroadcast: React.FC = () => {
           <div className="bg-[#ffffff] text-stone-900 w-full max-w-lg rounded-2xl shadow-2xl border border-stone-200 overflow-hidden">
             <div className="p-4 bg-stone-100 border-b border-stone-200 flex items-center justify-between">
               <h3 className="font-bold text-stone-900 text-sm">
-                {editingTemplate ? 'Edit WhatsApp Template' : 'Create WhatsApp Template'}
+                {editingTemplate ? t("Edit WhatsApp Template") : t("Create WhatsApp Template")}
               </h3>
               <button
                 onClick={() => setShowTemplateModal(false)}
@@ -704,12 +695,11 @@ export const FollowUpAndBroadcast: React.FC = () => {
             <form onSubmit={handleSaveTemplate} className="p-5 space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Template Title
-                </label>
+                  {t("Template Title ")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 6-Month Refraction Reminder"
+                  placeholder={t("e.g. 6-Month Refraction Reminder")}
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm focus:outline-none focus:border-amber-500"
@@ -718,38 +708,36 @@ export const FollowUpAndBroadcast: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Category
-                </label>
+                  {t("Category ")}</label>
                 <select
                   value={templateCategory}
                   onChange={(e) => setTemplateCategory(e.target.value as WhatsAppTemplate['category'])}
                   className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm focus:outline-none focus:border-amber-500"
                 >
-                  <option value="Eye Checkup Reminder">Eye Checkup Reminder</option>
-                  <option value="Order Ready">Order Ready</option>
-                  <option value="Invoice Share">Invoice Share</option>
-                  <option value="Payment Due Reminder">Payment Due Reminder</option>
-                  <option value="Promotional / Festive">Promotional / Festive</option>
-                  <option value="Custom">Custom</option>
+                  <option value="Eye Checkup Reminder">{t("Eye Checkup Reminder")}</option>
+                  <option value="Order Ready">{t("Order Ready")}</option>
+                  <option value="Invoice Share">{t("Invoice Share")}</option>
+                  <option value="Payment Due Reminder">{t("Payment Due Reminder")}</option>
+                  <option value="Promotional / Festive">{t("Promotional / Festive")}</option>
+                  <option value="Custom">{t("Custom")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Message Body
-                </label>
+                  {t("Message Body ")}</label>
                 <textarea
                   rows={4}
                   required
                   value={templateBody}
                   onChange={(e) => setTemplateBody(e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm focus:outline-none focus:border-amber-500 font-sans"
-                  placeholder="Type message with {name}, {store_name}, {due_date}, {phone}..."
+                  placeholder={t("Type message with {name}, {store_name}, {due_date}, {phone}...")}
                 />
               </div>
 
               <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900">
-                <strong>Supported Dynamic Placeholders:</strong>
+                <strong>{t("Supported Dynamic Placeholders:")}</strong>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {['{name}', '{store_name}', '{shop_name}', '{invoice_no}', '{amount}', '{due_date}', '{delivery_date}', '{phone}'].map((tag) => (
                     <span key={tag} className="px-1.5 py-0.5 bg-amber-200/80 rounded font-mono text-[10px]">
@@ -765,14 +753,12 @@ export const FollowUpAndBroadcast: React.FC = () => {
                   onClick={() => setShowTemplateModal(false)}
                   className="px-4 py-2 border border-stone-300 text-stone-700 font-semibold rounded-xl text-xs"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-xs"
                 >
-                  Save Template
-                </button>
+                  {t("Save Template ")}</button>
               </div>
             </form>
           </div>

@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React from 'react';
 import { Store, MapPin, Phone, CheckCircle, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -28,7 +29,7 @@ export const ShopSelectModal: React.FC = () => {
               <Store className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-stone-900 text-base">Select Branch</h3>
+              <h3 className="font-bold text-stone-900 text-base">{t("Select Branch")}</h3>
               <p className="text-xs text-stone-500">{shopSelectPromptTitle}</p>
             </div>
           </div>
@@ -43,8 +44,7 @@ export const ShopSelectModal: React.FC = () => {
 
         <div className="p-5 space-y-3">
           <p className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
-            Choose target branch for this entry:
-          </p>
+            {t("Choose target branch for this entry: ")}</p>
           <div className="space-y-2.5">
             {shops.map((shop) => (
               <button
@@ -61,8 +61,7 @@ export const ShopSelectModal: React.FC = () => {
                     </span>
                     {shop.isMain && (
                       <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
-                        Main
-                      </span>
+                        {t("Main ")}</span>
                     )}
                   </div>
                   <div className="flex items-center text-xs text-stone-500 space-x-1">
@@ -84,8 +83,7 @@ export const ShopSelectModal: React.FC = () => {
 
         <div className="p-4 bg-stone-50 border-t border-stone-200 text-center">
           <p className="text-xs text-stone-400">
-            You can also filter the dashboard by specific shop in the top bar.
-          </p>
+            {t("You can also filter the dashboard by specific shop in the top bar. ")}</p>
         </div>
       </div>
     </div>

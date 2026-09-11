@@ -73,7 +73,7 @@ begin
     email      = excluded.email,
     full_name  = case when nullif(trim(display_name), '') is not null then excluded.full_name else public.optical_user_directory.full_name end,
     username   = case when nullif(trim(uname), '')       is not null then excluded.username  else public.optical_user_directory.username  end,
-    phone      = case when trim(user_sync.phone) <> ''   then excluded.phone     else public.optical_user_directory.phone     end,
+    phone      = case when user_sync.phone is not null then excluded.phone else public.optical_user_directory.phone end,
     updated_at = now()
   returning * into row;
 

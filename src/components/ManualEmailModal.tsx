@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useState, useEffect } from 'react';
 import { 
   Mail, 
@@ -91,8 +92,7 @@ export const ManualEmailModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold">
-                  Send Email (Manual Mailer)
-                </h2>
+                  {t("Send Email (Manual Mailer) ")}</h2>
                 {emailModalData.documentType && (
                   <span className="text-[10px] bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
                     {emailModalData.documentType}
@@ -100,8 +100,7 @@ export const ManualEmailModal: React.FC = () => {
                 )}
               </div>
               <p className="text-xs text-stone-400">
-                Compose, review, or launch in your preferred email client (Gmail, Outlook, Mail App)
-              </p>
+                {t("Compose, review, or launch in your preferred email client (Gmail, Outlook, Mail App) ")}</p>
             </div>
           </div>
 
@@ -119,7 +118,7 @@ export const ManualEmailModal: React.FC = () => {
           <div className="bg-amber-50/80 border-b border-amber-200/80 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
             <div className="flex items-center space-x-2 text-stone-800">
               <User className="w-3.5 h-3.5 text-amber-700" />
-              <span className="font-semibold">Recipient:</span>
+              <span className="font-semibold">{t("Recipient:")}</span>
               <span className="font-bold text-amber-900">{emailModalData.recipientName}</span>
               {emailModalData.recipientMobile && (
                 <span className="text-stone-500 flex items-center gap-1">
@@ -133,10 +132,10 @@ export const ManualEmailModal: React.FC = () => {
                 id="btn-switch-to-whatsapp"
                 onClick={handleSendViaWhatsApp}
                 className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-100/80 hover:bg-emerald-200/80 px-2 py-1 rounded transition-colors cursor-pointer"
-                title="Send same content via WhatsApp"
+                title={t("Send same content via WhatsApp")}
               >
                 <MessageSquare className="w-3 h-3" />
-                <span>Switch to WhatsApp</span>
+                <span>{t("Switch to WhatsApp")}</span>
               </button>
             )}
           </div>
@@ -147,11 +146,10 @@ export const ManualEmailModal: React.FC = () => {
           {/* Recipient Email */}
           <div>
             <label className="block text-stone-700 font-semibold mb-1 flex items-center justify-between">
-              <span>Customer / Recipient Email Address *</span>
+              <span>{t("Customer / Recipient Email Address *")}</span>
               {!toEmail && (
                 <span className="text-rose-500 text-[11px] font-normal">
-                  (Enter customer's email ID below)
-                </span>
+                  {t("(Enter customer's email ID below) ")}</span>
               )}
             </label>
             <div className="relative">
@@ -159,7 +157,7 @@ export const ManualEmailModal: React.FC = () => {
                 id="input-recipient-email"
                 type="email"
                 required
-                placeholder="e.g. customer@gmail.com, jiya@example.com"
+                placeholder={t("e.g. customer@gmail.com, jiya@example.com")}
                 value={toEmail}
                 onChange={(e) => setToEmail(e.target.value)}
                 className="w-full bg-stone-50 border border-stone-300 rounded-lg pl-8 pr-3 py-2 text-stone-900 font-medium focus:border-amber-600 focus:bg-white outline-none"
@@ -171,8 +169,7 @@ export const ManualEmailModal: React.FC = () => {
           {/* Subject */}
           <div>
             <label className="block text-stone-700 font-semibold mb-1">
-              Email Subject Line *
-            </label>
+              {t("Email Subject Line * ")}</label>
             <input
               id="input-email-subject"
               type="text"
@@ -187,8 +184,7 @@ export const ManualEmailModal: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-stone-700 font-semibold">
-                Message Body (Formatted Content)
-              </label>
+                {t("Message Body (Formatted Content) ")}</label>
               <button
                 id="btn-copy-email-body"
                 type="button"
@@ -198,12 +194,12 @@ export const ManualEmailModal: React.FC = () => {
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-700 font-bold">Copied!</span>
+                    <span className="text-emerald-700 font-bold">{t("Copied!")}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Content</span>
+                    <span>{t("Copy Content")}</span>
                   </>
                 )}
               </button>
@@ -220,17 +216,16 @@ export const ManualEmailModal: React.FC = () => {
           {/* Sender Signature notice */}
           <div className="p-2.5 bg-stone-100 rounded-lg border border-stone-200 text-stone-600 text-[11px] flex items-center justify-between">
             <span>
-              🏢 Sending from: <strong className="text-stone-800">{storeProfile.name}</strong> ({storeProfile.email})
+              {t("🏢 Sending from: ")}<strong className="text-stone-800">{storeProfile.name}</strong> ({storeProfile.email})
             </span>
-            <span className="text-stone-500">Phone: {storeProfile.phone}</span>
+            <span className="text-stone-500">{t("Phone: ")}{storeProfile.phone}</span>
           </div>
         </div>
 
         {/* Footer Quick Launch Actions */}
         <div className="p-4 bg-stone-50 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="text-[11px] text-stone-500 hidden sm:block">
-            Choose your email client to dispatch immediately:
-          </div>
+            {t("Choose your email client to dispatch immediately: ")}</div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             {/* Launch Gmail Web */}
@@ -239,10 +234,10 @@ export const ManualEmailModal: React.FC = () => {
               type="button"
               onClick={handleSendViaGmail}
               className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              title="Compose directly in Gmail web browser"
+              title={t("Compose directly in Gmail web browser")}
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>Gmail Web</span>
+              <span>{t("Gmail Web")}</span>
             </button>
 
             {/* Launch Outlook Web */}
@@ -251,10 +246,10 @@ export const ManualEmailModal: React.FC = () => {
               type="button"
               onClick={handleSendViaOutlook}
               className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              title="Compose directly in Outlook / Hotmail web"
+              title={t("Compose directly in Outlook / Hotmail web")}
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Outlook</span>
+              <span>{t("Outlook")}</span>
             </button>
 
             {/* Default Mail Client (mailto:) */}
@@ -263,10 +258,10 @@ export const ManualEmailModal: React.FC = () => {
               type="button"
               onClick={handleSendViaMailto}
               className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              title="Open default email application on your device"
+              title={t("Open default email application on your device")}
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Send via Default Mail App</span>
+              <span>{t("Send via Default Mail App")}</span>
             </button>
           </div>
         </div>

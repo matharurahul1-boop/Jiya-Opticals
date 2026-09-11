@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -84,7 +85,7 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-amber-200 rounded-xl shadow-xl overflow-hidden z-50 text-xs divide-y divide-stone-100 max-h-[60vh] overflow-y-auto">
           {matchedInvoices.length > 0 && (
             <div className="p-2 bg-stone-50/80">
-              <div className="text-[10px] uppercase font-bold text-amber-800 mb-1 px-1">Invoices</div>
+              <div className="text-[10px] uppercase font-bold text-amber-800 mb-1 px-1">{t("Invoices")}</div>
               {matchedInvoices.map((inv) => (
                 <button
                   key={inv.id}
@@ -103,15 +104,14 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
                     </span>
                   </span>
                   <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
-                    View
-                  </span>
+                    {t("View ")}</span>
                 </button>
               ))}
             </div>
           )}
           {matchedProducts.length > 0 && (
             <div className="p-2 bg-stone-50/80">
-              <div className="text-[10px] uppercase font-bold text-emerald-800 mb-1 px-1">Products</div>
+              <div className="text-[10px] uppercase font-bold text-emerald-800 mb-1 px-1">{t("Products")}</div>
               {matchedProducts.map((p) => (
                 <button
                   key={p.id}
@@ -126,7 +126,7 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
                       {p.name} ({p.modelNo})
                     </span>
                     <span className="text-[11px] text-stone-500">
-                      Barcode: {p.barcode} • Stock: {p.stockQty}
+                      {t("Barcode: ")}{p.barcode} {t("• Stock: ")}{p.stockQty}
                     </span>
                   </span>
                   <span className="text-stone-900 font-bold">₹{p.salePrice}</span>
@@ -136,7 +136,7 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
           )}
           {matchedCustomers.length > 0 && (
             <div className="p-2 bg-stone-50/80">
-              <div className="text-[10px] uppercase font-bold text-teal-800 mb-1 px-1">Customers</div>
+              <div className="text-[10px] uppercase font-bold text-teal-800 mb-1 px-1">{t("Customers")}</div>
               {matchedCustomers.map((c) => (
                 <button
                   key={c.id}
@@ -149,10 +149,10 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
                   <span>
                     <span className="font-semibold text-stone-900 block">{c.name}</span>
                     <span className="text-[11px] text-stone-500">
-                      📱 {c.mobile} • Dues: ₹{c.outstandingBalance}
+                      📱 {c.mobile} {t("• Dues: ₹")}{c.outstandingBalance}
                     </span>
                   </span>
-                  <span className="text-[10px] text-teal-700 font-medium">View</span>
+                  <span className="text-[10px] text-teal-700 font-medium">{t("View")}</span>
                 </button>
               ))}
             </div>

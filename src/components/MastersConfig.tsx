@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n';
+import { NumberInput } from './NumberInput';
 import React, { useEffect, useState } from 'react';
 import {
   Building2,
@@ -248,11 +250,9 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           </div>
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              Masters & Multi-Shop Configuration
-            </h1>
+              {t("Masters & Multi-Shop Configuration ")}</h1>
             <p className="text-xs text-stone-500">
-              Jiya Opticals: Company profile, GSTIN, Shop branches, Optometrists, and Users.
-            </p>
+              {t("Jiya Opticals: Company profile, GSTIN, Shop branches, Optometrists, and Users. ")}</p>
           </div>
         </div>
       </div>
@@ -266,8 +266,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
-          Store Profile & GSTIN
-        </button>
+          {t("Store Profile & GSTIN ")}</button>
 
         <button
           onClick={() => setActiveTab('Shops')}
@@ -276,7 +275,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           }`}
         >
           <Store className="w-3.5 h-3.5" />
-          Shop Branches ({shops.length})
+          {t("Shop Branches (")}{shops.length})
         </button>
 
         <button
@@ -286,7 +285,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           }`}
         >
           <UserCheck className="w-3.5 h-3.5" />
-          Doctors & Optometrists ({doctors.length})
+          {t("Doctors & Optometrists (")}{doctors.length})
         </button>
 
         <button
@@ -296,7 +295,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          Users ({users.length})
+          {t("Users (")}{users.length})
         </button>
       </div>
 
@@ -304,12 +303,12 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
       {activeTab === 'StoreProfile' && (
         <form onSubmit={handleSaveStoreProfile} className="bg-white border border-amber-200/80 rounded-xl p-5 space-y-4 text-xs shadow-xs">
           <div className="border-b border-stone-200 pb-2 flex justify-between items-center">
-            <span className="font-bold text-stone-900 uppercase text-xs">Store Header & Tax Identification</span>
+            <span className="font-bold text-stone-900 uppercase text-xs">{t("Store Header & Tax Identification")}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">Store / Company Name *</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Store / Company Name *")}</label>
               <input
                 type="text"
                 required
@@ -320,7 +319,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
             </div>
 
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">Tagline / Slogan</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Tagline / Slogan")}</label>
               <input
                 type="text"
                 value={profileForm.tagline}
@@ -332,7 +331,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">Primary Store Phone *</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Primary Store Phone *")}</label>
               <input
                 type="text"
                 value={profileForm.phone}
@@ -341,7 +340,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               />
             </div>
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">Store Email</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Store Email")}</label>
               <input
                 type="email"
                 value={profileForm.email}
@@ -350,7 +349,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               />
             </div>
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">GSTIN Number *</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("GSTIN Number *")}</label>
               <input
                 type="text"
                 value={profileForm.gstin}
@@ -369,16 +368,14 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 onChange={(e) => setProfileForm({ ...profileForm, openAccess: e.target.checked })}
               />
               <span className="text-xs text-stone-700">
-                <strong className="block text-stone-900">Let any signed-in staff use this store</strong>
-                Anyone who signs up and confirms their email can open the store and work every shop — no per-person setup.
-                Turn this off to grant access shop-by-shop from Team &amp; Access instead.
-              </span>
+                <strong className="block text-stone-900">{t("Let any signed-in staff use this store")}</strong>
+                {t("Anyone who signs up and confirms their email can open the store and work every shop — no per-person setup. Turn this off to grant access shop-by-shop from Team &amp; Access instead. ")}</span>
             </label>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-stone-600 mb-1 font-semibold">Head Office / Main Branch Address</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Head Office / Main Branch Address")}</label>
               <input
                 type="text"
                 value={profileForm.addressLine1}
@@ -387,7 +384,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               />
             </div>
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">City / State</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("City / State")}</label>
               <input
                 type="text"
                 value={profileForm.city}
@@ -396,7 +393,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               />
             </div>
             <div>
-              <label className="block text-stone-600 mb-1 font-semibold">Pincode</label>
+              <label className="block text-stone-600 mb-1 font-semibold">{t("Pincode")}</label>
               <input
                 type="text"
                 value={profileForm.pincode}
@@ -407,11 +404,11 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           </div>
 
           {/* Bank & UPI Settings */}
-          <div className="bg-[#f4f6fb] border border-amber-200 rounded-xl p-3.5 space-y-3">
-            <span className="text-xs font-bold text-amber-900 block">Bank Account & UPI QR Integration</span>
+          <div className="bg-[#f8fbfb] border border-amber-200 rounded-xl p-3.5 space-y-3">
+            <span className="text-xs font-bold text-amber-900 block">{t("Bank Account & UPI QR Integration")}</span>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Bank Name</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Bank Name")}</label>
                 <input
                   type="text"
                   value={profileForm.bankName}
@@ -420,7 +417,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 />
               </div>
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Account Number</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Account Number")}</label>
                 <input
                   type="text"
                   value={profileForm.bankAccountNo}
@@ -429,7 +426,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 />
               </div>
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">IFSC Code</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("IFSC Code")}</label>
                 <input
                   type="text"
                   value={profileForm.bankIfsc}
@@ -438,7 +435,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 />
               </div>
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">UPI ID (for QR payment on invoices)</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("UPI ID (for QR payment on invoices)")}</label>
                 <input
                   type="text"
                   value={profileForm.upiId}
@@ -459,17 +456,14 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               </div>
               <div className="space-y-1.5 text-xs">
                 <p className="font-semibold text-stone-700">
-                  Upload your UPI QR (PhonePe / GPay / BharatPe / bank).
-                </p>
+                  {t("Upload your UPI QR (PhonePe / GPay / BharatPe / bank). ")}</p>
                 <p className="text-stone-500 max-w-sm">
-                  This exact QR is shown on the billing “Scan to Pay” screen and on invoices. If you don’t upload one, a
-                  QR is auto-generated from the UPI ID above.
-                </p>
+                  {t("This exact QR is shown on the billing “Scan to Pay” screen and on invoices. If you don’t upload one, a QR is auto-generated from the UPI ID above. ")}</p>
                 {qrError && <p className="text-rose-600" role="alert">{qrError}</p>}
                 <div className="flex gap-2 pt-0.5">
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer">
                     <Upload className="w-3.5 h-3.5" />
-                    {profileForm.upiQrDataUrl ? 'Replace QR' : 'Upload QR image'}
+                    {profileForm.upiQrDataUrl ? t("Replace QR") : t("Upload QR image")}
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
@@ -494,8 +488,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       onClick={() => setProfileForm((f) => ({ ...f, upiQrDataUrl: undefined }))}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" /> Remove
-                    </button>
+                      <X className="w-3.5 h-3.5" /> {t("Remove ")}</button>
                   )}
                 </div>
               </div>
@@ -503,20 +496,18 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           </div>
 
           {/* GST rate by product category */}
-          <div className="bg-[#f4f6fb] border border-amber-200 rounded-xl p-3.5 space-y-3">
+          <div className="bg-[#f8fbfb] border border-amber-200 rounded-xl p-3.5 space-y-3">
             <div>
-              <span className="text-xs font-bold text-amber-900 block">GST Output Tax by Category (GSTR-1)</span>
+              <span className="text-xs font-bold text-amber-900 block">{t("GST Output Tax by Category (GSTR-1)")}</span>
               <p className="text-[11px] text-stone-500">
-                Set the GST % you charge for each category (e.g. Sunglasses 18%). New bill lines pick this up
-                automatically; a single line can still be changed at billing.
-              </p>
+                {t("Set the GST % you charge for each category (e.g. Sunglasses 18%). New bill lines pick this up automatically; a single line can still be changed at billing. ")}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {PRODUCT_CATEGORIES.map((cat) => (
                 <div key={cat}>
                   <label className="block text-stone-600 mb-1 font-semibold text-[11px]">{cat}</label>
                   <div className="flex items-center">
-                    <input
+                    <NumberInput
                       type="number"
                       min="0"
                       max="28"
@@ -543,7 +534,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
           {/* Terms & Conditions */}
           <div>
-            <label className="block text-stone-600 mb-1 font-semibold">Invoice Terms & Conditions (One per line)</label>
+            <label className="block text-stone-600 mb-1 font-semibold">{t("Invoice Terms & Conditions (One per line)")}</label>
             <textarea
               rows={3}
               value={termsText}
@@ -557,8 +548,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               type="submit"
               className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shadow-xs flex items-center gap-1.5 text-xs cursor-pointer"
             >
-              <Save className="w-4 h-4" /> Save Store Profile
-            </button>
+              <Save className="w-4 h-4" /> {t("Save Store Profile ")}</button>
           </div>
         </form>
       )}
@@ -569,7 +559,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           <div className="md:col-span-5 bg-white border border-amber-200/80 rounded-xl p-5 space-y-4 text-xs shadow-xs">
             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
               <span className="font-bold text-stone-900 uppercase">
-                {editingShopId ? 'Edit Shop Branch' : 'Add New Optical Branch'}
+                {editingShopId ? t("Edit Shop Branch") : t("Add New Optical Branch")}
               </span>
               {editingShopId && (
                 <button
@@ -584,18 +574,17 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   }}
                   className="text-stone-500 hover:text-stone-800 text-[11px]"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
               )}
             </div>
 
             <form onSubmit={handleCreateOrUpdateShop} className="space-y-3">
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Shop / Branch Name *</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Shop / Branch Name *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Jiya Opticals - Shop 3 (Sector 14)"
+                  placeholder={t("e.g. Jiya Opticals - Shop 3 (Sector 14)")}
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-medium"
@@ -604,20 +593,20 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Branch Code</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Branch Code")}</label>
                   <input
                     type="text"
-                    placeholder="SH03"
+                    placeholder={t("SH03")}
                     value={shopCode}
                     onChange={(e) => setShopCode(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">City</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("City")}</label>
                   <input
                     type="text"
-                    placeholder="Gurugram / Delhi"
+                    placeholder={t("Gurugram / Delhi")}
                     value={shopCity}
                     onChange={(e) => setShopCity(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -626,10 +615,10 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Branch Address</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Branch Address")}</label>
                 <input
                   type="text"
-                  placeholder="Shop No. 12, Main Market Road"
+                  placeholder={t("Shop No. 12, Main Market Road")}
                   value={shopAddress}
                   onChange={(e) => setShopAddress(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -638,7 +627,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Branch Phone</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Branch Phone")}</label>
                   <input
                     type="tel"
                     placeholder="9811000000"
@@ -648,10 +637,10 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Branch GSTIN (Optional)</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Branch GSTIN (Optional)")}</label>
                   <input
                     type="text"
-                    placeholder="07AAAAA0000A1Z5"
+                    placeholder={t("07AAAAA0000A1Z5")}
                     value={shopGstin}
                     onChange={(e) => setShopGstin(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono"
@@ -668,22 +657,21 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   className="rounded border-stone-300 text-amber-600"
                 />
                 <label htmlFor="shopIsMain" className="text-stone-700 font-medium cursor-pointer">
-                  Set as Primary / Main Flagship Store
-                </label>
+                  {t("Set as Primary / Main Flagship Store ")}</label>
               </div>
 
               <button
                 type="submit"
                 className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold cursor-pointer shadow-xs"
               >
-                {editingShopId ? 'Update Shop Branch' : '+ Register New Branch'}
+                {editingShopId ? t("Update Shop Branch") : t("+ Register New Branch")}
               </button>
             </form>
           </div>
 
           <div className="md:col-span-7 bg-white border border-amber-200/80 rounded-xl overflow-hidden p-4 space-y-3 shadow-xs">
             <span className="font-bold text-stone-900 text-xs uppercase block">
-              Configured Optical Branches ({shops.length})
+              {t("Configured Optical Branches (")}{shops.length})
             </span>
 
             <div className="space-y-2.5">
@@ -705,8 +693,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                         </span>
                         {s.isMain && (
                           <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded">
-                            Main Store
-                          </span>
+                            {t("Main Store ")}</span>
                         )}
                       </div>
                       <div className="text-[11px] text-stone-600 flex items-center gap-1">
@@ -718,8 +705,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                           <Phone className="w-3 h-3 text-stone-400" /> {s.phone}
                         </span>
                         <span className="text-amber-800 font-semibold">
-                          📦 {branchProductsCount} Inventory SKUs
-                        </span>
+                          📦 {branchProductsCount} {t("Inventory SKUs ")}</span>
                       </div>
                     </div>
 
@@ -727,7 +713,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       <button
                         onClick={() => handleEditShop(s)}
                         className="p-1.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 cursor-pointer"
-                        title="Edit Shop Branch"
+                        title={t("Edit Shop Branch")}
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
@@ -739,7 +725,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                             }
                           }}
                           className="p-1.5 bg-white hover:bg-rose-50 border border-stone-200 rounded text-stone-400 hover:text-rose-600 cursor-pointer"
-                          title="Delete Shop Branch"
+                          title={t("Delete Shop Branch")}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -759,7 +745,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           <div className="md:col-span-5 bg-white border border-amber-200/80 rounded-xl p-5 space-y-4 text-xs shadow-xs">
             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
               <span className="font-bold text-stone-900 uppercase">
-                {editingDoctorId ? 'Edit Doctor / Optometrist' : 'Add Doctor / Optometrist'}
+                {editingDoctorId ? t("Edit Doctor / Optometrist") : t("Add Doctor / Optometrist")}
               </span>
               {editingDoctorId && (
                 <button
@@ -771,18 +757,17 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   }}
                   className="text-stone-500 hover:text-stone-800 text-[11px]"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
               )}
             </div>
 
             <form onSubmit={handleCreateDoctor} className="space-y-3">
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Doctor / Optometrist Name *</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Doctor / Optometrist Name *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Dr. Jiya Sengupta / Dr. Ananya"
+                  placeholder={t("e.g. Dr. Jiya Sengupta / Dr. Ananya")}
                   value={docName}
                   onChange={(e) => setDocName(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-medium"
@@ -790,7 +775,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Qualifications</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Qualifications")}</label>
                 <input
                   type="text"
                   value={docQual}
@@ -800,10 +785,10 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Clinic / Hospital / Shop Attached</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Clinic / Hospital / Shop Attached")}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Jiya Eye Care Clinic / In-house"
+                  placeholder={t("e.g. Jiya Eye Care Clinic / In-house")}
                   value={docClinic}
                   onChange={(e) => setDocClinic(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -812,7 +797,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Mobile No</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Mobile No")}</label>
                   <input
                     type="tel"
                     placeholder="9811000000"
@@ -822,8 +807,8 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Comm. / Cut (%)</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Comm. / Cut (%)")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     max="50"
@@ -838,14 +823,14 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 type="submit"
                 className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold cursor-pointer shadow-xs"
               >
-                {editingDoctorId ? 'Save Doctor Changes' : '+ Register Doctor / Optometrist'}
+                {editingDoctorId ? t("Save Doctor Changes") : t("+ Register Doctor / Optometrist")}
               </button>
             </form>
           </div>
 
           <div className="md:col-span-7 bg-white border border-amber-200/80 rounded-xl overflow-hidden p-4 space-y-3 shadow-xs">
             <span className="font-bold text-stone-900 text-xs uppercase block">
-              Registered Doctors & Refractionists ({doctors.length})
+              {t("Registered Doctors & Refractionists (")}{doctors.length})
             </span>
 
             <div className="space-y-2">
@@ -863,12 +848,11 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
-                      {doc.commissionPercent}% Commission
-                    </span>
+                      {doc.commissionPercent}{t("% Commission ")}</span>
                     <button
                       onClick={() => handleEditDoctor(doc)}
                       className="p-1 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 cursor-pointer"
-                      title="Edit Doctor"
+                      title={t("Edit Doctor")}
                     >
                       <Edit className="w-3 h-3" />
                     </button>
@@ -879,7 +863,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                         }
                       }}
                       className="p-1 bg-white hover:bg-rose-50 border border-stone-200 rounded text-stone-400 hover:text-rose-600 cursor-pointer"
-                      title="Delete Doctor"
+                      title={t("Delete Doctor")}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -895,18 +879,15 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
       {activeTab === 'Users' && isCloud && (
         <div className="bg-white border border-amber-200/80 rounded-xl p-5 space-y-4 text-xs shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-bold text-stone-900 uppercase">Users who have signed in ({cloudUsers.length})</span>
+            <span className="font-bold text-stone-900 uppercase">{t("Users who have signed in (")}{cloudUsers.length})</span>
             <button
               onClick={() => goToTab('team')}
               className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer"
             >
-              Assign shops &amp; roles in Team &amp; Access →
-            </button>
+              {t("Assign shops &amp; roles in Team &amp; Access → ")}</button>
           </div>
           <p className="text-[11px] text-stone-500">
-            Rows fill in automatically when a person signs up with the email you assigned. Change their role and shops in
-            Team &amp; Access; the person edits their own name/username from the profile menu. Email is fixed.
-          </p>
+            {t("Rows fill in automatically when a person signs up with the email you assigned. Change their role and shops in Team &amp; Access; the person edits their own name/username from the profile menu. Email is fixed. ")}</p>
           {cloudUsersNote && <p className="text-amber-700 text-[11px]">{cloudUsersNote}</p>}
           <div className="space-y-2">
             {cloudUsers.map((u) => (
@@ -920,9 +901,9 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                     {u.username ? <span className="font-mono text-[10px] text-stone-400"> @{u.username}</span> : null}
                   </div>
                   <div className="text-[11px] text-stone-600">
-                    {u.isAdmin ? 'Admin' : u.role || 'Shop Manager'} •{' '}
+                    {u.isAdmin ? t("Admin") : u.role || 'Shop Manager'} •{' '}
                     {u.isAdmin
-                      ? 'All Branches'
+                      ? t("All Branches")
                       : u.shopIds.map((id) => shops.find((s) => s.id === id)?.name || 'Removed shop').join(', ') ||
                         'No shop'}
                   </div>
@@ -937,12 +918,12 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}
                 >
-                  {u.isAdmin ? 'Owner' : u.registered ? 'Signed up' : 'Not signed up yet'}
+                  {u.isAdmin ? t("Owner") : u.registered ? t("Signed up") : t("Not signed up yet")}
                 </span>
               </div>
             ))}
             {!cloudUsers.length && !cloudUsersNote && (
-              <p className="text-stone-500">No members yet. Assign someone a shop in Team &amp; Access.</p>
+              <p className="text-stone-500">{t("No members yet. Assign someone a shop in Team &amp; Access.")}</p>
             )}
           </div>
         </div>
@@ -953,18 +934,17 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-5 bg-white border border-amber-200/80 rounded-xl p-5 space-y-4 text-xs shadow-xs">
             <span className="font-bold text-stone-900 uppercase block">
-              {editingUserId ? 'Edit User' : 'Add User'}
+              {editingUserId ? t("Edit User") : t("Add User")}
             </span>
             <p className="text-[11px] text-stone-500">
-              These are the people who use this software. Team &amp; Access picks members from this list.
-            </p>
+              {t("These are the people who use this software. Team &amp; Access picks members from this list. ")}</p>
             <form onSubmit={handleSaveUser} className="space-y-3">
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Full Name *</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Full Name *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder={t("e.g. Rahul Sharma")}
                   value={uName}
                   onChange={(e) => setUName(e.target.value)}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -973,21 +953,21 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Username *</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Username *")}</label>
                   <input
                     type="text"
                     required
-                    placeholder="rahul_s1"
+                    placeholder={t("rahul_s1")}
                     value={uUsername}
                     onChange={(e) => setUUsername(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Login Email</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Login Email")}</label>
                   <input
                     type="email"
-                    placeholder="rahul@example.com"
+                    placeholder={t("rahul@example.com")}
                     value={uEmail}
                     onChange={(e) => setUEmail(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -995,32 +975,31 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                 </div>
               </div>
               <p className="text-[10px] text-stone-400 -mt-1.5">
-                Email is only needed for cloud team access — the member signs up with it.
-              </p>
+                {t("Email is only needed for cloud team access — the member signs up with it. ")}</p>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Role</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Role")}</label>
                   <select
                     value={uRole}
                     onChange={(e) => setURole(e.target.value as UserAccount['role'])}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   >
-                    <option value="Admin">Admin</option>
-                    <option value="Shop Manager">Shop Manager</option>
-                    <option value="Optometrist">Optometrist</option>
-                    <option value="Cashier">Cashier</option>
-                    <option value="Lab Technician">Lab Technician</option>
+                    <option value="Admin">{t("Admin")}</option>
+                    <option value="Shop Manager">{t("Shop Manager")}</option>
+                    <option value="Optometrist">{t("Optometrist")}</option>
+                    <option value="Cashier">{t("Cashier")}</option>
+                    <option value="Lab Technician">{t("Lab Technician")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Shop</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Shop")}</label>
                   <select
                     value={uShop}
                     onChange={(e) => setUShop(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   >
-                    <option value="all">All Branches</option>
+                    <option value="all">{t("All Branches")}</option>
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -1031,7 +1010,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Mobile No</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Mobile No")}</label>
                 <input
                   type="tel"
                   placeholder="9876543210"
@@ -1046,7 +1025,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                   type="submit"
                   className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold cursor-pointer"
                 >
-                  {editingUserId ? 'Save Changes' : '+ Add User'}
+                  {editingUserId ? t("Save Changes") : t("+ Add User")}
                 </button>
                 {editingUserId && (
                   <button
@@ -1054,15 +1033,14 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                     onClick={resetUserForm}
                     className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-bold cursor-pointer"
                   >
-                    Cancel
-                  </button>
+                    {t("Cancel ")}</button>
                 )}
               </div>
             </form>
           </div>
 
           <div className="md:col-span-7 bg-white border border-amber-200/80 rounded-xl overflow-hidden p-4 space-y-3 shadow-xs">
-            <span className="font-bold text-stone-900 text-xs uppercase block">User Directory ({users.length})</span>
+            <span className="font-bold text-stone-900 text-xs uppercase block">{t("User Directory (")}{users.length})</span>
             <div className="space-y-2">
               {users.map((u) => (
                 <div
@@ -1077,7 +1055,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       {u.role} • {shops.find((s) => s.id === u.shopId)?.name || 'All Branches'}
                     </div>
                     <div className="text-[10px] text-stone-500 truncate">
-                      {u.email ? `✉️ ${u.email}` : 'No login email set'} {u.phone ? ` • 📱 ${u.phone}` : ''}
+                      {u.email ? `✉️ ${u.email}` : t("No login email set")} {u.phone ? ` • 📱 ${u.phone}` : ''}
                     </div>
                   </div>
                   <button
@@ -1092,8 +1070,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                     }}
                     className="shrink-0 ml-2 px-2 py-1 rounded bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
                   >
-                    Edit
-                  </button>
+                    {t("Edit ")}</button>
                 </div>
               ))}
             </div>

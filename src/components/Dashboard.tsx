@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React from 'react';
 import { MonthlyRevenueChart } from './MonthlyRevenueChart';
 import { 
@@ -121,10 +122,10 @@ export const Dashboard: React.FC = () => {
   return (
     <div id="dashboard-main-container" className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Shop Selector & Role Header */}
-      <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="optical-dashboard-hero border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:items-start justify-between gap-5">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-800 shrink-0">
-            <Store className="w-5 h-5" />
+            <img src="/brand/logo.svg" alt="" className="w-10 h-10 rounded-xl" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -133,16 +134,17 @@ export const Dashboard: React.FC = () => {
               </h1>
               <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300/60 text-[11px] font-bold rounded-md">
                 {selectedShopFilter === 'all'
-                  ? 'All Branches'
+                  ? t("All Branches")
                   : shops.find((s) => s.id === selectedShopFilter)?.name || 'Branch'}
               </span>
             </div>
             <p className="text-stone-500 text-xs">
-              {currentUser.name} ({currentUser.role}) • {storeProfile.phone}
+              {currentUser.name} ({currentUser.role}){(shops.find(s=>s.id===selectedShopFilter)?.phone || shops[0]?.phone) ? ` · ${shops.find(s=>s.id===selectedShopFilter)?.phone || shops[0]?.phone}` : ''}
             </p>
           </div>
         </div>
 
+        <div className="optical-dashboard-intro"><span className="optical-eyebrow">YOUR PRACTICE, IN FOCUS</span><h2>Clear vision. Better care.</h2><p>Everything your optical practice needs, in one place.</p></div>
         {/* Branch Filter Switcher (If Admin) */}
         {shops.length > 0 && (
           <div className="flex items-center space-x-1 bg-white p-1 rounded-xl border border-stone-200 shadow-xs self-start md:self-auto overflow-x-auto max-w-full">
@@ -155,8 +157,7 @@ export const Dashboard: React.FC = () => {
                   : 'text-stone-600 hover:text-stone-950 hover:bg-stone-100'
               }`}
             >
-              All Branches
-            </button>
+              {t("All Branches ")}</button>
             {shops.map((shop) => (
               <button
                 key={shop.id}
@@ -186,7 +187,7 @@ export const Dashboard: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <UserPlus className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold text-stone-900">Client Entry</span>
+          <span className="text-xs font-bold text-stone-900">{t("Client Entry")}</span>
         </button>
 
         {/* Button 2: POS Bill */}
@@ -198,7 +199,7 @@ export const Dashboard: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-stone-950/10 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Receipt className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold">POS Bill</span>
+          <span className="text-xs font-bold">{t("POS Bill")}</span>
         </button>
 
         {/* Button 3: Eye Checkup */}
@@ -210,7 +211,7 @@ export const Dashboard: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-teal-100 border border-teal-300 text-teal-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Eye className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold text-stone-900">Eye Checkup</span>
+          <span className="text-xs font-bold text-stone-900">{t("Eye Checkup")}</span>
         </button>
 
         {/* Button 4: Inventory */}
@@ -222,7 +223,7 @@ export const Dashboard: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-stone-100 border border-stone-300 text-stone-800 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <Package className="w-5 h-5" />
           </div>
-          <span className="text-xs font-bold text-stone-900">Inventory</span>
+          <span className="text-xs font-bold text-stone-900">{t("Inventory")}</span>
         </button>
 
         {/* Button 5: Follow-ups */}
@@ -239,7 +240,7 @@ export const Dashboard: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-xs font-bold text-stone-900">Follow-ups</span>
+          <span className="text-xs font-bold text-stone-900">{t("Follow-ups")}</span>
         </button>
       </div>
 
@@ -249,14 +250,13 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center space-x-2.5">
             <Bell className="w-4 h-4 text-amber-800 shrink-0" />
             <span className="text-xs text-stone-800 font-medium">
-              <strong className="text-stone-900 font-bold">{dueFollowupsToday.length} Follow-ups Due</strong> ({dueFollowupsToday[0]?.customerName} & others)
-            </span>
+              <strong className="text-stone-900 font-bold">{dueFollowupsToday.length} {t("Follow-ups Due")}</strong> ({dueFollowupsToday[0]?.customerName} {t("& others) ")}</span>
           </div>
           <button
             onClick={() => setActiveTab('followups')}
             className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-lg text-xs flex items-center space-x-1 transition-colors cursor-pointer shrink-0"
           >
-            <span>View</span>
+            <span>{t("View")}</span>
             <ChevronRight className="w-3 h-3" />
           </button>
         </div>
@@ -267,7 +267,7 @@ export const Dashboard: React.FC = () => {
         {/* Card 1: Today Sales */}
         <div className="bg-white border border-stone-200 rounded-xl p-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">Today Sales</span>
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">{t("Today Sales")}</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
               <TrendingUp className="w-3.5 h-3.5" />
             </div>
@@ -276,14 +276,13 @@ export const Dashboard: React.FC = () => {
             ₹{todaySalesTotal.toLocaleString('en-IN')}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5">
-            {todayInvoices.length} Bills
-          </div>
+            {todayInvoices.length} {t("Bills ")}</div>
         </div>
 
         {/* Card 2: Cash in Hand */}
         <div className="bg-white border border-stone-200 rounded-xl p-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">Net cash today</span>
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">{t("Net cash today")}</span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
               <Wallet className="w-3.5 h-3.5" />
             </div>
@@ -292,9 +291,9 @@ export const Dashboard: React.FC = () => {
             ₹{netCashInHandEstimate.toLocaleString('en-IN')}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5 flex items-center space-x-2">
-            <span>Cash: ₹{todayCashSales}</span>
+            <span>{t("Cash: ₹")}{todayCashSales}</span>
             <span>•</span>
-            <span>UPI: ₹{todayUpiSales}</span>
+            <span>{t("UPI: ₹")}{todayUpiSales}</span>
           </div>
         </div>
 
@@ -304,17 +303,16 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-stone-200 rounded-xl p-3.5 shadow-xs hover:border-amber-400 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Active Orders</span>
+            <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">{t("Active Orders")}</span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-xl font-bold text-stone-900 mt-1">
-            {pendingOrders.length} Orders
-          </div>
+            {pendingOrders.length} {t("Orders ")}</div>
           <div className="text-[11px] text-stone-500 mt-0.5 flex items-center justify-between">
-            <span>Ready: {readyForDeliveryInvoices.length}</span>
-            <span className="text-amber-700 font-semibold group-hover:underline">POS Bill →</span>
+            <span>{t("Ready: ")}{readyForDeliveryInvoices.length}</span>
+            <span className="text-amber-700 font-semibold group-hover:underline">{t("POS Bill →")}</span>
           </div>
         </div>
 
@@ -324,7 +322,7 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-stone-200 rounded-xl p-3.5 shadow-xs hover:border-rose-300 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-rose-700 uppercase tracking-wider">Khata Dues</span>
+            <span className="text-[11px] font-semibold text-rose-700 uppercase tracking-wider">{t("Khata Dues")}</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-700">
               <Users className="w-3.5 h-3.5" />
             </div>
@@ -333,8 +331,8 @@ export const Dashboard: React.FC = () => {
             ₹{totalCustomerDues.toLocaleString('en-IN')}
           </div>
           <div className="text-[11px] text-stone-500 mt-0.5 flex items-center justify-between">
-            <span>Pending Balance</span>
-            <span className="text-rose-700 font-semibold group-hover:underline">View →</span>
+            <span>{t("Pending Balance")}</span>
+            <span className="text-rose-700 font-semibold group-hover:underline">{t("View →")}</span>
           </div>
         </div>
       </div>
@@ -348,21 +346,20 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4 text-amber-700" />
                 <h2 className="text-sm font-bold text-stone-900">
-                  Active Customer Orders ({pendingOrders.length})
+                  {t("Active Customer Orders (")}{pendingOrders.length})
                 </h2>
               </div>
               <button
                 onClick={() => setActiveTab('billing')}
                 className="text-xs text-amber-800 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
               >
-                + New Bill <ArrowRight className="w-3 h-3" />
+                {t("+ New Bill ")}<ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
             {pendingOrders.length === 0 ? (
               <div className="p-6 text-center text-stone-500 text-xs bg-stone-50 rounded-lg border border-stone-200">
-                No active orders pending fitting or delivery.
-              </div>
+                {t("No active orders pending fitting or delivery. ")}</div>
             ) : (
               <div className="space-y-2">
                 {pendingOrders.map((inv) => (
@@ -379,9 +376,9 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-[11px] text-stone-500 flex flex-wrap gap-2">
-                        <span>Items: {inv.items.map((i) => i.name).join(' + ')}</span>
-                        <span>• Target: <strong className="text-stone-700">{inv.deliveryDate || 'Today'}</strong></span>
-                        <span>• Due: <strong className={inv.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-700'}>₹{inv.balanceDue}</strong></span>
+                        <span>{t("Items: ")}{inv.items.map((i) => i.name).join(' + ')}</span>
+                        <span>{t("• Target: ")}<strong className="text-stone-700">{inv.deliveryDate || 'Today'}</strong></span>
+                        <span>{t("• Due: ")}<strong className={inv.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-700'}>₹{inv.balanceDue}</strong></span>
                       </div>
                     </div>
 
@@ -391,29 +388,26 @@ export const Dashboard: React.FC = () => {
                           onClick={() => handleQuickStatusChange(inv, 'Fitting Done')}
                           className="px-2.5 py-1 bg-teal-700 hover:bg-teal-800 text-white rounded-md text-[11px] font-semibold cursor-pointer"
                         >
-                          Mark Fitting Done
-                        </button>
+                          {t("Mark Fitting Done ")}</button>
                       )}
                       {inv.orderStatus === 'Fitting Done' && (
                         <button
                           onClick={() => handleQuickStatusChange(inv, 'Ready for Delivery')}
                           className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md text-[11px] font-semibold cursor-pointer"
                         >
-                          Ready For Delivery
-                        </button>
+                          {t("Ready For Delivery ")}</button>
                       )}
                       {inv.orderStatus === 'Ready for Delivery' && (
                         <button
                           onClick={() => handleQuickStatusChange(inv, 'Delivered')}
                           className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-md text-[11px] font-semibold cursor-pointer"
                         >
-                          Mark Delivered
-                        </button>
+                          {t("Mark Delivered ")}</button>
                       )}
                       <button
                         onClick={() => openWhatsAppShare(inv)}
                         className="p-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded-md cursor-pointer"
-                        title="WhatsApp"
+                        title={t("WhatsApp")}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                       </button>
@@ -430,20 +424,18 @@ export const Dashboard: React.FC = () => {
           <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-                Low Stock ({lowStockItems.length})
+                {t("Low Stock (")}{lowStockItems.length})
               </span>
               <button
                 onClick={() => setActiveTab('inventory')}
                 className="text-xs text-amber-800 hover:underline font-semibold cursor-pointer"
               >
-                Manage
-              </button>
+                {t("Manage ")}</button>
             </div>
 
             {lowStockItems.length === 0 ? (
               <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 text-center">
-                Stock levels are adequate.
-              </p>
+                {t("Stock levels are adequate. ")}</p>
             ) : (
               <div className="space-y-2">
                 {lowStockItems.slice(0, 4).map((p) => (
@@ -456,8 +448,7 @@ export const Dashboard: React.FC = () => {
                       <div className="text-stone-500 text-[10px]">{shops.find(s=>s.id===p.shopId)?.name || 'Unallocated'} · {p.modelNo}</div>
                     </div>
                     <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold rounded text-[11px]">
-                      {p.stockQty} left
-                    </span>
+                      {p.stockQty} {t("left ")}</span>
                   </div>
                 ))}
               </div>
@@ -466,7 +457,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
       <MonthlyRevenueChart />
-      {currentUser.role === 'Admin' && <div className="flex flex-wrap gap-3"><button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-600 hover:text-amber-700" onClick={() => setActiveTab('shops')}>Manage shops</button><button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-600 hover:text-amber-700" onClick={() => setActiveTab('team')}>Team & access</button></div>}
     </div>
   );
 };

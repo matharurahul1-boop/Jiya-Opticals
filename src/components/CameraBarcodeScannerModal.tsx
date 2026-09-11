@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import type { IScannerControls } from '@zxing/browser';
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, X, Check, Scan, AlertCircle, RefreshCw } from 'lucide-react';
@@ -92,8 +93,8 @@ export const CameraBarcodeScannerModal: React.FC = () => {
               <Scan className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h3 className="font-bold text-stone-100 text-base">Barcode Scanner</h3>
-              <p className="text-xs text-stone-400">Align barcode or frame tag inside the frame</p>
+              <h3 className="font-bold text-stone-100 text-base">{t("Barcode Scanner")}</h3>
+              <p className="text-xs text-stone-400">{t("Align barcode or frame tag inside the frame")}</p>
             </div>
           </div>
           <button
@@ -118,12 +119,11 @@ export const CameraBarcodeScannerModal: React.FC = () => {
             <div className="text-center p-6 space-y-3">
               <Camera className="w-12 h-12 text-stone-600 mx-auto animate-bounce" />
               <p className="text-sm text-stone-300">
-                {cameraError ? cameraError : 'Initializing camera feed...'}
+                {cameraError ? cameraError : t("Initializing camera feed...")}
               </p>
               <p className="text-xs text-stone-400">
-                You can also use manual entry or a USB barcode/QR scanner.
-              </p>
-              {cameraError && <button className="underline" onClick={() => setRetryCamera(n=>n+1)}>Retry camera</button>}
+                {t("You can also use manual entry or a USB barcode/QR scanner. ")}</p>
+              {cameraError && <button className="underline" onClick={() => setRetryCamera(n=>n+1)}>{t("Retry camera")}</button>}
             </div>
           )}
 
@@ -154,7 +154,7 @@ export const CameraBarcodeScannerModal: React.FC = () => {
             <input
               id="input-manual-barcode"
               type="text"
-              placeholder="Enter / scan barcode number..."
+              placeholder={t("Enter / scan barcode number...")}
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               className="flex-1 px-3.5 py-2.5 bg-stone-900 border border-stone-700 rounded-xl text-stone-100 placeholder-stone-400 text-sm focus:outline-none focus:border-amber-400"
@@ -167,15 +167,14 @@ export const CameraBarcodeScannerModal: React.FC = () => {
               className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-stone-950 font-bold rounded-xl text-sm flex items-center space-x-1.5 transition-colors"
             >
               <Check className="w-4 h-4" />
-              <span>Apply</span>
+              <span>{t("Apply")}</span>
             </button>
           </form>
 
           {/* Quick Demo Test Buttons */}
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
-              Quick Scan Available Inventory:
-            </div>
+              {t("Quick Scan Available Inventory: ")}</div>
             <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1">
               {shopProducts.slice(0, 8).map((p) => (
                 <button

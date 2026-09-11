@@ -1,34 +1,19 @@
 @import "tailwindcss";
 
-/*
-  ============================================================
-  BOLD REDESIGN — global palette remap
-  ------------------------------------------------------------
-  The whole app is styled with hard-coded `amber-*` (brand) and
-  `stone-*` (neutral) Tailwind utilities. Instead of touching
-  2000+ class names, we re-point those two colour ramps here:
-
-    amber  ->  violet / indigo  (modern primary)
-    stone  ->  slate            (cool neutral)
-
-  Every existing `bg-amber-600`, `text-stone-700`, etc. instantly
-  picks up the new look. Semantic accents (teal / emerald / rose /
-  sky) are left alone on purpose.
-  ============================================================
-*/
+/* Optical studio palette: deep navy, sea green and clear white surfaces. */
 @theme {
   /* Primary brand ramp (was amber) */
-  --color-amber-50:  #f5f3ff;
-  --color-amber-100: #ede9fe;
-  --color-amber-200: #ddd6fe;
-  --color-amber-300: #c4b5fd;
-  --color-amber-400: #a78bfa;
-  --color-amber-500: #8b5cf6;
-  --color-amber-600: #7c3aed;
-  --color-amber-700: #6d28d9;
-  --color-amber-800: #5b21b6;
-  --color-amber-900: #4c1d95;
-  --color-amber-950: #2e1065;
+  --color-amber-50:  #effbf8;
+  --color-amber-100: #d8f4ed;
+  --color-amber-200: #b4e8dc;
+  --color-amber-300: #7bd5c2;
+  --color-amber-400: #3ebba6;
+  --color-amber-500: #16a18e;
+  --color-amber-600: #078574;
+  --color-amber-700: #096b60;
+  --color-amber-800: #10574f;
+  --color-amber-900: #124840;
+  --color-amber-950: #082c29;
 
   /* Neutral ramp (was stone) */
   --color-stone-50:  #f8fafc;
@@ -44,9 +29,9 @@
   --color-stone-950: #020617;
 
   /* App surface tokens (referenced by components) */
-  --color-app-bg:      #eef1f7;
+  --color-app-bg:      #f4f8f8;
   --color-app-surface: #ffffff;
-  --color-app-rail:    #f4f6fb;
+  --color-app-rail:    #f8fbfb;
 
   --radius-xl: 0.9rem;
   --radius-2xl: 1.15rem;
@@ -56,6 +41,41 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Optical studio identity. Replace public/brand/logo.svg to update the mark. */
+.optical-eyebrow { display:block; font-size:10px; font-weight:700; letter-spacing:.2em; color:#39726a; }
+.optical-auth { min-height:100dvh; display:grid; grid-template-columns:1.1fr 1fr; background:#fcfcf9; padding:20px; gap:20px; }
+.optical-auth-story { min-height:720px; border-radius:28px; padding:44px; position:relative; overflow:hidden; display:flex; flex-direction:column; background:#d4e4dd url('/brand/optical-studio.png') center/cover no-repeat; }
+.optical-auth-story::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(229,241,234,.88),rgba(229,241,234,.35) 48%,transparent 70%); }
+.optical-auth-story>* {position:relative;z-index:1;}
+.optical-brand {display:flex;align-items:center;gap:14px;color:#103d39;}
+.optical-brand img {width:48px;height:48px;}
+.optical-brand strong {display:block;letter-spacing:.13em;font-size:16px;}
+.optical-brand span {display:block;font-size:9px;letter-spacing:.16em;margin-top:5px;}
+.optical-story-copy {margin-top:76px;max-width:530px;}
+.optical-story-copy h1 {font-size:clamp(36px,3.7vw,60px);line-height:1.1;letter-spacing:-.045em;color:#113c37;font-weight:500;margin:20px 0;}
+.optical-story-copy p {font-size:15px;line-height:1.8;color:#365c56;}
+.optical-story-footer {margin-top:auto;display:flex;justify-content:space-between;gap:12px;font-size:9px;letter-spacing:.12em;color:#214e47;padding-top:100px;}
+.optical-auth-panel {display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 32px;}
+.optical-auth-form {width:100%;max-width:400px;display:flex;flex-direction:column;gap:22px;}
+.auth-logo {width:52px;height:52px;margin-bottom:10px;}
+.optical-auth-form h2 {font-size:36px;line-height:1.1;letter-spacing:-.04em;color:#123d38;font-weight:600;}
+.auth-intro {font-size:14px;line-height:1.7;color:#70807b;margin-top:-10px;}
+.optical-auth-form label {font-size:12px;font-weight:600;color:#304d48;}
+.optical-auth-form input {margin-top:8px;min-height:48px;padding:12px 14px;background:#fff;border:1px solid #d9e3dd;border-radius:10px;outline:none;font-size:14px;font-weight:400;}
+.optical-auth-form input:focus {border-color:#378579;box-shadow:0 0 0 3px #deeee7;}
+.optical-auth-form button[type=button] {font-size:12px;text-decoration:none;}
+.optical-auth-form button:not([type=button]) {border-radius:10px;min-height:48px;font-size:14px;font-weight:600;background:#0d5750;box-shadow:0 5px 12px #124b4015;}
+.auth-footnote {margin-top:60px;font-size:10px;color:#84938d;letter-spacing:.04em;}
+.auth-footnote span {margin:0 8px;}
+.optical-dashboard-hero {background:#e5f0e9;position:relative;isolation:isolate;overflow:hidden;min-height:270px;}
+.optical-dashboard-hero::before {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#e5f0e9 0%,#e5f0e9 40%,transparent 80%),url('/brand/optical-studio.png') right 59%/60% auto no-repeat;}
+.optical-dashboard-intro h2 {font-size:clamp(24px,2.5vw,34px);font-weight:500;letter-spacing:-.04em;line-height:1.2;color:#183f38;margin:8px 0;}
+.optical-dashboard-intro p {font-size:12px;color:#53746b;}
+@media(min-width:1024px) {#dashboard-main-container {max-width:1600px;} aside nav button {min-height:42px;} main {background-image:radial-gradient(ellipse at top right,#dfede555,transparent 55%);} }
+@media(max-width:900px) {.optical-auth {grid-template-columns:1fr;padding:12px;gap:0;}.optical-auth-story {min-height:250px;padding:25px;background-position:center 62%;}.optical-story-copy {margin-top:28px;}.optical-story-copy h1 {font-size:30px;}.optical-story-copy p,.optical-story-footer {display:none;}.optical-auth-panel {padding:36px 20px;}.auth-logo {display:none;}.auth-footnote {margin-top:30px;}}
+@media(max-width:640px) {.optical-dashboard-hero::before {opacity:.22;background-size:cover;}.optical-dashboard-hero {min-height:240px;}.optical-dashboard-hero h1 {font-size:18px;}}
+@media print {.optical-dashboard-hero::before {display:none;}}
 
 body {
   background-color: var(--color-app-bg);

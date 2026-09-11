@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n';
+import { NumberInput } from './NumberInput';
 import React, { useState, useRef } from 'react';
 import {
   AlertTriangle,
@@ -154,8 +156,8 @@ export const InventoryManager: React.FC = () => {
       mrp: 0,
       salePrice: 0,
       gstRate: 12,
-      stockQty: 10,
-      minStockAlert: 3,
+      stockQty: 0,
+      minStockAlert: 0,
       location: 'Rack A-1',
       shopId: defaultAllocationShop()
     });
@@ -277,12 +279,13 @@ export const InventoryManager: React.FC = () => {
       const frameType = cols[5] || 'Full Rim';
       const size = cols[6] || '';
       const hsnCode = cols[7] || '90031100';
-      const purchasePrice = parseFloat(cols[8]) || 500;
-      const mrp = parseFloat(cols[9]) || purchasePrice * 2;
-      const salePrice = parseFloat(cols[10]) || mrp * 0.9;
-      const gstRate = parseInt(cols[11], 10) || 12;
-      const stockQty = parseInt(cols[12], 10) || 10;
-      const minStockAlert = parseInt(cols[13], 10) || 3;
+      const purchasePrice = Number(cols[8] || 0);
+      const mrp = Number(cols[9] || 0);
+      const salePrice = Number(cols[10] || 0);
+      const gstRate = Number(cols[11] || 0);
+      const stockQty = Number(cols[12] || 0);
+      const minStockAlert = Number(cols[13] || 0);
+      if([purchasePrice,mrp,salePrice,gstRate,stockQty,minStockAlert].some(v=>!Number.isFinite(v)||v<0)||!Number.isInteger(stockQty)||!Number.isInteger(minStockAlert)){alert('Invalid numeric value in CSV row '+(i+1));setParsedImportItems([]);return;}
       const location = cols[14] || 'Rack 1';
       const barcode = cols[15] && cols[15].length > 4 ? cols[15] : `890${Math.floor(100000000 + Math.random() * 900000000)}`;
 
@@ -402,8 +405,8 @@ export const InventoryManager: React.FC = () => {
             <ScanLine className="w-4.5 h-4.5" />
           </span>
           <span>
-            <span className="block text-sm font-bold text-stone-900">Drishti Desktop Sync</span>
-            <span className="block text-xs text-stone-500">Import items & QR codes from the Drishti software · open setup</span>
+            <span className="block text-sm font-bold text-stone-900">{t("Drishti Desktop Sync")}</span>
+            <span className="block text-xs text-stone-500">{t("Import items & QR codes from the Drishti software · open setup")}</span>
           </span>
         </span>
         <ChevronRight className="w-4 h-4 text-stone-400" />
@@ -416,11 +419,9 @@ export const InventoryManager: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              Item Master & Material Inventory
-            </h1>
+              {t("Item Master & Material Inventory ")}</h1>
             <p className="text-xs text-stone-500">
-              One material catalogue. Separate stock, purchases and sales for each shop.
-            </p>
+              {t("One material catalogue. Separate stock, purchases and sales for each shop. ")}</p>
           </div>
         </div>
 
@@ -429,19 +430,19 @@ export const InventoryManager: React.FC = () => {
             onClick={() => setShowImportModal(true)}
             disabled={currentUser.role!=='Admin'}
             className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-stone-300 cursor-pointer shadow-xs"
-            title="Import materials via CSV / Excel"
+            title={t("Import materials via CSV / Excel")}
           >
             <Upload className="w-3.5 h-3.5 text-amber-700" />
-            <span>Import CSV</span>
+            <span>{t("Import CSV")}</span>
           </button>
 
           <button
             onClick={handleExportInventoryCSV}
             className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-stone-300 cursor-pointer shadow-xs"
-            title="Export full inventory to Excel/CSV"
+            title={t("Export full inventory to Excel/CSV")}
           >
             <Download className="w-3.5 h-3.5 text-stone-600" />
-            <span>Export CSV</span>
+            <span>{t("Export CSV")}</span>
           </button>
 
           <button
@@ -449,8 +450,7 @@ export const InventoryManager: React.FC = () => {
             disabled={currentUser.role!=='Admin'}
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Create Material
-          </button>
+            <Plus className="w-4 h-4" /> {t("Create Material ")}</button>
         </div>
       </div>
 
@@ -458,13 +458,13 @@ export const InventoryManager: React.FC = () => {
       <div className="bg-amber-50/70 border border-amber-200 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <Store className="w-4 h-4 text-amber-800 shrink-0" />
-          <span className="font-bold text-stone-800">Branch Stock View:</span>
+          <span className="font-bold text-stone-800">{t("Branch Stock View:")}</span>
           <select
             value={inventoryShopFilter}
             onChange={(e) => setInventoryShopFilter(e.target.value)}
             className="bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 font-bold text-stone-900 outline-none focus:border-amber-600"
           >
-            <option value="all">🏢 All Shops & Warehouses (Consolidated)</option>
+            <option value="all">{t("🏢 All Shops & Warehouses (Consolidated)")}</option>
             {shops.map((s) => (
               <option key={s.id} value={s.id}>
                 📍 {s.name} ({s.city})
@@ -474,10 +474,10 @@ export const InventoryManager: React.FC = () => {
         </div>
 
         <div className="text-[11px] text-stone-600">
-          Showing <span className="font-bold text-stone-900">{materialGroups.length}</span> materials in{' '}
+          {t("Showing ")}<span className="font-bold text-stone-900">{materialGroups.length}</span> {t("materials in")}{' '}
           <span className="font-bold text-amber-800">
             {inventoryShopFilter === 'all'
-              ? 'All Branches'
+              ? t("All Branches")
               : shops.find((s) => s.id === inventoryShopFilter)?.name}
           </span>
         </div>
@@ -486,19 +486,19 @@ export const InventoryManager: React.FC = () => {
       {/* Stock Valuation Summary Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-stone-500">Unique SKUs</span>
-          <div className="text-xl font-bold text-stone-900 mt-1">{materialGroups.length} Materials</div>
+          <span className="text-[10px] uppercase font-bold text-stone-500">{t("Unique SKUs")}</span>
+          <div className="text-xl font-bold text-stone-900 mt-1">{materialGroups.length} {t("Materials")}</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-stone-500">Physical Stock</span>
-          <div className="text-xl font-bold text-amber-800 mt-1">{totalStockCount} Units</div>
+          <span className="text-[10px] uppercase font-bold text-stone-500">{t("Physical Stock")}</span>
+          <div className="text-xl font-bold text-amber-800 mt-1">{totalStockCount} {t("Units")}</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-stone-500">Cost Valuation</span>
+          <span className="text-[10px] uppercase font-bold text-stone-500">{t("Cost Valuation")}</span>
           <div className="text-xl font-bold text-stone-800 mt-1">₹{totalStockValuation.toLocaleString('en-IN')}</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-stone-500">Retail Value</span>
+          <span className="text-[10px] uppercase font-bold text-stone-500">{t("Retail Value")}</span>
           <div className="text-xl font-bold text-emerald-700 mt-1">₹{totalRetailValuation.toLocaleString('en-IN')}</div>
         </div>
       </div>
@@ -514,7 +514,7 @@ export const InventoryManager: React.FC = () => {
                 : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
             }`}
           >
-            All ({materialGroups.length})
+            {t("All (")}{materialGroups.length})
           </button>
           {categories.map((cat) => (
             <button
@@ -541,14 +541,14 @@ export const InventoryManager: React.FC = () => {
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
-            Low Stock ({lowStockCount})
+            {t("Low Stock (")}{lowStockCount})
           </button>
 
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search name, brand, barcode..."
+              placeholder={t("Search name, brand, barcode...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-48 sm:w-60 bg-stone-50 border border-stone-300 text-xs rounded-lg pl-8 pr-3 py-1.5 text-stone-900 outline-none focus:border-amber-600"
@@ -563,15 +563,15 @@ export const InventoryManager: React.FC = () => {
           <table className="w-full text-left text-xs text-stone-700">
             <thead className="bg-stone-100 text-stone-700 uppercase text-[10px] font-bold border-b border-stone-200">
               <tr>
-                <th className="py-2.5 px-3">Material / Item Details</th>
-                <th className="py-2.5 px-2">Category</th>
-                <th className="py-2.5 px-2">Barcode</th>
-                <th className="py-2.5 px-2">Shop Branch</th>
-                <th className="py-2.5 px-2 text-right">Cost (₹)</th>
-                <th className="py-2.5 px-2 text-right">Sale (₹)</th>
-                <th className="py-2.5 px-2 text-center">GST</th>
-                <th className="py-2.5 px-2 text-center">Stock</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
+                <th className="py-2.5 px-3">{t("Material / Item Details")}</th>
+                <th className="py-2.5 px-2">{t("Category")}</th>
+                <th className="py-2.5 px-2">{t("Barcode")}</th>
+                <th className="py-2.5 px-2">{t("Shop Branch")}</th>
+                <th className="py-2.5 px-2 text-right">{t("Cost (₹)")}</th>
+                <th className="py-2.5 px-2 text-right">{t("Sale (₹)")}</th>
+                <th className="py-2.5 px-2 text-center">{t("GST")}</th>
+                <th className="py-2.5 px-2 text-center">{t("Stock")}</th>
+                <th className="py-2.5 px-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-200">
@@ -582,22 +582,22 @@ export const InventoryManager: React.FC = () => {
                   <td className="px-2 text-xs text-stone-500">{p.category}</td>
                   <td className="px-2 font-mono text-xs">{p.barcode}</td>
                   <td className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
-                    <button onClick={()=>handleOpenStockAdjust(row)} className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 hover:border-amber-400" title="Adjust this shop's stock">
+                    <button onClick={()=>handleOpenStockAdjust(row)} className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 hover:border-amber-400" title={t("Adjust this shop's stock")}>
                       <span className="text-xs whitespace-nowrap">{(shops.find(s=>s.id===row.shopId)?.name || 'Unallocated').split(' - ')[0]}</span><strong className={isLowStockRow(row)?'text-rose-600':row.stockQty===0?'text-stone-400':'text-emerald-700'}>{row.stockQty}</strong>
                     </button>
-                    <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30" title="Transfer from this shop"><ArrowLeftRight className="w-4 h-4"/></button>
+                    <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30" title={t("Transfer from this shop")}><ArrowLeftRight className="w-4 h-4"/></button>
                   </div>)}</div></td>
-                  <td className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:'Shop-wise'}</td>
-                  <td className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:'Varies'}</td>
+                  <td className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:t("Shop-wise")}</td>
+                  <td className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:t("Varies")}</td>
                   <td className="px-2 text-center">{p.gstRate}%</td>
-                  <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">TOTAL UNITS</span></td>
+                  <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
-                    <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title="Print material code"><Tag className="w-4 h-4"/></button>
-                    {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title="Edit shared material"><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title="Delete material"><Trash2 className="w-4 h-4"/></button></>}
+                    <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>
+                    {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
                   </td>
                 </tr>;
               })}
-              {materialGroups.length===0 && <tr><td colSpan={9} className="p-12 text-center text-stone-500">No materials yet. Create a material once to make it available in every shop.</td></tr>}
+              {materialGroups.length===0 && <tr><td colSpan={9} className="p-12 text-center text-stone-500">{t("No materials yet. Create a material once to make it available in every shop.")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -610,15 +610,15 @@ export const InventoryManager: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <Package className="w-4 h-4 text-amber-600" />
-                {editingProduct ? 'Edit Master Material' : 'Create New Material / Item'}
+                {editingProduct ? t("Edit Master Material") : t("Create New Material / Item")}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer text-base">✕</button>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-3 text-xs"><p className="bg-amber-50 text-amber-800 rounded-xl p-3 leading-relaxed">Material details and selling price are shared across shops. Opening quantity, cost and rack belong to the selected shop.</p>
+            <form onSubmit={handleSubmitForm} className="space-y-3 text-xs"><p className="bg-amber-50 text-amber-800 rounded-xl p-3 leading-relaxed">{t("Material details and selling price are shared across shops. Opening quantity, cost and rack belong to the selected shop.")}</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Category *</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Category *")}</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
@@ -631,7 +631,7 @@ export const InventoryManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Opening stock shop *</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Opening stock shop *")}</label>
                   <select
                     disabled={!!editingProduct && shops.some(s=>s.id===editingProduct.shopId)} value={formData.shopId || shops[0]?.id || ''}
                     onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
@@ -646,7 +646,7 @@ export const InventoryManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Barcode / SKU *</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Barcode / SKU *")}</label>
                   <input
                     type="text"
                     required
@@ -658,11 +658,11 @@ export const InventoryManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1 font-semibold">Material / Product Title *</label>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Material / Product Title *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Ray-Ban Aviator Classic Green G-15"
+                  placeholder={t("e.g. Ray-Ban Aviator Classic Green G-15")}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-medium"
@@ -671,30 +671,30 @@ export const InventoryManager: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Brand / Manufacturer</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Brand / Manufacturer")}</label>
                   <input
                     type="text"
-                    placeholder="Ray-Ban, Titan, Zeiss..."
+                    placeholder={t("Ray-Ban, Titan, Zeiss...")}
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Model / Article No.</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Model / Article No.")}</label>
                   <input
                     type="text"
-                    placeholder="RB-3025 / 1.56 HMC"
+                    placeholder={t("RB-3025 / 1.56 HMC")}
                     value={formData.modelNo}
                     onChange={(e) => setFormData({ ...formData, modelNo: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Color / Shade</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Color / Shade")}</label>
                   <input
                     type="text"
-                    placeholder="Matte Black / Clear"
+                    placeholder={t("Matte Black / Clear")}
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -704,30 +704,30 @@ export const InventoryManager: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Frame Type</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Frame Type")}</label>
                   <select
                     value={formData.frameType}
                     onChange={(e) => setFormData({ ...formData, frameType: e.target.value as any })}
                     className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900"
                   >
-                    <option value="Full Rim">Full Rim</option>
-                    <option value="Half Rim">Half Rim (Supra)</option>
-                    <option value="Rimless">Rimless</option>
-                    <option value="N/A">N/A (Lens / Accessory)</option>
+                    <option value="Full Rim">{t("Full Rim")}</option>
+                    <option value="Half Rim">{t("Half Rim (Supra)")}</option>
+                    <option value="Rimless">{t("Rimless")}</option>
+                    <option value="N/A">{t("N/A (Lens / Accessory)")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Size Specs / Base Curve</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Size Specs / Base Curve")}</label>
                   <input
                     type="text"
-                    placeholder="52-18-140 / 8.5 BC"
+                    placeholder={t("52-18-140 / 8.5 BC")}
                     value={formData.size}
                     onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">HSN Code</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("HSN Code")}</label>
                   <input
                     type="text"
                     value={formData.hsnCode}
@@ -739,8 +739,8 @@ export const InventoryManager: React.FC = () => {
 
               <div className="grid grid-cols-4 gap-3 bg-stone-50 p-3 rounded-lg border border-stone-200">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Purchase Price (₹)</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Purchase Price (₹)")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     placeholder="0"
@@ -750,8 +750,8 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">MRP (₹)</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("MRP (₹)")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     placeholder="0"
@@ -761,8 +761,8 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Sale Price (₹)</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Sale Price (₹)")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     placeholder="0"
@@ -772,7 +772,7 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">GST %</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("GST %")}</label>
                   <select
                     value={formData.gstRate}
                     onChange={(e) => setFormData({ ...formData, gstRate: Number(e.target.value) })}
@@ -780,8 +780,8 @@ export const InventoryManager: React.FC = () => {
                   >
                     <option value={0}>0%</option>
                     <option value={5}>5%</option>
-                    <option value={12}>12% (Frames & Lenses)</option>
-                    <option value={18}>18% (Sunglasses & Care)</option>
+                    <option value={12}>{t("12% (Frames & Lenses)")}</option>
+                    <option value={18}>{t("18% (Sunglasses & Care)")}</option>
                     <option value={28}>28%</option>
                   </select>
                 </div>
@@ -789,8 +789,8 @@ export const InventoryManager: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Initial Stock Qty</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Initial Stock Qty")}</label>
+                  <NumberInput
                     type="number"
                     min="0"
                     value={formData.stockQty}
@@ -799,8 +799,8 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Low Stock Alert</label>
-                  <input
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Low Stock Alert")}</label>
+                  <NumberInput
                     type="number"
                     min="1"
                     value={formData.minStockAlert}
@@ -809,10 +809,10 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">Rack / Shelf Location</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Rack / Shelf Location")}</label>
                   <input
                     type="text"
-                    placeholder="Rack A-1, Drawer 3"
+                    placeholder={t("Rack A-1, Drawer 3")}
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -826,13 +826,12 @@ export const InventoryManager: React.FC = () => {
                   onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  {editingProduct ? 'Save Changes' : 'Create Material'}
+                  {editingProduct ? t("Save Changes") : t("Create Material")}
                 </button>
               </div>
             </form>
@@ -847,21 +846,20 @@ export const InventoryManager: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <ArrowLeftRight className="w-4 h-4 text-amber-700" />
-                Inter-Branch Stock Transfer
-              </h4>
+                {t("Inter-Branch Stock Transfer ")}</h4>
               <button onClick={() => setTransferProduct(null)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
             <div className="bg-stone-50 p-3 rounded-lg text-xs border border-stone-200 space-y-1">
               <div className="font-bold text-stone-900">{transferProduct.name}</div>
               <div className="text-[11px] text-stone-500">
-                Current Location: <span className="font-bold text-stone-800">{shops.find(s => s.id === transferProduct.shopId)?.name || 'All Branches'}</span> • Current Stock: <span className="font-bold text-amber-800">{transferProduct.stockQty} units</span>
+                {t("Current Location: ")}<span className="font-bold text-stone-800">{shops.find(s => s.id === transferProduct.shopId)?.name || 'All Branches'}</span> {t("• Current Stock: ")}<span className="font-bold text-amber-800">{transferProduct.stockQty} {t("units")}</span>
               </div>
             </div>
 
             <form onSubmit={handleExecuteTransfer} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-700 font-semibold mb-1">Destination Branch *</label>
+                <label className="block text-stone-700 font-semibold mb-1">{t("Destination Branch *")}</label>
                 <select
                   value={transferToShopId}
                   onChange={(e) => setTransferToShopId(e.target.value)}
@@ -876,14 +874,14 @@ export const InventoryManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-700 font-semibold mb-1">Quantity to Transfer (Max {transferProduct.stockQty})</label>
-                <input
+                <label className="block text-stone-700 font-semibold mb-1">{t("Quantity to Transfer (Max ")}{transferProduct.stockQty})</label>
+                <NumberInput
                   type="number"
                   min="1"
                   max={transferProduct.stockQty}
                   required
                   value={transferQty}
-                  onChange={(e) => setTransferQty(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) => setTransferQty(Number(e.target.value))}
                   className="w-full bg-white border border-stone-300 rounded-lg p-2 font-bold text-amber-800 text-sm"
                 />
               </div>
@@ -894,14 +892,12 @@ export const InventoryManager: React.FC = () => {
                   onClick={() => setTransferProduct(null)}
                   className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs"
                 >
-                  Transfer Stock
-                </button>
+                  {t("Transfer Stock ")}</button>
               </div>
             </form>
           </div>
@@ -915,8 +911,7 @@ export const InventoryManager: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4 text-amber-600" />
-                Bulk Material Import (CSV / Excel)
-              </h3>
+                {t("Bulk Material Import (CSV / Excel) ")}</h3>
               <button onClick={() => setShowImportModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
@@ -930,24 +925,21 @@ export const InventoryManager: React.FC = () => {
                 {/* Step 1: Download Sample */}
                 <div className="bg-amber-50/60 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-stone-900">Step 1: Download Sample Excel / CSV Template</div>
+                    <div className="font-bold text-stone-900">{t("Step 1: Download Sample Excel / CSV Template")}</div>
                     <div className="text-[11px] text-stone-500">
-                      Use our formatted template with columns for Frames, Rx Lenses, Contact Lenses, and Solutions.
-                    </div>
+                      {t("Use our formatted template with columns for Frames, Rx Lenses, Contact Lenses, and Solutions. ")}</div>
                   </div>
                   <button
                     onClick={handleDownloadSampleCSV}
                     className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                   >
-                    <Download className="w-3.5 h-3.5" /> Sample CSV
-                  </button>
+                    <Download className="w-3.5 h-3.5" /> {t("Sample CSV ")}</button>
                 </div>
 
                 {/* Step 2: Choose Target Branch */}
                 <div>
                   <label className="block text-stone-700 font-semibold mb-1">
-                    Step 2: Assign Imported Stock to Shop Branch:
-                  </label>
+                    {t("Step 2: Assign Imported Stock to Shop Branch: ")}</label>
                   <select
                     value={importTargetShop === 'all' ? shops[0]?.id ?? '' : importTargetShop}
                     onChange={(e) => setImportTargetShop(e.target.value)}
@@ -964,8 +956,7 @@ export const InventoryManager: React.FC = () => {
                 {/* Step 3: Upload File or Paste */}
                 <div className="space-y-2">
                   <label className="block text-stone-700 font-semibold">
-                    Step 3: Upload CSV File or Paste Data Below:
-                  </label>
+                    {t("Step 3: Upload CSV File or Paste Data Below: ")}</label>
 
                   <div className="flex items-center gap-2">
                     <input
@@ -981,14 +972,13 @@ export const InventoryManager: React.FC = () => {
                       className="px-4 py-2 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-lg text-stone-800 font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-stone-600" />
-                      Browse CSV File
-                    </button>
-                    <span className="text-[11px] text-stone-500">or paste CSV text directly in the box:</span>
+                      {t("Browse CSV File ")}</button>
+                    <span className="text-[11px] text-stone-500">{t("or paste CSV text directly in the box:")}</span>
                   </div>
 
                   <textarea
                     rows={4}
-                    placeholder="Name,Category,Brand,ModelNo,Color,FrameType,Size,HSNCode,PurchasePrice,MRP,SalePrice,GSTRate,StockQty,MinStockAlert,Location,Barcode&#10;Ray-Ban Aviator,Spectacle Frame,Ray-Ban,RB-3025,Gold,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099"
+                    placeholder={t("Name,Category,Brand,ModelNo,Color,FrameType,Size,HSNCode,PurchasePrice,MRP,SalePrice,GSTRate,StockQty,MinStockAlert,Location,Barcode&#10;Ray-Ban Aviator,Spectacle Frame,Ray-Ban,RB-3025,Gold,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099")}
                     value={importText}
                     onChange={(e) => {
                       setImportText(e.target.value);
@@ -1003,22 +993,21 @@ export const InventoryManager: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-stone-900 text-xs">
-                        Parsed Materials Preview ({parsedImportItems.length} items found)
-                      </span>
-                      <span className="text-[11px] text-emerald-700 font-semibold">Ready to Import</span>
+                        {t("Parsed Materials Preview (")}{parsedImportItems.length} {t("items found) ")}</span>
+                      <span className="text-[11px] text-emerald-700 font-semibold">{t("Ready to Import")}</span>
                     </div>
 
                     <div className="border border-stone-200 rounded-lg max-h-48 overflow-y-auto">
                       <table className="w-full text-left text-[11px]">
                         <thead className="bg-stone-100 text-stone-600 font-bold sticky top-0">
                           <tr>
-                            <th className="p-2">Name</th>
-                            <th className="p-2">Category</th>
-                            <th className="p-2">Brand</th>
-                            <th className="p-2 text-right">Cost</th>
-                            <th className="p-2 text-right">Sale</th>
-                            <th className="p-2 text-center">Stock</th>
-                            <th className="p-2">Barcode</th>
+                            <th className="p-2">{t("Name")}</th>
+                            <th className="p-2">{t("Category")}</th>
+                            <th className="p-2">{t("Brand")}</th>
+                            <th className="p-2 text-right">{t("Cost")}</th>
+                            <th className="p-2 text-right">{t("Sale")}</th>
+                            <th className="p-2 text-center">{t("Stock")}</th>
+                            <th className="p-2">{t("Barcode")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-200">
@@ -1046,16 +1035,14 @@ export const InventoryManager: React.FC = () => {
                     onClick={() => setShowImportModal(false)}
                     className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs cursor-pointer"
                   >
-                    Cancel
-                  </button>
+                    {t("Cancel ")}</button>
                   <button
                     type="button"
                     disabled={parsedImportItems.length === 0}
                     onClick={handleExecuteBulkImport}
                     className="px-5 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                   >
-                    Import {parsedImportItems.length} Material(s)
-                  </button>
+                    {t("Import ")}{parsedImportItems.length} {t("Material(s) ")}</button>
                 </div>
               </div>
             )}
@@ -1068,19 +1055,19 @@ export const InventoryManager: React.FC = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-stone-200 rounded-xl p-5 max-w-sm w-full shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-              <h4 className="text-xs font-bold text-stone-900">Adjust Physical Stock Quantity</h4>
+              <h4 className="text-xs font-bold text-stone-900">{t("Adjust Physical Stock Quantity")}</h4>
               <button onClick={() => setAdjustingProduct(null)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
             <div className="text-xs text-stone-700">
               <div className="font-bold text-stone-900">{adjustingProduct.name}</div>
-              <div className="text-[11px] text-stone-500 font-mono">Barcode: {adjustingProduct.barcode}</div>
+              <div className="text-[11px] text-stone-500 font-mono">{t("Barcode: ")}{adjustingProduct.barcode}</div>
             </div>
 
             <form onSubmit={handleSaveStockAdjust} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-600 mb-1">New Physical Stock Count (Units)</label>
-                <input
+                <label className="block text-stone-600 mb-1">{t("New Physical Stock Count (Units)")}</label>
+                <NumberInput
                   type="number"
                   min="0"
                   value={newStockInput}
@@ -1095,14 +1082,12 @@ export const InventoryManager: React.FC = () => {
                   onClick={() => setAdjustingProduct(null)}
                   className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded text-xs cursor-pointer"
                 >
-                  Update Stock
-                </button>
+                  {t("Update Stock ")}</button>
               </div>
             </form>
           </div>

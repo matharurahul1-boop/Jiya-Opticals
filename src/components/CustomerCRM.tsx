@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n';
+import { NumberInput } from './NumberInput';
 import React, { useState } from 'react';
 import { 
   Calendar, 
@@ -260,11 +262,9 @@ export const CustomerCRM: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              Customer & Patient CRM
-            </h1>
+              {t("Customer & Patient CRM ")}</h1>
             <p className="text-xs text-stone-500">
-              Manage patient database, prescription history, and accounts.
-            </p>
+              {t("Manage patient database, prescription history, and accounts. ")}</p>
           </div>
         </div>
 
@@ -272,25 +272,23 @@ export const CustomerCRM: React.FC = () => {
           onClick={handleOpenAdd}
           className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs self-start sm:self-auto cursor-pointer"
         >
-          <UserPlus className="w-4 h-4" /> Add Customer
-        </button>
+          <UserPlus className="w-4 h-4" /> {t("Add Customer ")}</button>
       </div>
 
       {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-stone-500">Total Patients</span>
-          <div className="text-xl font-bold text-stone-900 mt-1">{totalCustomersCount} Patients</div>
+          <span className="text-[10px] uppercase font-bold text-stone-500">{t("Total Patients")}</span>
+          <div className="text-xl font-bold text-stone-900 mt-1">{totalCustomersCount} {t("Patients")}</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-rose-600">Pending Dues</span>
+          <span className="text-[10px] uppercase font-bold text-rose-600">{t("Pending Dues")}</span>
           <div className="text-xl font-bold text-rose-600 mt-1">₹{totalDuesAll.toLocaleString('en-IN')}</div>
         </div>
         <div className="bg-white border border-amber-200/80 p-3 rounded-xl shadow-xs">
-          <span className="text-[10px] uppercase font-bold text-emerald-700">Prescriptions on File</span>
+          <span className="text-[10px] uppercase font-bold text-emerald-700">{t("Prescriptions on File")}</span>
           <div className="text-xl font-bold text-emerald-700 mt-1">
-            {customers.reduce((sum, c) => sum + c.prescriptions.length, 0)} Records
-          </div>
+            {customers.reduce((sum, c) => sum + c.prescriptions.length, 0)} {t("Records ")}</div>
         </div>
       </div>
 
@@ -303,7 +301,7 @@ export const CustomerCRM: React.FC = () => {
               filterType === 'All' ? 'bg-amber-600 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
             }`}
           >
-            All Patients ({customers.length})
+            {t("All Patients (")}{customers.length})
           </button>
           <button
             onClick={() => setFilterType('WithDues')}
@@ -311,7 +309,7 @@ export const CustomerCRM: React.FC = () => {
               filterType === 'WithDues' ? 'bg-rose-600 text-white shadow-xs' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
             }`}
           >
-            Pending Dues ({customers.filter((c) => c.outstandingBalance > 0).length})
+            {t("Pending Dues (")}{customers.filter((c) => c.outstandingBalance > 0).length})
           </button>
         </div>
 
@@ -319,7 +317,7 @@ export const CustomerCRM: React.FC = () => {
           <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search patient name, mobile, city..."
+            placeholder={t("Search patient name, mobile, city...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:w-64 bg-stone-50 border border-stone-300 text-xs rounded-lg pl-8 pr-3 py-1.5 text-stone-900 outline-none focus:border-amber-600"
@@ -335,12 +333,12 @@ export const CustomerCRM: React.FC = () => {
             <table className="w-full text-left text-xs text-stone-700">
               <thead className="bg-stone-100 text-stone-700 uppercase text-[10px] font-bold border-b border-stone-200">
                 <tr>
-                  <th className="py-2.5 px-3">Patient Name</th>
-                  <th className="py-2.5 px-2">Mobile / City</th>
-                  <th className="py-2.5 px-2 text-right">Total Spent</th>
-                  <th className="py-2.5 px-2 text-right">Dues</th>
-                  <th className="py-2.5 px-2 text-center">Rx</th>
-                  <th className="py-2.5 px-3 text-right">Actions</th>
+                  <th className="py-2.5 px-3">{t("Patient Name")}</th>
+                  <th className="py-2.5 px-2">{t("Mobile / City")}</th>
+                  <th className="py-2.5 px-2 text-right">{t("Total Spent")}</th>
+                  <th className="py-2.5 px-2 text-right">{t("Dues")}</th>
+                  <th className="py-2.5 px-2 text-center">{t("Rx")}</th>
+                  <th className="py-2.5 px-3 text-right">{t("Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200">
@@ -354,7 +352,7 @@ export const CustomerCRM: React.FC = () => {
                   >
                     <td className="py-3 px-3">
                       <div className="font-bold text-stone-900">{c.name}</div>
-                      <div className="text-[10px] text-stone-500">Joined: {c.createdAt}</div>
+                      <div className="text-[10px] text-stone-500">{t("Joined: ")}{c.createdAt}</div>
                     </td>
                     <td className="py-3 px-2">
                       <div className="text-stone-800 font-mono text-[11px]">📱 {c.mobile}</div>
@@ -386,7 +384,7 @@ export const CustomerCRM: React.FC = () => {
                       <button
                         onClick={() => handleOpenEdit(c)}
                         className="p-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700 rounded cursor-pointer"
-                        title="Edit Customer Details & Email"
+                        title={t("Edit Customer Details & Email")}
                       >
                         <Edit3 className="w-3 h-3" />
                       </button>
@@ -395,20 +393,19 @@ export const CustomerCRM: React.FC = () => {
                           onClick={() => handleOpenReceivePay(c)}
                           className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold cursor-pointer"
                         >
-                          Collect ₹
-                        </button>
+                          {t("Collect ₹ ")}</button>
                       )}
                       <button
                         onClick={() => sendWhatsAppEyeCheckupDue(c)}
                         className="p-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 rounded cursor-pointer"
-                        title="Send Eye Checkup Reminder via WhatsApp"
+                        title={t("Send Eye Checkup Reminder via WhatsApp")}
                       >
                         <MessageSquare className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => sendEmailEyeCheckupDue(c)}
                         className="p-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-700 rounded cursor-pointer"
-                        title="Send Eye Checkup Reminder via Email"
+                        title={t("Send Eye Checkup Reminder via Email")}
                       >
                         <Mail className="w-3 h-3" />
                       </button>
@@ -431,7 +428,7 @@ export const CustomerCRM: React.FC = () => {
                     <button
                       onClick={() => handleOpenEdit(selectedCustomer)}
                       className="p-1 hover:bg-stone-100 text-stone-500 hover:text-stone-800 rounded text-xs transition-colors cursor-pointer"
-                      title="Edit Customer Details & Email"
+                      title={t("Edit Customer Details & Email")}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -442,7 +439,7 @@ export const CustomerCRM: React.FC = () => {
                     {selectedCustomer.email ? (
                       <span>{selectedCustomer.email}</span>
                     ) : (
-                      <span className="text-stone-400 italic">No email saved (<button onClick={() => handleOpenEdit(selectedCustomer)} className="text-amber-700 hover:underline">Add Email</button>)</span>
+                      <span className="text-stone-400 italic">{t("No email saved (")}<button onClick={() => handleOpenEdit(selectedCustomer)} className="text-amber-700 hover:underline">{t("Add Email")}</button>)</span>
                     )}
                   </p>
                   {selectedCustomer.address && (
@@ -454,7 +451,7 @@ export const CustomerCRM: React.FC = () => {
                     onClick={() => handleOpenReceivePay(selectedCustomer)}
                     className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold cursor-pointer shrink-0"
                   >
-                    Receive ₹{selectedCustomer.outstandingBalance}
+                    {t("Receive ₹")}{selectedCustomer.outstandingBalance}
                   </button>
                 )}
               </div>
@@ -462,8 +459,8 @@ export const CustomerCRM: React.FC = () => {
               {/* Quick Communication Triggers (WhatsApp & Email) */}
               <div className="space-y-2">
                 <div className="text-[11px] font-bold text-stone-600 uppercase flex items-center justify-between">
-                  <span>Quick Customer Dispatch</span>
-                  <span className="text-stone-400 font-normal">WhatsApp & Email</span>
+                  <span>{t("Quick Customer Dispatch")}</span>
+                  <span className="text-stone-400 font-normal">{t("WhatsApp & Email")}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -473,19 +470,19 @@ export const CustomerCRM: React.FC = () => {
                         id="btn-whatsapp-due-reminder"
                         onClick={() => sendWhatsAppDueReminder(selectedCustomer)}
                         className="p-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        title="Send Due Reminder via WhatsApp"
+                        title={t("Send Due Reminder via WhatsApp")}
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-rose-600" /> 
-                        <span>WhatsApp Due</span>
+                        <span>{t("WhatsApp Due")}</span>
                       </button>
                       <button
                         id="btn-email-due-reminder"
                         onClick={() => sendEmailDueReminder(selectedCustomer)}
                         className="p-2 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        title="Send Due Reminder via Email"
+                        title={t("Send Due Reminder via Email")}
                       >
                         <Mail className="w-3.5 h-3.5 text-sky-600" /> 
-                        <span>Email Due</span>
+                        <span>{t("Email Due")}</span>
                       </button>
                     </>
                   ) : (
@@ -494,19 +491,19 @@ export const CustomerCRM: React.FC = () => {
                         id="btn-whatsapp-checkup-reminder"
                         onClick={() => sendWhatsAppEyeCheckupDue(selectedCustomer)}
                         className="p-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        title="Send Vision Checkup Invite via WhatsApp"
+                        title={t("Send Vision Checkup Invite via WhatsApp")}
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> 
-                        <span>WhatsApp Rx</span>
+                        <span>{t("WhatsApp Rx")}</span>
                       </button>
                       <button
                         id="btn-email-checkup-reminder"
                         onClick={() => sendEmailEyeCheckupDue(selectedCustomer)}
                         className="p-2 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        title="Send Vision Checkup Invite via Email"
+                        title={t("Send Vision Checkup Invite via Email")}
                       >
                         <Mail className="w-3.5 h-3.5 text-sky-600" /> 
-                        <span>Email Checkup</span>
+                        <span>{t("Email Checkup")}</span>
                       </button>
                     </>
                   )}
@@ -521,14 +518,14 @@ export const CustomerCRM: React.FC = () => {
                     className="p-2 bg-stone-50 hover:bg-stone-100 border border-stone-300 text-stone-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5 text-emerald-600" /> 
-                    <span>WhatsApp Offer</span>
+                    <span>{t("WhatsApp Offer")}</span>
                   </button>
                   <button
                     onClick={() => sendEmailPromotionalOffer(selectedCustomer)}
                     className="p-2 bg-stone-50 hover:bg-stone-100 border border-stone-300 text-stone-800 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Mail className="w-3.5 h-3.5 text-sky-600" /> 
-                    <span>Email Offer</span>
+                    <span>{t("Email Offer")}</span>
                   </button>
                 </div>
               </div>
@@ -537,26 +534,25 @@ export const CustomerCRM: React.FC = () => {
               <div className="space-y-2">
                 <span className="text-xs font-bold text-stone-700 uppercase flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5 text-amber-700" />
-                  Prescriptions ({selectedCustomer.prescriptions.length})
+                  {t("Prescriptions (")}{selectedCustomer.prescriptions.length})
                 </span>
 
                 {selectedCustomer.prescriptions.length === 0 ? (
                   <div className="p-3 text-center text-stone-400 text-xs bg-stone-50 rounded-lg border border-stone-200">
-                    No prescription on file.
-                  </div>
+                    {t("No prescription on file. ")}</div>
                 ) : (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {selectedCustomer.prescriptions.map((rx) => (
                       <div key={rx.id} className="p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-xs space-y-1">
                         <div className="flex justify-between font-semibold text-stone-900">
-                          <span>Exam: {rx.date}</span>
+                          <span>{t("Exam: ")}{rx.date}</span>
                           <span className="text-amber-800">{rx.doctorName}</span>
                         </div>
                         <div className="text-[11px] text-stone-600 font-mono">
-                          OD: SPH {rx.rightEye.sph} | CYL {rx.rightEye.cyl} | AXIS {rx.rightEye.axis || '0'}
+                          {t("OD: SPH ")}{rx.rightEye.sph} {t("| CYL ")}{rx.rightEye.cyl} {t("| AXIS ")}{rx.rightEye.axis || '0'}
                         </div>
                         <div className="text-[11px] text-stone-600 font-mono">
-                          OS: SPH {rx.leftEye.sph} | CYL {rx.leftEye.cyl} | AXIS {rx.leftEye.axis || '0'}
+                          {t("OS: SPH ")}{rx.leftEye.sph} {t("| CYL ")}{rx.leftEye.cyl} {t("| AXIS ")}{rx.leftEye.axis || '0'}
                         </div>
                       </div>
                     ))}
@@ -568,13 +564,12 @@ export const CustomerCRM: React.FC = () => {
               <div className="space-y-2">
                 <span className="text-xs font-bold text-stone-700 uppercase flex items-center gap-1.5">
                   <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-                  Invoices ({customerInvoices.length})
+                  {t("Invoices (")}{customerInvoices.length})
                 </span>
 
                 {customerInvoices.length === 0 ? (
                   <div className="p-3 text-center text-stone-400 text-xs bg-stone-50 rounded-lg border border-stone-200">
-                    No past purchases.
-                  </div>
+                    {t("No past purchases. ")}</div>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {customerInvoices.map((inv) => (
@@ -589,7 +584,7 @@ export const CustomerCRM: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <div className="font-bold text-stone-900">₹{inv.netPayable}</div>
-                          <span className="text-[10px] text-amber-800 underline">View Bill</span>
+                          <span className="text-[10px] text-amber-800 underline">{t("View Bill")}</span>
                         </div>
                       </div>
                     ))}
@@ -599,8 +594,7 @@ export const CustomerCRM: React.FC = () => {
             </div>
           ) : (
             <div className="bg-white border border-amber-200/80 rounded-xl p-12 text-center text-stone-400 text-xs shadow-xs">
-              Select any customer on the left to view profile and history.
-            </div>
+              {t("Select any customer on the left to view profile and history. ")}</div>
           )}
         </div>
       </div>
@@ -612,18 +606,17 @@ export const CustomerCRM: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-amber-600" />
-                Register New Customer
-              </h3>
+                {t("Register New Customer ")}</h3>
               <button onClick={() => setShowAddModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-600 mb-1">Customer Full Name *</label>
+                <label className="block text-stone-600 mb-1">{t("Customer Full Name *")}</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Amit Kumar"
+                  placeholder={t("e.g. Amit Kumar")}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -631,7 +624,7 @@ export const CustomerCRM: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">Mobile Number (10 Digits) *</label>
+                <label className="block text-stone-600 mb-1">{t("Mobile Number (10 Digits) *")}</label>
                 <input
                   type="tel"
                   required
@@ -644,7 +637,7 @@ export const CustomerCRM: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1">City / Area</label>
+                  <label className="block text-stone-600 mb-1">{t("City / Area")}</label>
                   <input
                     type="text"
                     value={formData.city}
@@ -654,11 +647,11 @@ export const CustomerCRM: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-stone-600 mb-1">
-                    Email Address <span className="text-[10px] text-sky-600">(for Invoices & Rx)</span>
+                    {t("Email Address ")}<span className="text-[10px] text-sky-600">{t("(for Invoices & Rx)")}</span>
                   </label>
                   <input
                     type="email"
-                    placeholder="client@gmail.com"
+                    placeholder={t("client@gmail.com")}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -667,10 +660,10 @@ export const CustomerCRM: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">Residential Address</label>
+                <label className="block text-stone-600 mb-1">{t("Residential Address")}</label>
                 <input
                   type="text"
-                  placeholder="House / Street / Locality"
+                  placeholder={t("House / Street / Locality")}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -683,14 +676,12 @@ export const CustomerCRM: React.FC = () => {
                   onClick={() => setShowAddModal(false)}
                   className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold cursor-pointer"
                 >
-                  Save Record
-                </button>
+                  {t("Save Record ")}</button>
               </div>
             </form>
           </div>
@@ -704,14 +695,13 @@ export const CustomerCRM: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-amber-600" />
-                Edit Customer Profile & Email
-              </h3>
+                {t("Edit Customer Profile & Email ")}</h3>
               <button onClick={() => setShowEditModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-600 mb-1">Customer Full Name *</label>
+                <label className="block text-stone-600 mb-1">{t("Customer Full Name *")}</label>
                 <input
                   type="text"
                   required
@@ -722,7 +712,7 @@ export const CustomerCRM: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">Mobile Number (10 Digits) *</label>
+                <label className="block text-stone-600 mb-1">{t("Mobile Number (10 Digits) *")}</label>
                 <input
                   type="tel"
                   required
@@ -734,13 +724,13 @@ export const CustomerCRM: React.FC = () => {
 
               <div>
                 <label className="block text-stone-600 mb-1">
-                  Email Address <span className="text-[10px] text-sky-600 font-medium">(Used for sending Tax Invoices, Rx & Due Reminders)</span>
+                  {t("Email Address ")}<span className="text-[10px] text-sky-600 font-medium">{t("(Used for sending Tax Invoices, Rx & Due Reminders)")}</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
-                    placeholder="client@gmail.com"
+                    placeholder={t("client@gmail.com")}
                     value={editFormData.email || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                     className="w-full pl-8 pr-2.5 py-2 bg-stone-50 border border-stone-300 rounded-lg text-stone-900"
@@ -750,7 +740,7 @@ export const CustomerCRM: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-600 mb-1">City / Area</label>
+                  <label className="block text-stone-600 mb-1">{t("City / Area")}</label>
                   <input
                     type="text"
                     value={editFormData.city || ''}
@@ -759,10 +749,10 @@ export const CustomerCRM: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1">Residential Address</label>
+                  <label className="block text-stone-600 mb-1">{t("Residential Address")}</label>
                   <input
                     type="text"
-                    placeholder="Locality / Landmark"
+                    placeholder={t("Locality / Landmark")}
                     value={editFormData.address || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
@@ -776,14 +766,12 @@ export const CustomerCRM: React.FC = () => {
                   onClick={() => setShowEditModal(false)}
                   className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold cursor-pointer"
                 >
-                  Update Customer
-                </button>
+                  {t("Update Customer ")}</button>
               </div>
             </form>
           </div>
@@ -795,20 +783,20 @@ export const CustomerCRM: React.FC = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white border border-stone-200 rounded-xl p-5 max-w-sm w-full shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-              <h4 className="text-xs font-bold text-stone-900">Receive Due Payment</h4>
+              <h4 className="text-xs font-bold text-stone-900">{t("Receive Due Payment")}</h4>
               <button onClick={() => setShowPayModal(false)} className="text-stone-500 hover:text-stone-800 cursor-pointer">✕</button>
             </div>
 
             <div className="text-xs bg-stone-50 p-2.5 rounded-lg border border-stone-200 space-y-0.5">
               <div className="font-bold text-stone-900">{selectedCustomer.name}</div>
               <div className="text-stone-500">📱 {selectedCustomer.mobile}</div>
-              <div className="text-rose-600 font-bold mt-1">Outstanding Balance: ₹{selectedCustomer.outstandingBalance}</div>
+              <div className="text-rose-600 font-bold mt-1">{t("Outstanding Balance: ₹")}{selectedCustomer.outstandingBalance}</div>
             </div>
 
             <form onSubmit={handleConfirmPayment} className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-600 mb-1">Amount Receiving (₹)</label>
-                <input
+                <label className="block text-stone-600 mb-1">{t("Amount Receiving (₹)")}</label>
+                <NumberInput
                   type="number"
                   required
                   min="1"
@@ -821,15 +809,15 @@ export const CustomerCRM: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">Payment Method</label>
+                <label className="block text-stone-600 mb-1">{t("Payment Method")}</label>
                 <select
                   value={payMode}
                   onChange={(e) => setPayMode(e.target.value)}
                   className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900"
                 >
-                  <option value="UPI / QR">UPI / QR</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Credit / Debit Card">Credit / Debit Card</option>
+                  <option value="UPI / QR">{t("UPI / QR")}</option>
+                  <option value="Cash">{t("Cash")}</option>
+                  <option value="Credit / Debit Card">{t("Credit / Debit Card")}</option>
                 </select>
               </div>
 
@@ -839,14 +827,12 @@ export const CustomerCRM: React.FC = () => {
                   onClick={() => setShowPayModal(false)}
                   className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs cursor-pointer"
                 >
-                  Cancel
-                </button>
+                  {t("Cancel ")}</button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs cursor-pointer"
                 >
-                  Record Payment
-                </button>
+                  {t("Record Payment ")}</button>
               </div>
             </form>
           </div>

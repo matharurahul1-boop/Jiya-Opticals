@@ -25,6 +25,8 @@ test('complete live SQL installs twice and every required schema check passes', 
     await rpc('optical_user_sync',['Owner','owner','123']);
     const updated=await rpc('optical_user_sync',['Changed Owner','owner2','456']);
     assert.equal(updated.phone,'456');
+    assert.equal((await rpc('optical_user_sync',['Changed Owner','owner2',null])).phone,'456');
+    assert.equal((await rpc('optical_user_sync',['Changed Owner','owner2',''])).phone,'');
     await rpc('optical_team_create',['Store','{}']);
     let data=await rpc('optical_team_load',[owner]);
     assert.equal(data.user.name,'Changed Owner');

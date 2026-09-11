@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useState } from 'react';
 import { UserPlus, Search, Receipt, Eye, Phone, MapPin, X, Check, ArrowRight, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -12,6 +13,7 @@ export const QuickClientModal: React.FC = () => {
     setActiveTab, 
     setSelectedCustomerForAction,
     selectedShopFilter,
+    setSelectedShopFilter,
     promptShopSelect,
     currentUser
   } = useApp();
@@ -75,6 +77,7 @@ export const QuickClientModal: React.FC = () => {
 
   const handleProceedToBilling = () => {
     if (createdOrFoundCustomer) {
+      if (createdOrFoundCustomer.shopId) setSelectedShopFilter(createdOrFoundCustomer.shopId);
       setSelectedCustomerForAction(createdOrFoundCustomer);
     }
     handleClose();
@@ -83,6 +86,7 @@ export const QuickClientModal: React.FC = () => {
 
   const handleProceedToEyeTest = () => {
     if (createdOrFoundCustomer) {
+      if (createdOrFoundCustomer.shopId) setSelectedShopFilter(createdOrFoundCustomer.shopId);
       setSelectedCustomerForAction(createdOrFoundCustomer);
     }
     handleClose();
@@ -91,6 +95,7 @@ export const QuickClientModal: React.FC = () => {
 
   const handleProceedToCRM = () => {
     if (createdOrFoundCustomer) {
+      if (createdOrFoundCustomer.shopId) setSelectedShopFilter(createdOrFoundCustomer.shopId);
       setSelectedCustomerForAction(createdOrFoundCustomer);
     }
     handleClose();
@@ -119,8 +124,8 @@ export const QuickClientModal: React.FC = () => {
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-stone-900 text-base">Client / Patient Entry</h3>
-              <p className="text-xs text-stone-500">Quickly register or lookup customer</p>
+              <h3 className="font-bold text-stone-900 text-base">{t("Client / Patient Entry")}</h3>
+              <p className="text-xs text-stone-500">{t("Quickly register or lookup customer")}</p>
             </div>
           </div>
           <button
@@ -148,7 +153,7 @@ export const QuickClientModal: React.FC = () => {
                   }`}
                 >
                   <UserPlus className="w-3.5 h-3.5" />
-                  <span>+ New Client</span>
+                  <span>{t("+ New Client")}</span>
                 </button>
                 <button
                   type="button"
@@ -160,7 +165,7 @@ export const QuickClientModal: React.FC = () => {
                   }`}
                 >
                   <Search className="w-3.5 h-3.5" />
-                  <span>Search Existing</span>
+                  <span>{t("Search Existing")}</span>
                 </button>
               </div>
 
@@ -168,13 +173,12 @@ export const QuickClientModal: React.FC = () => {
                 <form onSubmit={handleCreateCustomer} className="space-y-3.5">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Full Name *
-                    </label>
+                      {t("Full Name * ")}</label>
                     <input
                       id="input-quick-client-name"
                       type="text"
                       required
-                      placeholder="e.g. Ramesh Kumar"
+                      placeholder={t("e.g. Ramesh Kumar")}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs"
@@ -184,15 +188,14 @@ export const QuickClientModal: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Mobile Number (WhatsApp) *
-                    </label>
+                      {t("Mobile Number (WhatsApp) * ")}</label>
                     <div className="relative">
                       <Phone className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         id="input-quick-client-mobile"
                         type="tel"
                         required
-                        placeholder="10-digit mobile number"
+                        placeholder={t("10-digit mobile number")}
                         value={mobile}
                         onChange={(e) => setMobile(e.target.value)}
                         className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs font-mono"
@@ -202,15 +205,14 @@ export const QuickClientModal: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Email Address (Optional)
-                      <span className="text-[10px] text-stone-400 font-normal ml-1.5">(For Emailing Invoices & Rx)</span>
+                      {t("Email Address (Optional) ")}<span className="text-[10px] text-stone-400 font-normal ml-1.5">{t("(For Emailing Invoices & Rx)")}</span>
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         id="input-quick-client-email"
                         type="email"
-                        placeholder="e.g. client@gmail.com"
+                        placeholder={t("e.g. client@gmail.com")}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs"
@@ -221,12 +223,11 @@ export const QuickClientModal: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">
-                        City / Area
-                      </label>
+                        {t("City / Area ")}</label>
                       <input
                         id="input-quick-client-city"
                         type="text"
-                        placeholder="e.g. New Delhi"
+                        placeholder={t("e.g. New Delhi")}
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         className="w-full px-3.5 py-2 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs"
@@ -234,12 +235,11 @@ export const QuickClientModal: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">
-                        Address / Landmark
-                      </label>
+                        {t("Address / Landmark ")}</label>
                       <input
                         id="input-quick-client-address"
                         type="text"
-                        placeholder="Sector / Road"
+                        placeholder={t("Sector / Road")}
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         className="w-full px-3.5 py-2 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs"
@@ -253,7 +253,7 @@ export const QuickClientModal: React.FC = () => {
                     className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-sm shadow-xs transition-colors flex items-center justify-center space-x-2 mt-2 cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
-                    <span>Save & Proceed</span>
+                    <span>{t("Save & Proceed")}</span>
                   </button>
                 </form>
               ) : (
@@ -263,7 +263,7 @@ export const QuickClientModal: React.FC = () => {
                     <input
                       id="input-quick-search-client"
                       type="text"
-                      placeholder="Type name or phone number..."
+                      placeholder={t("Type name or phone number...")}
                       value={searchPhoneOrName}
                       onChange={(e) => setSearchPhoneOrName(e.target.value)}
                       className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 text-sm focus:outline-none focus:border-amber-500 shadow-xs"
@@ -274,8 +274,7 @@ export const QuickClientModal: React.FC = () => {
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {filteredExisting.length === 0 ? (
                       <p className="text-center text-xs text-stone-400 py-6">
-                        No clients found matching &ldquo;{searchPhoneOrName}&rdquo;
-                      </p>
+                        {t("No clients found matching &ldquo;")}{searchPhoneOrName}{t("&rdquo; ")}</p>
                     ) : (
                       filteredExisting.map((c) => (
                         <button
@@ -294,8 +293,7 @@ export const QuickClientModal: React.FC = () => {
                             </div>
                           </div>
                           <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-lg">
-                            Select
-                          </span>
+                            {t("Select ")}</span>
                         </button>
                       ))
                     )}
@@ -323,8 +321,7 @@ export const QuickClientModal: React.FC = () => {
               </div>
 
               <div className="text-xs font-semibold uppercase tracking-wider text-stone-500 pt-2">
-                What would you like to do next?
-              </div>
+                {t("What would you like to do next? ")}</div>
 
               <div className="grid grid-cols-1 gap-2.5">
                 <button
@@ -338,8 +335,8 @@ export const QuickClientModal: React.FC = () => {
                       <Receipt className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold">1. Create POS Bill</div>
-                      <div className="text-xs opacity-80">Add frames, lenses, generate invoice</div>
+                      <div className="text-sm font-bold">{t("1. Create POS Bill")}</div>
+                      <div className="text-xs opacity-80">{t("Add frames, lenses, generate invoice")}</div>
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -356,8 +353,8 @@ export const QuickClientModal: React.FC = () => {
                       <Eye className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold">2. Start Eye Checkup</div>
-                      <div className="text-xs text-stone-500">Record SPH, CYL, Axis & 6M/1Y Followup</div>
+                      <div className="text-sm font-bold">{t("2. Start Eye Checkup")}</div>
+                      <div className="text-xs text-stone-500">{t("Record SPH, CYL, Axis & 6M/1Y Followup")}</div>
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -369,7 +366,7 @@ export const QuickClientModal: React.FC = () => {
                   type="button"
                   className="w-full p-3 bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-medium rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors"
                 >
-                  <span>View Customer Khata / Past History</span>
+                  <span>{t("View Customer Khata / Past History")}</span>
                 </button>
               </div>
             </div>

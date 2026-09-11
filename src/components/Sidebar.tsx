@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Building,
@@ -68,8 +69,7 @@ const BranchSelect: React.FC = () => {
               selectedShopFilter === 'all' ? 'font-bold text-amber-800 bg-amber-50/60' : 'text-stone-700'
             }`}
           >
-            All Branches
-          </button>
+            {t("All Branches ")}</button>
           {shops.map((s) => (
             <button
               key={s.id}
@@ -143,7 +143,7 @@ export const Sidebar: React.FC = () => {
     },
     {
       id: 'customers',
-      label: 'Customers',
+      label: 'Clients',
       labelHi: 'ग्राहक व खाता',
       icon: Users,
       badge: pendingDuesCount > 0 ? pendingDuesCount : undefined,
@@ -162,7 +162,6 @@ export const Sidebar: React.FC = () => {
     { id: 'purchases', label: 'Purchases', labelHi: 'खरीद', icon: Truck, group: 'ops' },
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet, group: 'ops' },
     { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine, group: 'ops' },
-    { id: 'shops', label: 'Shops', labelHi: 'दुकानें', icon: Building, group: 'admin' },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users, group: 'admin' },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings, group: 'admin' }
   ];
@@ -181,7 +180,7 @@ export const Sidebar: React.FC = () => {
         sidebarCollapsed ? 'w-[76px]' : 'w-64'
       } shrink-0 select-none transition-[width] duration-200 ease-out py-3 pl-3`}
     >
-      <div className="h-full bg-[#f4f6fb] border border-stone-200/80 rounded-2xl shadow-sm flex flex-col">
+      <div className="h-full bg-[#f8fbfb] border border-stone-200/80 rounded-2xl shadow-sm flex flex-col">
         {/* Brand + collapse */}
         <div className={`flex items-center gap-2 px-3 pt-3 pb-2 ${sidebarCollapsed ? 'flex-col' : ''}`}>
           <button
@@ -190,7 +189,7 @@ export const Sidebar: React.FC = () => {
             title={storeProfile.name}
           >
             <span className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm shrink-0">
-              <Glasses className="w-5 h-5" />
+              <img src="/brand/logo.svg" alt="" className="w-9 h-9" />
             </span>
             {!sidebarCollapsed && (
               <span className="font-bold text-stone-900 text-sm truncate">{storeProfile.name || 'Opticals'}</span>

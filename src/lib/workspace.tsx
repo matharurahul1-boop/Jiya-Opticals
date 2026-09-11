@@ -34,7 +34,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   },[selected,attempt]);
   if (row) return <>{children(row.data,row.version,row)}</>;
   const noAccess = teams && teams.length === 0;
-  return <div className="min-h-screen bg-[#eef1f7] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
+  return <div className="min-h-screen bg-[#f4f8f8] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
     <h1 className="text-2xl font-bold">Jiya Opticals</h1>
     {error && <div role="alert" className="text-red-700">{error}<p className="text-sm">If the store functions are missing, run supabase/LIVE_SETUP.sql in the Supabase SQL Editor.</p></div>}
     {!teams && !error && <p>Opening your store…</p>}
@@ -44,7 +44,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
       <form className="space-y-3 pt-3" onSubmit={async e=>{
         e.preventDefault(); if(busy)return; setBusy(true); setError('');
         try {
-          const {data,error}=await supabase!.rpc('optical_team_create',{business_name:businessName.trim(),profile:initialStoreProfile});
+          const {data,error}=await supabase!.rpc('optical_team_create',{business_name:businessName.trim(),profile:{...initialStoreProfile,name:businessName.trim(),phone:'',email:'',addressLine1:'',addressLine2:'',city:'',gstin:'',panNo:'',upiId:'',upiName:'',bankAccountNo:'',bankName:'',ifscCode:''}});
           if(error)throw error; setSelected(data);setAttempt(n=>n+1);
         }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
       }}><label className="block text-sm">Store name<input className="w-full border rounded p-2" required minLength={2} value={businessName} onChange={e=>setBusinessName(e.target.value)} /></label><button disabled={busy} className="bg-amber-700 text-white p-3 rounded">{busy?'Creating…':'Create the store'}</button></form>

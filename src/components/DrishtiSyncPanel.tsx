@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import React from 'react';
 import {
   ScanLine,
@@ -97,16 +98,14 @@ export function DrishtiSyncPanel() {
             <ScanLine className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-stone-900">Drishti Desktop Sync</h1>
+            <h1 className="text-xl font-bold text-stone-900">{t("Drishti Desktop Sync")}</h1>
             <p className="text-sm text-stone-500">
-              Pulls <strong className="text-stone-700">items and their barcode / QR codes</strong> from the Drishti
-              software on the shop computer into this catalogue. {shopName ? `Branch: ${shopName}.` : ''}
+              {t("Pulls ")}<strong className="text-stone-700">{t("items and their barcode / QR codes")}</strong> {t("from the Drishti software on the shop computer into this catalogue. ")}{shopName ? `Branch: ${shopName}.` : ''}
             </p>
           </div>
         </div>
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle2 className="w-3.5 h-3.5" /> Catalogue sync only
-        </span>
+          <CheckCircle2 className="w-3.5 h-3.5" /> {t("Catalogue sync only ")}</span>
       </header>
 
       {/* Stat cards */}
@@ -128,18 +127,15 @@ export function DrishtiSyncPanel() {
       <div className="rounded-2xl border border-stone-200 bg-white p-4 flex items-start gap-3">
         <RefreshCw className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
         <div className="text-sm text-stone-600">
-          <p className="font-semibold text-stone-800">New items appear automatically</p>
+          <p className="font-semibold text-stone-800">{t("New items appear automatically")}</p>
           <p>
-            Once the connector is running on the Drishti computer, items created or edited there show up here within
-            about 30 seconds — no button needed. The number above is the last import time received from the cloud, not a
-            live desktop heartbeat.
-          </p>
+            {t("Once the connector is running on the Drishti computer, items created or edited there show up here within about 30 seconds — no button needed. The number above is the last import time received from the cloud, not a live desktop heartbeat. ")}</p>
         </div>
       </div>
 
       {/* Setup */}
       <div className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 space-y-4">
-        <h2 className="font-bold text-stone-900">One-time setup on the Drishti computer</h2>
+        <h2 className="font-bold text-stone-900">{t("One-time setup on the Drishti computer")}</h2>
         <ol className="space-y-2.5">
           {steps.map((step, i) => (
             <li key={i} className="flex gap-3 text-sm text-stone-700">
@@ -157,35 +153,27 @@ export function DrishtiSyncPanel() {
             href={`${import.meta.env.BASE_URL}drishti-connector.zip`}
             download
           >
-            <Download className="w-4 h-4" /> Download Windows connector
-          </a>
+            <Download className="w-4 h-4" /> {t("Download Windows connector ")}</a>
           <button
             disabled={!isCloud || !shopId || shopId === 'all'}
             onClick={downloadConfig}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4" /> Download this shop’s config.json
-          </button>
+            <Download className="w-4 h-4" /> {t("Download this shop’s config.json ")}</button>
         </div>
 
         {(!shopId || shopId === 'all') && (
           <p className="flex items-center gap-2 text-xs text-amber-700">
-            <AlertTriangle className="w-4 h-4" /> Select a single branch (top bar) before downloading the configuration.
-          </p>
+            <AlertTriangle className="w-4 h-4" /> {t("Select a single branch (top bar) before downloading the configuration. ")}</p>
         )}
         {!isCloud && (
           <p className="flex items-center gap-2 text-xs text-amber-700">
-            <AlertTriangle className="w-4 h-4" /> Sign in to the cloud workspace to generate a connector configuration.
-          </p>
+            <AlertTriangle className="w-4 h-4" /> {t("Sign in to the cloud workspace to generate a connector configuration. ")}</p>
         )}
       </div>
 
       <p className="text-xs text-stone-500">
-        CSV mode syncs whenever Drishti writes a fresh export. ODBC mode polls the Drishti database directly once a
-        read-only SELECT and credentials are configured. Existing ERP stock is preserved — this is a one-way catalogue
-        import, not two-way sales or stock sync. Keep the original Drishti stickers; their barcode and QR values are
-        matched to this shop’s inventory when scanned at billing.
-      </p>
+        {t("CSV mode syncs whenever Drishti writes a fresh export. ODBC mode polls the Drishti database directly once a read-only SELECT and credentials are configured. Existing ERP stock is preserved — this is a one-way catalogue import, not two-way sales or stock sync. Keep the original Drishti stickers; their barcode and QR values are matched to this shop’s inventory when scanned at billing. ")}</p>
     </section>
   );
 }
