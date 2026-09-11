@@ -1,5 +1,7 @@
+import { JoinShop } from '../components/JoinShop';
+import { cloudErrorMessage } from './cloudErrors';
 import { initialStoreProfile } from '../data/initialData';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 
 export type Snapshot = Record<string, unknown>;
@@ -10,7 +12,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const [row, setRow] = useState<(WorkspaceAccess & { data: Snapshot; version: number }) | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [businessName, setBusinessName] = useState('');
+  const onApproved = useCallback(() => setAttempt(n=>n+1), []);
   const [busy, setBusy] = useState(false);
   // One store per deployment. Whichever store the account can reach is opened straight away —
   // there is no "organisation" to choose. Shop selection happens inside the app.
@@ -18,7 +20,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
     let active = true; setError('');
     supabase!.rpc('optical_team_list').then(({data,error}) => {
       if (!active) return;
-      if (error) setError(error.message);
+      if (error) setError(cloudErrorMessage(error));
       else { setTeams(data); if (data.length) setSelected(data[0].ownerId); }
     });
     return () => { active=false; };
@@ -28,7 +30,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
     let active=true; setRow(null); setError('');
     supabase!.rpc('optical_team_load',{team_owner:selected}).then(({data,error}) => {
       if (!active) return;
-      if (error) setError(error.message); else setRow(data);
+      if (error) setError(cloudErrorMessage(error)); else setRow(data);
     });
     return () => { active=false; };
   },[selected,attempt]);
@@ -36,19 +38,10 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const noAccess = teams && teams.length === 0;
   return <div className="min-h-screen bg-[#f4f8f8] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
     <h1 className="text-2xl font-bold">Jiya Opticals</h1>
-    {error && <div role="alert" className="text-red-700">{error}<p className="text-sm">If the store functions are missing, run supabase/LIVE_SETUP.sql in the Supabase SQL Editor.</p></div>}
+    {error && <div role="alert" className="text-red-700">{error}</div>}
     {!teams && !error && <p>Opening your store…</p>}
     {selected && !error && <p>Loading store…</p>}
-    {noAccess && !error && <p className="text-stone-600">You're signed in, but this account isn't part of the store yet. Ask the owner to add your sign-up email under <strong>Team &amp; Access</strong>, then refresh.</p>}
-    {noAccess && <details className="border-t pt-4"><summary className="cursor-pointer text-sm text-stone-500">First-time setup (only if no store exists yet)</summary>
-      <form className="space-y-3 pt-3" onSubmit={async e=>{
-        e.preventDefault(); if(busy)return; setBusy(true); setError('');
-        try {
-          const {data,error}=await supabase!.rpc('optical_team_create',{business_name:businessName.trim(),profile:{...initialStoreProfile,name:businessName.trim(),phone:'',email:'',addressLine1:'',addressLine2:'',city:'',gstin:'',panNo:'',upiId:'',upiName:'',bankAccountNo:'',bankName:'',ifscCode:''}});
-          if(error)throw error; setSelected(data);setAttempt(n=>n+1);
-        }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
-      }}><label className="block text-sm">Store name<input className="w-full border rounded p-2" required minLength={2} value={businessName} onChange={e=>setBusinessName(e.target.value)} /></label><button disabled={busy} className="bg-amber-700 text-white p-3 rounded">{busy?'Creating…':'Create the store'}</button></form>
-    </details>}
+    {noAccess && <JoinShop onApproved={onApproved} />}
     <button className="underline mr-4" onClick={()=>setAttempt(n=>n+1)}>Refresh</button>
     <button className="underline" onClick={()=>void supabase!.auth.signOut()}>Sign out</button>
   </div></div>;
@@ -121,7 +114,7 @@ export function useCloudSave(ownerId: string | undefined, initialVersion: number
         if (!disposed) setStatus('Saved to Supabase');
       } catch (e) {
         failed.current = true;
-        if (!disposed) { setError(e instanceof Error ? e.message : String(e)); setStatus('Not saved'); }
+        if (!disposed) { setError(cloudErrorMessage(e)); setStatus('Not saved'); }
       } finally { running.current = false; }
     }, 350);
     return () => { disposed = true; window.clearInterval(timer); };

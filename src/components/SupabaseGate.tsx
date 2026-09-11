@@ -1,3 +1,4 @@
+import { cloudErrorMessage } from '../lib/cloudErrors';
 import { t } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -19,8 +20,8 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
       setSession(data.session); setLoading(false);
-      if (error) setError(error.message);
-    }).catch(e => { if (active) { setError(String(e)); setLoading(false); } });
+      if (error) setError(cloudErrorMessage(error));
+    }).catch(e => { if (active) { setError(cloudErrorMessage(e)); setLoading(false); } });
     const { data } = supabase.auth.onAuthStateChange((_event, value) => {
       setSession(value); setLoading(false);
     });
@@ -70,7 +71,7 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
           const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
           if (error) throw error;
         }
-      } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+      } catch (e) { setError(cloudErrorMessage(e)); }
       finally { setBusy(false); }
     }}>
       <img className="auth-logo" src="/brand/logo.svg" alt="Jiya Opticals logo" />
@@ -91,7 +92,7 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
       <button type="button" disabled={busy} className="text-amber-800 underline w-full disabled:opacity-60" onClick={() => {
         setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); setPassword(''); setConfirmPassword('');
       }}>{mode === 'signin' ? t("New here? Create an account") : t("Already have an account? Sign in")}</button>
-      {mode === 'signup' && <p className="text-sm text-stone-500">{t("After sign-in, create a business as an admin or join shops assigned to your email by your admin.")}</p>}
+      {mode === 'signup' && <p className="text-sm text-stone-500">{t("After sign-in, select your shop and request access. Your workspace opens after the admin approves.")}</p>}
     </form>
     <p className="auth-footnote">JIYA OPTICALS <span>•</span> Designed around better eye care</p>
     </section>

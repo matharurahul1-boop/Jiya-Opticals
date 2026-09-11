@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const parts = ['team-access.sql', 'users-directory.sql', 'drishti-sync.sql'];
+const parts = ['team-access.sql', 'users-directory.sql', 'drishti-sync.sql', 'join-requests.sql'];
 const body = parts.map(file => {
   const text = fs.readFileSync('supabase/' + file, 'utf8')
     .replace(/^begin;\s*$/gmi, '').replace(/^commit;\s*$/gmi, '')

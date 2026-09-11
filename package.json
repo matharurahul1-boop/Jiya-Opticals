@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "node --import tsx --test tests/revenue.test.ts tests/team-access.test.ts tests/drishti.test.ts tests/live-setup.test.ts tests/catalog.test.ts",
+    "test": "node --import tsx --test tests/revenue.test.ts tests/team-access.test.ts tests/drishti.test.ts tests/live-setup.test.ts tests/catalog.test.ts tests/cloud-errors.test.ts",
     "test:connector": "powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File tests/connector.test.ps1",
     "sql:build": "node scripts/build-live-sql.cjs"
   },

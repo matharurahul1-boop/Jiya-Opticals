@@ -18,7 +18,7 @@ test('complete live SQL installs twice and every required schema check passes', 
     const full = readFileSync('supabase/LIVE_SETUP.sql','utf8');
     await db.exec(full);await db.exec(full);
     const audit = await db.query<{status:string}>(readFileSync('supabase/VERIFY_LIVE.sql','utf8'));
-    assert.equal(audit.rows.length,30);
+    assert.equal(audit.rows.length,40);
     assert.deepEqual(audit.rows.filter(r=>r.status!=='PASS'),[]);
     await db.query('insert into auth.users values($1,$2,now()),($3,$4,now())',[owner,'admin@example.com',member,'member@example.com']);
     await signin(owner);

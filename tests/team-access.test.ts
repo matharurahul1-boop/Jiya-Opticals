@@ -74,7 +74,7 @@ test('team RPCs isolate shops, preserve other branches, and revoke access', asyn
   } finally { await db.close(); }
 });
 
-test('open-access store lets any confirmed sign-in join every shop, and cannot be duplicated', async () => {
+test('joining requires owner approval even for legacy open-access stores', async () => {
   const db = new PGlite();
   const owner = '00000000-0000-0000-0000-000000000001';
   const staff = '00000000-0000-0000-0000-000000000002';
@@ -99,26 +99,37 @@ test('open-access store lets any confirmed sign-in join every shop, and cannot b
     let loaded = await rpc('optical_team_load', [owner]);
     loaded.data[key('shops')] = [{ id: 'a', name: 'Shop A' }, { id: 'b', name: 'Shop B' }];
     await rpc('optical_team_save', [owner, loaded.version, JSON.stringify(loaded.data)]);
-    // Confirmed staff with no membership row: sees the store, gets every shop, can bill.
+    await db.exec('reset role');
+    await db.exec(readFileSync('supabase/join-requests.sql','utf8'));
+    await db.exec(readFileSync('supabase/join-requests.sql','utf8'));
     await signIn(staff);
-    assert.equal((await rpc('optical_team_list')).length, 1);
-    let staffView = await rpc('optical_team_load', [owner]);
-    assert.deepEqual(staffView.data[key('shops')].map((s: any) => s.id).sort(), ['a', 'b']);
-    staffView.data[key('customers')] = [{ id: 'c1', shopId: 'b', name: 'Walk-in' }];
-    await rpc('optical_team_save', [owner, staffView.version, JSON.stringify(staffView.data)]);
+    assert.equal((await rpc('optical_team_list')).length,0);
+    await assert.rejects(rpc('optical_team_load',[owner]),/access removed/);
+    const options=await rpc('optical_join_options');
+    assert.deepEqual(options[0].shops,[{id:'a',name:'Shop A'},{id:'b',name:'Shop B'}]);
+    assert.equal(options[0].data,undefined);
+    await assert.rejects(rpc('optical_join_request',[owner,'invalid']),/Unknown shop/);
+    await rpc('optical_join_request',[owner,'a']);
+    await rpc('optical_join_request',[owner,'a']);
+    assert.equal((await rpc('optical_join_options'))[0].request.status,'pending');
+    await assert.rejects(rpc('optical_join_review',[owner,staff,true]),/Admin access/);
+    await assert.rejects(rpc('optical_join_pending',[owner]),/Admin access/);
+    await assert.rejects(rpc('optical_team_load',[owner]),/access removed/);
     await signIn(owner);
-    assert.equal((await rpc('optical_team_load', [owner])).data[key('customers')][0].name, 'Walk-in');
-    // Unconfirmed users are still excluded.
-    await signIn(unverified);
-    assert.equal((await rpc('optical_team_list')).length, 0);
-    await assert.rejects(rpc('optical_team_load', [owner]), /access removed|not confirmed/);
-    // Turning open access off restores per-person control.
-    await signIn(owner);
-    loaded = await rpc('optical_team_load', [owner]);
-    loaded.data[key('profile')].openAccess = false;
-    await rpc('optical_team_save', [owner, loaded.version, JSON.stringify(loaded.data)]);
+    assert.equal((await rpc('optical_join_pending',[owner])).length,1);
+    await rpc('optical_join_review',[owner,staff,true]);
+    await assert.rejects(rpc('optical_join_review',[owner,staff,true]),/no longer pending/);
+    await signIn(staff);
+    assert.equal((await rpc('optical_team_list')).length,1);
+    assert.deepEqual((await rpc('optical_team_load',[owner])).data[key('shops')].map((s:any)=>s.id),['a']);
     await signIn(other);
-    assert.equal((await rpc('optical_team_list')).length, 0);
-    await assert.rejects(rpc('optical_team_load', [owner]), /access removed/);
+    await rpc('optical_join_request',[owner,'b']);
+    await signIn(owner);
+    await rpc('optical_join_review',[owner,other,false]);
+    await signIn(other);
+    assert.equal((await rpc('optical_join_options'))[0].request.status,'rejected');
+    await assert.rejects(rpc('optical_team_load',[owner]),/access removed/);
+    await signIn(unverified);
+    await assert.rejects(rpc('optical_join_options'),/Confirmed sign-in/);
   } finally { await db.close(); }
 });

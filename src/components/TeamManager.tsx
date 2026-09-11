@@ -1,4 +1,5 @@
 import { t } from '../lib/i18n';
+import { JoinApprovals } from './JoinApprovals';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -115,6 +116,7 @@ export function TeamManager() {
 
   return (
     <section className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+      <JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} />
       <header>
         <h1 className="text-2xl font-bold">{t("Team &amp; shop access")}</h1>
         <p className="text-stone-600 mt-1">

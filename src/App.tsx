@@ -1,4 +1,5 @@
 import { SupabaseGate } from './components/SupabaseGate';
+import { JoinApprovals } from './components/JoinApprovals';
 import { ProfileScreen } from './components/ProfileScreen';
 import { CloudWorkspace } from './lib/workspace';
 import React from 'react';
@@ -25,7 +26,7 @@ import { DrishtiSyncPanel } from './components/DrishtiSyncPanel';
 import { FloatingMenu } from './components/FloatingMenu';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, canAccessTab, shops, currentUser, selectedShopFilter, setSelectedShopFilter } = useApp();
+  const { activeTab, canAccessTab, shops, currentUser, selectedShopFilter, setSelectedShopFilter, ownerId, saveStatus } = useApp();
   const needsShop = shops.length > 1 && selectedShopFilter === 'all' && ['billing', 'eyetesting', 'customers', 'followups'].includes(activeTab);
   if (!shops.length) return <div className="min-h-screen bg-[#f4f8f8]">
     <div className="p-5 bg-amber-50"><h1 className="text-2xl font-bold">Welcome to your business</h1><p>{currentUser.role === 'Admin' ? 'Create your first shop below. Then use Team & Access to assign members.' : 'No shops are assigned to you yet. Ask your admin to assign a shop, then reload.'}</p></div>
@@ -52,7 +53,7 @@ const MainLayout: React.FC = () => {
           {needsShop ? <section className="p-6 space-y-4"><h2 className="text-xl font-bold">Choose a shop to continue</h2><p>Clients, stock and transactions stay with the selected shop.</p><div className="flex flex-wrap gap-3">{shops.map(shop => <button key={shop.id} className="bg-white border border-amber-300 rounded-xl p-4" onClick={() => setSelectedShopFilter(shop.id)}>{shop.name}</button>)}</div></section> : <>
           {activeTab === 'shops' && canAccessTab('shops') && <MastersConfig key="shops" startTab="Shops" />}
           {activeTab === 'team' && canAccessTab('team') && <TeamManager />}
-          {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'dashboard' && <>{ownerId && currentUser.role === 'Admin' && <div className="px-6 pt-6"><JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} /></div>}<Dashboard /></>}
           {activeTab === 'profile' && <ProfileScreen />}
           {activeTab === 'billing' && <BillingPOS />}
           {activeTab === 'eyetesting' && <EyeTesting />}
