@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { resolveUpiQr } from '../lib/upiQr';
-import { categoryGst } from '../lib/gst';
+import { categoryGst, PRODUCT_CATEGORIES } from '../lib/gst';
 import {
   Customer,
   EyePower,
@@ -372,14 +372,7 @@ export const BillingPOS: React.FC = () => {
     setAttachPrescription(false);
   };
 
-  const categoriesList: ProductCategory[] = [
-    'Spectacle Frame',
-    'Sunglasses',
-    'Ophthalmic Lens',
-    'Contact Lens',
-    'Lens Solution',
-    'Optical Accessory'
-  ];
+  const categoriesList: ProductCategory[] = PRODUCT_CATEGORIES;
 
   if(selectedShopFilter==='all' && shops.length>1) return <div className="max-w-3xl mx-auto p-8 space-y-5"><h1 className="text-2xl font-semibold text-stone-900">{t("Which shop is making this sale?")}</h1><p className="text-stone-500">{t("The material catalogue is shared. Stock and revenue will be recorded against the shop you choose.")}</p><div className="grid sm:grid-cols-2 gap-4">{shops.map(shop=><button key={shop.id} onClick={()=>setSelectedShopFilter(shop.id)} className="p-6 bg-white border border-stone-200 hover:border-amber-400 rounded-2xl text-left shadow-sm"><strong className="block text-lg">{shop.name}</strong><span className="text-sm text-stone-500">{shop.address}</span></button>)}</div></div>;
 

@@ -41,12 +41,14 @@ export interface Prescription {
   followUpInterval?: string; // '1 Month' | '3 Months' | '6 Months' | '1 Year'
 }
 
-export type ProductCategory = 
-  | 'Spectacle Frame'
+export type ProductCategory =
+  | 'Frames'
   | 'Sunglasses'
-  | 'Ophthalmic Lens'
+  | 'Eyewear Lens'
   | 'Contact Lens'
-  | 'Lens Solution'
+  | 'Goggles Lens'
+  | 'MPS'
+  | 'Repair'
   | 'Optical Accessory'
   | 'Reading Glasses'
   | 'Equipment / Battery';

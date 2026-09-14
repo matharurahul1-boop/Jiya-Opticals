@@ -39,7 +39,7 @@ Polls use full query results and upload changed items. A new record becomes elig
 
 columns maps target field names to EXACT source headers/SELECT aliases. Required fields are externalId, barcode, name, purchasePrice, mrp, salePrice and stockQty. Optional qrCode stores a separate QR payload if the sticker uses one. If Drishti only has one encoded code, map it to barcode and remove qrCode from columns.
 
-Other supported fields: category, brand, modelNo, color, frameType, size, hsnCode, gstRate, minStockAlert, location. Use explicit defaults for fields absent from the source; do not invent prices. Category must be one of the app's categories, e.g. Spectacle Frame or Sunglasses. Normalize vendor category names in the SELECT or export. Numeric values use an invariant decimal point. Zero prices/stock/tax remain zero.
+Other supported fields: category, brand, modelNo, color, frameType, size, hsnCode, gstRate, minStockAlert, location. Use explicit defaults for fields absent from the source; do not invent prices. Category must be one of the app's categories: Frames, Sunglasses, Eyewear Lens, Contact Lens, Goggles Lens, MPS, Repair, Optical Accessory, Reading Glasses, Equipment / Battery. Normalize vendor category names in the SELECT or export. Numeric values use an invariant decimal point. Zero prices/stock/tax remain zero.
 
 Code columns MUST be strings. If the database stores them numerically, ask the vendor how sticker formatting works and use the correct text expression in the SELECT. Do not guess zero-padding. QR URLs/text are treated as literal identifiers and never fetched. sourceId must remain stable for this Drishti installation.
 

@@ -50,7 +50,7 @@ export function DrishtiSyncPanel() {
         stockQty: 'StockQty'
       },
       defaults: {
-        category: 'Spectacle Frame',
+        category: 'Frames',
         color: '',
         frameType: 'N/A',
         size: '',

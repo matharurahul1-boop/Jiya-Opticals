@@ -24,6 +24,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
 import { catalogKey } from '../lib/catalog';
+import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS } from '../lib/gst';
 
 export const InventoryManager: React.FC = () => {
   const { 
@@ -87,7 +88,7 @@ export const InventoryManager: React.FC = () => {
   const [formData, setFormData] = useState<Omit<Product, 'id'>>({
     barcode: '',
     name: '',
-    category: 'Spectacle Frame',
+    category: 'Frames',
     brand: '',
     modelNo: '',
     color: 'Black',
@@ -104,16 +105,7 @@ export const InventoryManager: React.FC = () => {
     shopId: 'all'
   });
 
-  const categories: ProductCategory[] = [
-    'Spectacle Frame',
-    'Sunglasses',
-    'Ophthalmic Lens',
-    'Contact Lens',
-    'Lens Solution',
-    'Optical Accessory',
-    'Reading Glasses',
-    'Equipment / Battery'
-  ];
+  const categories: ProductCategory[] = PRODUCT_CATEGORIES;
 
   const filteredProducts = products.filter((p) => {
     const matchesShop =
@@ -145,7 +137,7 @@ export const InventoryManager: React.FC = () => {
     setFormData({
       barcode: randomBarcode,
       name: '',
-      category: 'Spectacle Frame',
+      category: 'Frames',
       brand: '',
       modelNo: '',
       color: 'Black',
@@ -272,7 +264,7 @@ export const InventoryManager: React.FC = () => {
       if (cols.length < 2) continue;
 
       const name = cols[0] || `Imported Item ${i}`;
-      const category = (categories.find((c) => c.toLowerCase() === (cols[1] || '').toLowerCase()) || 'Spectacle Frame') as ProductCategory;
+      const category = (categories.find((c) => c.toLowerCase() === (cols[1] || '').toLowerCase()) || 'Frames') as ProductCategory;
       const brand = cols[2] || '';
       const modelNo = cols[3] || '';
       const color = cols[4] || 'Standard';
@@ -329,10 +321,10 @@ export const InventoryManager: React.FC = () => {
   const handleDownloadSampleCSV = () => {
     const csvContent =
       'Name,Category,Brand,ModelNo,Color,FrameType,Size,HSNCode,PurchasePrice,MRP,SalePrice,GSTRate,StockQty,MinStockAlert,Location,Barcode\n' +
-      'Ray-Ban Aviator Classic Green,Spectacle Frame,Ray-Ban,RB-3025,Gold / Green,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099\n' +
-      'Essilor Crizal Sapphire 1.60 Blue,Ophthalmic Lens,Essilor,Sapphire-1.60,Clear Blue,N/A,70mm,90015000,1400,3800,3200,12,20,5,Lens Box 2,890123450098\n' +
+      'Ray-Ban Aviator Classic Green,Frames,Ray-Ban,RB-3025,Gold / Green,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099\n' +
+      'Essilor Crizal Sapphire 1.60 Blue,Eyewear Lens,Essilor,Sapphire-1.60,Clear Blue,N/A,70mm,90015000,1400,3800,3200,12,20,5,Lens Box 2,890123450098\n' +
       'Acuvue Moist Daily Contact Lenses 30pk,Contact Lens,Johnson & Johnson,Moist-30,Clear Tint,N/A,8.5 BC,90013000,1200,2400,2100,12,15,4,CL Cabinet,890123450097\n' +
-      'Fastrack Square Acetate Glossy,Spectacle Frame,Fastrack,FT-2210,Matte Grey,Full Rim,53-17-140,90031100,650,1699,1499,12,12,4,Rack B-2,890123450096';
+      'Fastrack Square Acetate Glossy,Frames,Fastrack,FT-2210,Matte Grey,Full Rim,53-17-140,90031100,650,1699,1499,12,12,4,Rack B-2,890123450096';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -674,11 +666,17 @@ export const InventoryManager: React.FC = () => {
                   <label className="block text-stone-600 mb-1 font-semibold">{t("Brand / Manufacturer")}</label>
                   <input
                     type="text"
+                    list="brand-suggestions"
                     placeholder={t("Ray-Ban, Titan, Zeiss...")}
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
+                  <datalist id="brand-suggestions">
+                    {(formData.category === 'Contact Lens' ? SUGGESTED_CONTACT_LENS_BRANDS : SUGGESTED_EYEWEAR_BRANDS).map((b) => (
+                      <option key={b} value={b} />
+                    ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-stone-600 mb-1 font-semibold">{t("Model / Article No.")}</label>
@@ -978,7 +976,7 @@ export const InventoryManager: React.FC = () => {
 
                   <textarea
                     rows={4}
-                    placeholder={t("Name,Category,Brand,ModelNo,Color,FrameType,Size,HSNCode,PurchasePrice,MRP,SalePrice,GSTRate,StockQty,MinStockAlert,Location,Barcode&#10;Ray-Ban Aviator,Spectacle Frame,Ray-Ban,RB-3025,Gold,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099")}
+                    placeholder={t("Name,Category,Brand,ModelNo,Color,FrameType,Size,HSNCode,PurchasePrice,MRP,SalePrice,GSTRate,StockQty,MinStockAlert,Location,Barcode&#10;Ray-Ban Aviator,Frames,Ray-Ban,RB-3025,Gold,Full Rim,58-14-135,90031100,3200,6590,5900,12,10,3,Rack A-1,890123450099")}
                     value={importText}
                     onChange={(e) => {
                       setImportText(e.target.value);

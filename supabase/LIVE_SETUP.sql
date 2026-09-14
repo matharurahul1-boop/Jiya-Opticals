@@ -487,7 +487,7 @@ begin
       or (qr is not null and (jsonb_typeof(item->'qrCode')<>'string' or length(qr)>2048 or qr<>trim(qr))) then
       raise exception 'Source ID, original code and item name are required (codes must be text)';
     end if;
-    if coalesce(item->>'category','') not in ('Spectacle Frame','Sunglasses','Ophthalmic Lens','Contact Lens','Lens Solution','Optical Accessory','Reading Glasses','Equipment / Battery') then raise exception 'Unknown product category'; end if;
+    if coalesce(item->>'category','') not in ('Frames','Sunglasses','Eyewear Lens','Contact Lens','Goggles Lens','MPS','Repair','Optical Accessory','Reading Glasses','Equipment / Battery') then raise exception 'Unknown product category'; end if;
     if exists(select 1 from unnest(array['purchasePrice','mrp','salePrice','gstRate','stockQty','minStockAlert']) field
       where jsonb_typeof(item->field) is distinct from 'number') then raise exception 'Prices, tax and stock must be numbers'; end if;
     if (item->>'purchasePrice')::numeric<0 or (item->>'mrp')::numeric<0 or (item->>'salePrice')::numeric<0

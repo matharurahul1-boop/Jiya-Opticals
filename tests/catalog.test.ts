@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { expandCatalog,updateCatalogProduct,transferCatalogStock,applyStockMovement } from '../src/lib/catalog';
 import type { Product } from '../src/types';
-const item:Product={id:'old-a',shopId:'a',barcode:'000123',name:'Frame',category:'Spectacle Frame',brand:'Brand',modelNo:'M1',color:'Black',hsnCode:'9003',purchasePrice:100,mrp:250,salePrice:200,gstRate:0,stockQty:10,minStockAlert:1};
+const item:Product={id:'old-a',shopId:'a',barcode:'000123',name:'Frame',category:'Frames',brand:'Brand',modelNo:'M1',color:'Black',hsnCode:'9003',purchasePrice:100,mrp:250,salePrice:200,gstRate:0,stockQty:10,minStockAlert:1};
 test('one material has separate branch stock, stable historical IDs, and idempotent expansion',()=>{
  const rows=expandCatalog([item],['a','b']);assert.equal(rows.length,2);assert.equal(rows[0].id,'old-a');assert.equal(rows[1].stockQty,0);assert.equal(rows[0].catalogId,rows[1].catalogId);
  assert.deepEqual(expandCatalog(rows,['a','b']),rows);

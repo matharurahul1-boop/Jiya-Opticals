@@ -35,7 +35,7 @@ test('Drishti sync is atomic, idempotent, shop-scoped and preserves ERP stock', 
   const owner = '00000000-0000-0000-0000-000000000001', member = '00000000-0000-0000-0000-000000000002';
   const rpc = async (name: string, args: unknown[] = []) => (await db.query<{ r: any }>(`select public.${name}(${args.map((_, i) => '$' + (i + 1)).join(',')}) r`, args)).rows[0].r;
   const signIn = async (id: string) => { await db.exec('reset role; set role authenticated'); await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]); };
-  const sourceItem = { externalId: 'D-1', barcode: '000123', qrCode: 'https://example.invalid/AbC', name: 'Frame', category: 'Spectacle Frame', purchasePrice: 100, mrp: 250, salePrice: 200, gstRate: 0, stockQty: 10, minStockAlert: 0 };
+  const sourceItem = { externalId: 'D-1', barcode: '000123', qrCode: 'https://example.invalid/AbC', name: 'Frame', category: 'Frames', purchasePrice: 100, mrp: 250, salePrice: 200, gstRate: 0, stockQty: 10, minStockAlert: 0 };
   const upload = (items: any[], shop = 'a') => rpc('optical_drishti_import', [owner, shop, 'drishti-main', JSON.stringify(items)]);
   try {
     await db.exec(`create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);

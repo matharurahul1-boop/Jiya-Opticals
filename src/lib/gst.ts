@@ -1,14 +1,27 @@
 import { ProductCategory, StoreProfile } from '../types';
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = [
-  'Spectacle Frame',
+  'Frames',
   'Sunglasses',
-  'Ophthalmic Lens',
+  'Eyewear Lens',
   'Contact Lens',
-  'Lens Solution',
+  'Goggles Lens',
+  'MPS',
+  'Repair',
   'Optical Accessory',
   'Reading Glasses',
   'Equipment / Battery'
+];
+
+// Common brand names offered as autocomplete suggestions when creating a material.
+// This is a starting list, not a restriction — any brand can still be typed freely.
+export const SUGGESTED_EYEWEAR_BRANDS = [
+  'Idee', 'David Jones', 'Scott', 'X-Ford', 'Peter John', 'Carrera', 'Calvin Klein',
+  'Tommy Hilfiger', 'Ray-Ban', 'Vogue', 'Marc Jacobs', 'Burberry', 'Michael Kors',
+  'Oakley', 'Police', 'Armani', 'Fokals', 'Mark Williams', 'Arnette'
+];
+export const SUGGESTED_CONTACT_LENS_BRANDS = [
+  'Bausch & Lomb', 'Cooper Vision', 'Alcon', 'Johnson & Johnson', 'O2 Max'
 ];
 
 /**

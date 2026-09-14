@@ -27,7 +27,7 @@
     "stockQty": "StockQty"
   },
   "defaults": {
-    "category": "Spectacle Frame",
+    "category": "Frames",
     "color": "",
     "frameType": "N/A",
     "size": "",
