@@ -552,7 +552,7 @@ export const InventoryManager: React.FC = () => {
       {/* Products Table */}
       <div className="bg-white border border-amber-200/80 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-stone-700">
+          <table className="materials-table w-full text-left text-xs text-stone-700">
             <thead className="bg-stone-100 text-stone-700 uppercase text-[10px] font-bold border-b border-stone-200">
               <tr>
                 <th className="py-2.5 px-3">{t("Material / Item Details")}</th>
@@ -570,18 +570,18 @@ export const InventoryManager: React.FC = () => {
               {materialGroups.map(({id,rows}) => {
                 const p=rows[0],total=rows.reduce((sum,row)=>sum+row.stockQty,0);
                 return <tr key={id} className="hover:bg-stone-50/80 transition-colors">
-                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo} · {p.color}</div></td>
-                  <td className="px-2 text-xs text-stone-500">{p.category}</td>
-                  <td className="px-2 font-mono text-xs">{p.barcode}</td>
-                  <td className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
+                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm break-words">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo} · {p.color}</div></td>
+                  <td data-label={t('Category')} className="px-2 text-xs text-stone-500">{p.category}</td>
+                  <td data-label={t('Barcode')} className="px-2 font-mono text-xs break-all">{p.barcode}</td>
+                  <td data-label={t('Shop Branch')} className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
                     <button onClick={()=>handleOpenStockAdjust(row)} className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 hover:border-amber-400" title={t("Adjust this shop's stock")}>
                       <span className="text-xs whitespace-nowrap">{(shops.find(s=>s.id===row.shopId)?.name || 'Unallocated').split(' - ')[0]}</span><strong className={isLowStockRow(row)?'text-rose-600':row.stockQty===0?'text-stone-400':'text-emerald-700'}>{row.stockQty}</strong>
                     </button>
-                    <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30" title={t("Transfer from this shop")}><ArrowLeftRight className="w-4 h-4"/></button>
+                    <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30 shrink-0" title={t("Transfer from this shop")}><ArrowLeftRight className="w-4 h-4"/></button>
                   </div>)}</div></td>
-                  <td className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:t("Shop-wise")}</td>
-                  <td className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:t("Varies")}</td>
-                  <td className="px-2 text-center">{p.gstRate}%</td>
+                  <td data-label={t('Cost (₹)')} className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:t("Shop-wise")}</td>
+                  <td data-label={t('Sale (₹)')} className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:t("Varies")}</td>
+                  <td data-label={t('GST')} className="px-2 text-center">{p.gstRate}%</td>
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
                     <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>
@@ -673,7 +673,7 @@ export const InventoryManager: React.FC = () => {
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                   <datalist id="brand-suggestions">
-                    {(formData.category === 'Contact Lens' ? SUGGESTED_CONTACT_LENS_BRANDS : SUGGESTED_EYEWEAR_BRANDS).map((b) => (
+                    {(formData.category === 'Contact Lens' ? SUGGESTED_CONTACT_LENS_BRANDS : ['Frames','Sunglasses'].includes(formData.category) ? SUGGESTED_EYEWEAR_BRANDS : []).map((b) => (
                       <option key={b} value={b} />
                     ))}
                   </datalist>

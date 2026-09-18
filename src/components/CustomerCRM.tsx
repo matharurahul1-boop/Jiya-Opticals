@@ -330,7 +330,7 @@ export const CustomerCRM: React.FC = () => {
         {/* Left 7 Cols: Customer Table */}
         <div className="lg:col-span-7 bg-white border border-amber-200/80 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-stone-700">
+            <table className="customers-table w-full text-left text-xs text-stone-700">
               <thead className="bg-stone-100 text-stone-700 uppercase text-[10px] font-bold border-b border-stone-200">
                 <tr>
                   <th className="py-2.5 px-3">{t("Patient Name")}</th>
@@ -351,10 +351,10 @@ export const CustomerCRM: React.FC = () => {
                     }`}
                   >
                     <td className="py-3 px-3">
-                      <div className="font-bold text-stone-900">{c.name}</div>
+                      <div className="font-bold text-stone-900 break-words">{c.name}</div>
                       <div className="text-[10px] text-stone-500">{t("Joined: ")}{c.createdAt}</div>
                     </td>
-                    <td className="py-3 px-2">
+                    <td data-label={t('Mobile / City')} className="py-3 px-2">
                       <div className="text-stone-800 font-mono text-[11px]">📱 {c.mobile}</div>
                       {c.email && (
                         <div className="text-[10px] text-sky-700 truncate max-w-[150px]" title={c.email}>
@@ -363,10 +363,10 @@ export const CustomerCRM: React.FC = () => {
                       )}
                       <div className="text-[10px] text-stone-500">{c.city || 'Local'}</div>
                     </td>
-                    <td className="py-3 px-2 text-right font-medium text-stone-800">
+                    <td data-label={t('Total Spent')} className="py-3 px-2 text-right font-medium text-stone-800">
                       ₹{c.totalSpent}
                     </td>
-                    <td className="py-3 px-2 text-right">
+                    <td data-label={t('Dues')} className="py-3 px-2 text-right">
                       {c.outstandingBalance > 0 ? (
                         <span className="font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-xs">
                           ₹{c.outstandingBalance}
@@ -375,7 +375,7 @@ export const CustomerCRM: React.FC = () => {
                         <span className="text-emerald-700 font-semibold text-[11px]">₹0</span>
                       )}
                     </td>
-                    <td className="py-3 px-2 text-center">
+                    <td data-label={t('Rx')} className="py-3 px-2 text-center">
                       <span className="px-1.5 py-0.5 rounded text-[10px] bg-stone-100 text-stone-700 font-mono">
                         {c.prescriptions.length}
                       </span>

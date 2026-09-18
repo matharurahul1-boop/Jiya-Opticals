@@ -8,3 +8,6 @@ coverage/
 !.env.example
 desktop-connector/.state/
 desktop-connector/config.json
+
+.local-backups/
+setup/jiya/

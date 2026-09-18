@@ -222,7 +222,7 @@ export const DayBookReports: React.FC = () => {
                 {t("No invoices recorded on this date. ")}</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-stone-700">
+                <table className="day-book-table w-full text-left text-xs text-stone-700">
                   <thead className="bg-stone-50 text-stone-600 uppercase text-[10px] border-b border-stone-200">
                     <tr>
                       <th className="p-2">{t("Invoice #")}</th>
@@ -238,16 +238,16 @@ export const DayBookReports: React.FC = () => {
                   <tbody className="divide-y divide-stone-100">
                     {dateInvoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-amber-50/40">
-                        <td className="p-2 font-mono font-bold text-stone-900">{inv.invoiceNo}</td>
-                        <td className="p-2 text-stone-500">{inv.time}</td>
-                        <td className="p-2 font-medium text-stone-900">{inv.customerName}</td>
-                        <td className="p-2 text-stone-500 truncate max-w-[200px]">
+                        <td data-label={t('Invoice #')} className="p-2 font-mono font-bold text-stone-900">{inv.invoiceNo}</td>
+                        <td data-label={t('Time')} className="p-2 text-stone-500">{inv.time}</td>
+                        <td data-label={t('Customer')} className="p-2 font-medium text-stone-900">{inv.customerName}</td>
+                        <td data-label={t('Items')} className="p-2 text-stone-500 break-words sm:truncate sm:max-w-[200px]">
                           {inv.items.map((i) => `${i.name} (x${i.qty})`).join(', ')}
                         </td>
-                        <td className="p-2 text-right font-bold text-stone-900">₹{inv.netPayable}</td>
-                        <td className="p-2 text-right font-bold text-emerald-700">₹{inv.advancePaid}</td>
-                        <td className="p-2 text-stone-600 font-mono text-[11px]">{inv.paymentMode}</td>
-                        <td className="p-2 text-right font-bold text-rose-600">₹{inv.balanceDue}</td>
+                        <td data-label={t('Net (₹)')} className="p-2 text-right font-bold text-stone-900">₹{inv.netPayable}</td>
+                        <td data-label={t('Paid (₹)')} className="p-2 text-right font-bold text-emerald-700">₹{inv.advancePaid}</td>
+                        <td data-label={t('Mode')} className="p-2 text-stone-600 font-mono text-[11px]">{inv.paymentMode}</td>
+                        <td data-label={t('Balance (₹)')} className="p-2 text-right font-bold text-rose-600">₹{inv.balanceDue}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -275,7 +275,8 @@ export const DayBookReports: React.FC = () => {
           </div>
 
           <div className="bg-white border border-amber-200/80 rounded-xl overflow-hidden shadow-xs">
-            <table className="w-full text-left text-xs text-stone-700">
+            <div className="overflow-x-auto">
+            <table className="expenses-table w-full text-left text-xs text-stone-700">
               <thead className="bg-stone-50 text-stone-600 uppercase text-[10px] border-b border-stone-200">
                 <tr>
                   <th className="p-2.5">{t("Date")}</th>
@@ -290,12 +291,12 @@ export const DayBookReports: React.FC = () => {
               <tbody className="divide-y divide-stone-100">
                 {expenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-amber-50/40">
-                    <td className="p-2.5 text-stone-500">{exp.date}</td>
-                    <td className="p-2.5 font-bold text-stone-900">{exp.category}</td>
-                    <td className="p-2.5 text-stone-700">{exp.paidTo}</td>
-                    <td className="p-2.5 text-stone-500">{exp.remarks || '-'}</td>
-                    <td className="p-2.5 font-mono text-[11px] text-stone-600">{exp.paymentMode}</td>
-                    <td className="p-2.5 text-right font-bold text-rose-600">₹{exp.amount}</td>
+                    <td data-label={t('Date')} className="p-2.5 text-stone-500">{exp.date}</td>
+                    <td data-label={t('Category')} className="p-2.5 font-bold text-stone-900">{exp.category}</td>
+                    <td data-label={t('Paid To')} className="p-2.5 text-stone-700">{exp.paidTo}</td>
+                    <td data-label={t('Remarks')} className="p-2.5 text-stone-500 break-words">{exp.remarks || '-'}</td>
+                    <td data-label={t('Mode')} className="p-2.5 font-mono text-[11px] text-stone-600">{exp.paymentMode}</td>
+                    <td data-label={t('Amount (₹)')} className="p-2.5 text-right font-bold text-rose-600">₹{exp.amount}</td>
                     <td className="p-2.5 text-right">
                       <button
                         onClick={() => deleteExpense(exp.id)}
@@ -308,6 +309,7 @@ export const DayBookReports: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

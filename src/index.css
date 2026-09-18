@@ -42,6 +42,94 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Reflow the screen preview on phones; keep the printed invoice tabular. */
+.invoice-dialog,.invoice-preview {min-width:0;}
+.invoice-preview {min-height:0;overscroll-behavior:contain;}
+.invoice-sheet {overflow-wrap:anywhere;}
+@media screen and (max-width:639px) {
+ .invoice-modal {padding:0;overflow:hidden;}
+ .invoice-dialog {height:100dvh;max-height:100dvh;border:0;border-radius:0;}
+ .invoice-toolbar {padding:10px 12px;gap:10px;}
+ .invoice-toolbar>div:first-child {width:100%;min-width:0;flex-wrap:wrap;gap:6px;}
+ .invoice-toolbar>div:first-child>div {flex:1;min-width:0;}
+ .invoice-toolbar button {min-height:40px;}
+ .invoice-toolbar>div:first-child button {flex:1;padding:6px;font-size:11px;}
+ .invoice-actions {width:100%;gap:6px;justify-content:space-between;}
+ .invoice-actions>button {margin:0;padding:8px;}
+ .invoice-preview {padding:16px 12px calc(24px + env(safe-area-inset-bottom));}
+ .invoice-heading {flex-direction:column;gap:14px;}
+ .invoice-heading>div {width:100%;min-width:0;text-align:left;}
+ .invoice-heading .flex {flex-wrap:wrap;}
+ .invoice-sheet>.grid {grid-template-columns:minmax(0,1fr);gap:16px;}
+ .invoice-sheet>.grid>div {min-width:0;}
+ .invoice-items,.invoice-items tbody {display:block;width:100%;}
+ .invoice-items thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .invoice-items tbody tr {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:10px;gap:8px;border-bottom:1px solid #e2e8f0;}
+ .invoice-items td {display:block;min-width:0;padding:0;text-align:left;font-size:12px;}
+ .invoice-items td:first-child {display:none;}
+ .invoice-items td:nth-child(2) {grid-column:1/-1;font-size:13px;padding-bottom:4px;}
+ .invoice-items td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#64748b;margin-bottom:3px;}
+ .invoice-sheet .space-y-1>.flex {gap:12px;}
+ .invoice-sheet .space-y-1>.flex>span:last-child {text-align:right;}
+}
+
+/* POS cart table: a long product name in a fixed-width column pushed the row
+   controls out of line on narrow phones. Reflow each row into a small card. */
+@media screen and (max-width:639px) {
+ .cart-items,.cart-items tbody {display:block;width:100%;}
+ .cart-items thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .cart-items tbody tr {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;padding:10px 34px 10px 2px;position:relative;}
+ .cart-items td {padding:0;text-align:left;min-width:0;}
+ .cart-items td:first-child {grid-column:1/-1;}
+ .cart-items td:last-child {position:absolute;top:8px;right:0;}
+ .cart-items td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#64748b;margin-bottom:3px;}
+}
+
+/* Inventory materials table: same long-name-vs-short-cells problem, plus a
+   nested per-shop stock block. Reflow into a card per material on phones. */
+@media screen and (max-width:639px) {
+ .materials-table,.materials-table tbody {display:block;width:100%;}
+ .materials-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .materials-table tbody tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:14px;}
+ .materials-table td {padding:0;text-align:left;min-width:0;}
+ .materials-table td:nth-child(1),.materials-table td:nth-child(4),.materials-table td:nth-child(9) {grid-column:1/-1;}
+ .materials-table td:nth-child(9) {display:flex;gap:4px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:10px;}
+ .materials-table td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;}
+}
+
+/* Day Book: bills and expenses lists, same reflow-to-card treatment. */
+@media screen and (max-width:639px) {
+ .day-book-table,.day-book-table tbody,.expenses-table,.expenses-table tbody {display:block;width:100%;}
+ .day-book-table thead,.expenses-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .day-book-table tbody tr,.expenses-table tbody tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:12px;}
+ .day-book-table td,.expenses-table td {padding:0;text-align:left;min-width:0;}
+ .day-book-table td[data-label]::before,.expenses-table td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;}
+ .day-book-table td:nth-child(3),.day-book-table td:nth-child(4) {grid-column:1/-1;}
+ .expenses-table td:nth-child(3),.expenses-table td:nth-child(4),.expenses-table td:nth-child(7) {grid-column:1/-1;}
+ .expenses-table td:nth-child(7) {text-align:right;}
+}
+
+/* Customers list: same reflow, plus the action buttons need room to wrap. */
+@media screen and (max-width:639px) {
+ .customers-table,.customers-table tbody {display:block;width:100%;}
+ .customers-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .customers-table tbody tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:12px;}
+ .customers-table td {padding:0;text-align:left;min-width:0;}
+ .customers-table td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;}
+ .customers-table td:nth-child(1),.customers-table td:nth-child(2),.customers-table td:nth-child(6) {grid-column:1/-1;}
+ .customers-table td:nth-child(6) {display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;border-top:1px solid #f1f5f9;padding-top:10px;}
+}
+
+/* Purchases list: same reflow. */
+@media screen and (max-width:639px) {
+ .purchases-table,.purchases-table tbody {display:block;width:100%;}
+ .purchases-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+ .purchases-table tbody tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:12px;}
+ .purchases-table td {padding:0;text-align:left;min-width:0;}
+ .purchases-table td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;}
+ .purchases-table td:nth-child(1),.purchases-table td:nth-child(3) {grid-column:1/-1;}
+}
+
 /* Optical studio identity. Replace public/brand/logo.svg to update the mark. */
 .optical-eyebrow { display:block; font-size:10px; font-weight:700; letter-spacing:.2em; color:#39726a; }
 .optical-auth { min-height:100dvh; display:grid; grid-template-columns:1.1fr 1fr; background:#fcfcf9; padding:20px; gap:20px; }

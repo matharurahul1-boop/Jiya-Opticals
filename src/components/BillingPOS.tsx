@@ -529,7 +529,7 @@ export const BillingPOS: React.FC = () => {
                 {t("No items added yet. Click any product from catalog or scan barcode. ")}</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-stone-700">
+                <table className="cart-items w-full text-left text-xs text-stone-700">
                   <thead className="bg-stone-50 text-stone-600 uppercase text-[10px] border-b border-stone-200">
                     <tr>
                       <th className="py-2 px-2">{t("Item Description")}</th>
@@ -545,12 +545,12 @@ export const BillingPOS: React.FC = () => {
                     {cartItems.map((item, idx) => (
                       <tr key={idx} className="hover:bg-stone-50">
                         <td className="py-2.5 px-2">
-                          <div className="font-semibold text-stone-900">{item.name}</div>
-                          <div className="text-[10px] text-stone-400 font-mono">
+                          <div className="font-semibold text-stone-900 break-words">{item.name}</div>
+                          <div className="text-[10px] text-stone-400 font-mono break-all">
                             {t("HSN: ")}{item.hsnCode} {t("• Barcode: ")}{item.barcode}
                           </div>
                         </td>
-                        <td className="py-2.5 px-2 text-center">
+                        <td data-label={t('Qty')} className="py-2.5 px-2 text-center">
                           <div className="inline-flex items-center border border-stone-300 rounded bg-white">
                             <button
                               onClick={() => updateItemQty(idx, item.qty - 1)}
@@ -567,10 +567,10 @@ export const BillingPOS: React.FC = () => {
                             </button>
                           </div>
                         </td>
-                        <td className="py-2.5 px-2 text-right font-medium text-stone-800">
+                        <td data-label={t('Rate (₹)')} className="py-2.5 px-2 text-right font-medium text-stone-800">
                           ₹{item.unitPrice}
                         </td>
-                        <td className="py-2.5 px-2 text-center">
+                        <td data-label={t('Disc %')} className="py-2.5 px-2 text-center">
                           <NumberInput
                             type="number"
                             min="0"
@@ -581,15 +581,16 @@ export const BillingPOS: React.FC = () => {
                             className="w-12 bg-stone-50 border border-stone-200 text-center rounded text-xs py-0.5 text-stone-800"
                           />
                         </td>
-                        <td className="py-2.5 px-2 text-right text-stone-500">
+                        <td data-label={t('GST %')} className="py-2.5 px-2 text-right text-stone-500">
                           {item.gstRate}%
                         </td>
-                        <td className="py-2.5 px-2 text-right font-bold text-amber-700">
+                        <td data-label={t('Total (₹)')} className="py-2.5 px-2 text-right font-bold text-amber-700">
                           ₹{item.totalAmount}
                         </td>
                         <td className="py-2.5 px-1 text-center">
                           <button
                             onClick={() => removeItem(idx)}
+                            aria-label={t('Remove item')}
                             className="text-stone-400 hover:text-rose-600 p-1"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

@@ -2,7 +2,7 @@ import { t } from '../lib/i18n';
 import { NumberInput } from './NumberInput';
 import React, { useEffect, useState } from 'react';
 import {
-  BookOpenCheck,
+
   Building2,
   Check,
   Edit,
@@ -24,7 +24,7 @@ import { useApp } from '../context/AppContext';
 import { Doctor, ShopBranch, StoreProfile, UserAccount } from '../types';
 import { fileToQrDataUrl } from '../lib/upiQr';
 import { PRODUCT_CATEGORIES } from '../lib/gst';
-import { SetupGuide } from './SetupGuide';
+
 
 export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = ({ startTab = 'StoreProfile' }) => {
   const {
@@ -47,7 +47,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
     setActiveTab: goToTab
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'StoreProfile' | 'Shops' | 'Doctors' | 'Users' | 'Guide'>(startTab);
+  const [activeTab, setActiveTab] = useState<'StoreProfile' | 'Shops' | 'Doctors' | 'Users'>(startTab);
 
   // App Users Form State
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -300,18 +300,10 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           {t("Users (")}{users.length})
         </button>
 
-        <button
-          onClick={() => setActiveTab('Guide')}
-          className={`px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-            activeTab === 'Guide' ? 'bg-amber-600 text-white' : 'text-stone-700 hover:bg-stone-100'
-          }`}
-        >
-          <BookOpenCheck className="w-3.5 h-3.5" />
-          {t("Setup Guide")}
-        </button>
+
       </div>
 
-      {activeTab === 'Guide' && <SetupGuide isCloud={isCloud} />}
+      
 
       {/* Tab 1: Store Profile & GSTIN Master */}
       {activeTab === 'StoreProfile' && (

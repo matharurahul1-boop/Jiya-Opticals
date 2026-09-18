@@ -7,10 +7,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
   'Contact Lens',
   'Goggles Lens',
   'MPS',
-  'Repair',
-  'Optical Accessory',
-  'Reading Glasses',
-  'Equipment / Battery'
+  'Repair'
 ];
 
 // Common brand names offered as autocomplete suggestions when creating a material.

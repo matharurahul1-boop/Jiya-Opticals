@@ -237,7 +237,7 @@ export const PurchasesManager: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-stone-700">
+          <table className="purchases-table w-full text-left text-xs text-stone-700">
             <thead className="bg-stone-50 text-stone-600 uppercase text-[10px] font-semibold border-b border-stone-200">
               <tr>
                 <th className="py-2.5 px-3">{t("Purchase #")}</th>
@@ -254,16 +254,16 @@ export const PurchasesManager: React.FC = () => {
               {filteredPurchases.map((pur) => (
                 <tr key={pur.id} className="hover:bg-stone-50 transition-colors">
                   <td className="py-3 px-3 font-bold text-stone-900 font-mono">{pur.purchaseNo}<span className="block mt-1 font-sans font-normal text-xs text-stone-500">{shops.find(s=>s.id===pur.shopId)?.name || 'Unallocated'}</span></td>
-                  <td className="py-3 px-2 text-stone-500">{pur.billDate}</td>
-                  <td className="py-3 px-2 font-semibold text-stone-800">{pur.supplierName}</td>
-                  <td className="py-3 px-2 font-mono text-stone-600">{pur.supplierBillNo}</td>
-                  <td className="py-3 px-2 text-center">
+                  <td data-label={t('Date')} className="py-3 px-2 text-stone-500">{pur.billDate}</td>
+                  <td data-label={t('Supplier Name')} className="py-3 px-2 font-semibold text-stone-800 break-words">{pur.supplierName}</td>
+                  <td data-label={t('Vendor Bill #')} className="py-3 px-2 font-mono text-stone-600 break-all">{pur.supplierBillNo}</td>
+                  <td data-label={t('Items Qty')} className="py-3 px-2 text-center">
                     <span className="px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-700">
                       {pur.items.reduce((s, it) => s + it.qty, 0)} {t("Units ")}</span>
                   </td>
-                  <td className="py-3 px-2 text-right font-bold text-stone-900">₹{pur.grandTotal}</td>
-                  <td className="py-3 px-2 text-right text-emerald-600 font-medium">₹{pur.paidAmount}</td>
-                  <td className="py-3 px-3 text-right font-bold text-rose-600">₹{pur.balanceDue}</td>
+                  <td data-label={t('Grand Total (₹)')} className="py-3 px-2 text-right font-bold text-stone-900">₹{pur.grandTotal}</td>
+                  <td data-label={t('Paid (₹)')} className="py-3 px-2 text-right text-emerald-600 font-medium">₹{pur.paidAmount}</td>
+                  <td data-label={t('Balance Due (₹)')} className="py-3 px-3 text-right font-bold text-rose-600">₹{pur.balanceDue}</td>
                 </tr>
               ))}
             </tbody>

@@ -152,7 +152,7 @@ export const InvoicePrintModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Invoice preview" className="invoice-modal fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
       {toast && (
         <div
           className={`toast-in fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-sm px-4 py-3 rounded-xl text-sm font-medium shadow-2xl border no-print ${
@@ -167,9 +167,9 @@ export const InvoicePrintModal: React.FC = () => {
         </div>
       )}
       {/* Container */}
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="invoice-dialog bg-white border border-stone-200 rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Top Control Bar (Hidden in @media print) */}
-        <div className="p-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2 no-print shrink-0 flex-wrap">
+        <div className="invoice-toolbar p-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between gap-2 no-print shrink-0 flex-wrap">
           <div className="flex items-center space-x-2">
             <span className="text-xs font-bold text-stone-700">{t("Print Format:")}</span>
             <div className="flex bg-stone-200 border border-stone-300 rounded-lg p-0.5 text-xs">
@@ -190,7 +190,7 @@ export const InvoicePrintModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <div className="invoice-actions flex items-center space-x-1.5 sm:space-x-2">
             <button
               id="btn-whatsapp-invoice"
               onClick={handleWhatsApp}
@@ -233,7 +233,7 @@ export const InvoicePrintModal: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setSelectedInvoiceForPrint(null)}
+              aria-label={t("Close invoice")} onClick={() => setSelectedInvoiceForPrint(null)}
               className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -242,12 +242,12 @@ export const InvoicePrintModal: React.FC = () => {
         </div>
 
         {/* Printable Document Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-white text-stone-900 printable-area">
+        <div className="invoice-preview p-4 sm:p-6 overflow-y-auto flex-1 bg-white text-stone-900 printable-area">
           {printFormat === 'A4' ? (
             /* =================== A4 / A5 GST TAX INVOICE =================== */
-            <div className="max-w-2xl mx-auto space-y-4 text-xs font-sans">
+            <div className="invoice-sheet max-w-2xl mx-auto space-y-4 text-xs font-sans">
               {/* Header */}
-              <div className="border-b-2 border-stone-900 pb-3 flex justify-between items-start">
+              <div className="invoice-heading border-b-2 border-stone-900 pb-3 flex justify-between items-start">
                 <div>
                   <h1 className="text-xl font-black tracking-tight text-stone-900 uppercase">
                     {storeProfile.name}
@@ -354,7 +354,7 @@ export const InvoicePrintModal: React.FC = () => {
               )}
 
               {/* Items Table */}
-              <table className="w-full text-left text-xs border border-stone-300">
+              <table className="invoice-items w-full text-left text-xs border border-stone-300">
                 <thead className="bg-stone-100 text-stone-800 text-[10px] uppercase font-bold border-b border-stone-300">
                   <tr>
                     <th className="py-1.5 px-2">#</th>
@@ -369,22 +369,22 @@ export const InvoicePrintModal: React.FC = () => {
                 <tbody className="divide-y divide-stone-200">
                   {inv.items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="py-1.5 px-2 text-stone-500">{idx + 1}</td>
+                      <td data-label="#" className="py-1.5 px-2 text-stone-500">{idx + 1}</td>
                       <td className="py-1.5 px-2">
                         <div className="font-semibold text-stone-900">{item.name}</div>
                         {item.frameModel && (
                           <div className="text-[10px] text-stone-500">{t("Model: ")}{item.frameModel}</div>
                         )}
                       </td>
-                      <td className="py-1.5 px-2 text-center font-mono text-[10px] text-stone-600">
+                      <td data-label={t('HSN')} className="py-1.5 px-2 text-center font-mono text-[10px] text-stone-600">
                         {item.hsnCode}
                       </td>
-                      <td className="py-1.5 px-2 text-center font-bold text-stone-900">{item.qty}</td>
-                      <td className="py-1.5 px-2 text-right">{item.unitPrice.toFixed(2)}</td>
-                      <td className="py-1.5 px-2 text-center text-[10px] text-stone-600">
+                      <td data-label={t('Qty')} className="py-1.5 px-2 text-center font-bold text-stone-900">{item.qty}</td>
+                      <td data-label={t('Rate (₹)')} className="py-1.5 px-2 text-right">{item.unitPrice.toFixed(2)}</td>
+                      <td data-label={t('GST')} className="py-1.5 px-2 text-center text-[10px] text-stone-600">
                         {item.gstRate}%
                       </td>
-                      <td className="py-1.5 px-2 text-right font-bold text-stone-900">
+                      <td data-label={t('Total (₹)')} className="py-1.5 px-2 text-right font-bold text-stone-900">
                         {item.totalAmount.toFixed(2)}
                       </td>
                     </tr>
@@ -424,7 +424,7 @@ export const InvoicePrintModal: React.FC = () => {
                   <div>
                     <span className="font-bold text-stone-800 block">{t("Terms & Conditions:")}</span>
                     <ul className="list-disc pl-3.5 space-y-0.5 text-[9px]">
-                      {storeProfile.termsAndConditions.slice(0, 3).map((term, i) => (
+                      {storeProfile.termsAndConditions.map((term, i) => (
                         <li key={i}>{term}</li>
                       ))}
                     </ul>
@@ -500,7 +500,7 @@ export const InvoicePrintModal: React.FC = () => {
               <div className="space-y-1 text-[11px] border-b border-dashed border-stone-400 pb-2">
                 {inv.items.map((item, i) => (
                   <div key={i} className="flex justify-between">
-                    <span className="truncate max-w-[170px]">{item.name} {t("x")}{item.qty}</span>
+                    <span className="min-w-0 flex-1 break-words pr-2">{item.name} {t("x")}{item.qty}</span>
                     <span className="font-bold">₹{item.totalAmount}</span>
                   </div>
                 ))}
