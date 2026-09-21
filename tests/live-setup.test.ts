@@ -39,7 +39,6 @@ test('complete live SQL installs twice and every required schema check passes', 
     await assert.rejects(rpc('optical_team_save',[owner,data.version-1,JSON.stringify(data.data)]),(error:any)=>error.code==='PT409');
     await rpc('optical_team_assign',[owner,'member@example.com',['a'],false]);
     await rpc('optical_member_set_role',[owner,'member@example.com','Cashier']);
-    await assert.rejects(rpc('optical_member_set_role',[owner,'member@example.com','Admin']),/Unknown role/);
     const directory=await rpc('optical_team_users',[owner]);
     assert.equal(directory.length,2);
     await signin(member);
@@ -50,5 +49,23 @@ test('complete live SQL installs twice and every required schema check passes', 
     const tampered=structuredClone(data.data);tampered.JIYA_OPTICALS_ERP_V2_products[0].name='Member changed global name';
     await assert.rejects(rpc('optical_team_save',[owner,data.version,JSON.stringify(tampered)]),/Only admin/);
     await assert.rejects(rpc('optical_team_users',[owner]),/Admin access/);
+
+    // Promoting a member to Admin gives them the same full access as the owner.
+    await signin(owner);
+    await rpc('optical_member_set_role',[owner,'member@example.com','Admin']);
+    await signin(member);
+    data=await rpc('optical_team_load',[owner]);
+    assert.equal(data.user.role,'Admin');
+    assert.equal(data.data.JIYA_OPTICALS_ERP_V2_products.length,2,'promoted admin sees every shop, not just their assigned one');
+    data.data.JIYA_OPTICALS_ERP_V2_products[0].name='Admin-renamed frame';
+    const afterAdminSave=await rpc('optical_team_save',[owner,data.version,JSON.stringify(data.data)]);
+    assert.ok(afterAdminSave>data.version);
+    assert.equal((await rpc('optical_team_users',[owner])).length,2,'promoted admin can manage the team like the owner');
+
+    // Removing the member fully revokes access, even after they were Admin.
+    await signin(owner);
+    await rpc('optical_team_assign',[owner,'member@example.com',[],true]);
+    await signin(member);
+    await assert.rejects(rpc('optical_team_load',[owner]),/access removed/);
   }finally{await db.close();}
 });

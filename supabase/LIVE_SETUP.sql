@@ -31,6 +31,20 @@ alter table public.optical_team_members enable row level security;
 revoke all on public.optical_team_members from anon, authenticated;
 create index if not exists optical_team_email_idx on public.optical_team_members(email);
 
+-- Per-business role override for a member (declared here too, not only in
+-- users-directory.sql, so team_load/team_save/team_assign below can depend on
+-- it even if that script is run separately or out of order; both are
+-- idempotent so running both is always safe).
+create table if not exists public.optical_member_role (
+  owner_id uuid not null references public.optical_workspaces(owner_id) on delete cascade,
+  email    text not null check (email = lower(trim(email))),
+  role     text not null default 'Shop Manager'
+           check (role in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician')),
+  primary key (owner_id, email)
+);
+alter table public.optical_member_role enable row level security;
+revoke all on public.optical_member_role from anon, authenticated;
+
 create or replace function optical_private.session_email() returns text
 language plpgsql security definer set search_path = '' as $$
 declare result text;
@@ -40,6 +54,22 @@ begin
   return result;
 end $$;
 
+-- True for the real store owner, and for any team member an Admin has
+-- promoted to the 'Admin' role (see optical_member_role / member_set_role in
+-- users-directory.sql) - they then have full access, same as the owner.
+create or replace function optical_private.is_store_admin(team_owner uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select auth.uid() is not null and (
+    auth.uid() = team_owner
+    or exists(
+      select 1 from public.optical_member_role r
+      join auth.users u on u.id = auth.uid()
+      where r.owner_id = team_owner and r.role = 'Admin'
+        and r.email = lower(u.email) and u.email_confirmed_at is not null
+    )
+  )
+$$;
+
 create or replace function optical_private.team_list() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb;
@@ -47,7 +77,7 @@ begin
   if auth.uid() is null then raise exception 'Sign in required' using errcode='42501'; end if;
   select coalesce(jsonb_agg(jsonb_build_object('ownerId', w.owner_id,
     'name', coalesce(w.data->'JIYA_OPTICALS_ERP_V2_profile'->>'name','Optical store'),
-    'role', case when w.owner_id=auth.uid() then 'Admin' else 'Shop Manager' end)), '[]') into result
+    'role', case when optical_private.is_store_admin(w.owner_id) then 'Admin' else 'Shop Manager' end)), '[]') into result
   from public.optical_workspaces w
   left join public.optical_team_members m
     on m.owner_id = w.owner_id and m.email = optical_private.session_email()
@@ -75,13 +105,14 @@ end $$;
 
 create or replace function optical_private.team_load(team_owner uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare w public.optical_workspaces; allowed text[]; d jsonb := '{}'; k text; rows jsonb; actor_email text;
+declare w public.optical_workspaces; allowed text[]; d jsonb := '{}'; k text; rows jsonb; actor_email text; is_admin boolean;
 begin
   if auth.uid() is null then raise exception 'Sign in required' using errcode='42501'; end if;
   actor_email := optical_private.session_email();
   select * into w from public.optical_workspaces where owner_id=team_owner;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
-  if team_owner=auth.uid() then d := w.data;
+  is_admin := optical_private.is_store_admin(team_owner);
+  if team_owner=auth.uid() or is_admin then d := w.data;
   else
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=actor_email;
     if not found then raise exception 'Store access removed or email not confirmed' using errcode='42501'; end if;
@@ -104,7 +135,7 @@ begin
   end if;
   return jsonb_build_object('data', d, 'version', w.version, 'ownerId', team_owner,
     'user',jsonb_build_object('id',auth.uid(),'name',coalesce(actor_email,'Store owner'),'username',coalesce(actor_email,''),
-      'role',case when team_owner=auth.uid() then 'Admin' else 'Shop Manager' end,'shopId','all','phone',''));
+      'role',case when team_owner=auth.uid() or is_admin then 'Admin' else 'Shop Manager' end,'shopId','all','phone',''));
 end $$;
 
 -- Common material identity, separate stock rows. Never duplicate physical quantity.
@@ -129,20 +160,21 @@ revoke all on function optical_private.expand_catalog(jsonb) from public,anon,au
 
 create or replace function optical_private.team_save(team_owner uuid, expected_version integer, payload jsonb) returns integer
 language plpgsql security definer set search_path = '' as $$
-declare w public.optical_workspaces; allowed text[]; d jsonb; k text; incoming jsonb; preserved jsonb; all_shops text[];
+declare w public.optical_workspaces; allowed text[]; d jsonb; k text; incoming jsonb; preserved jsonb; all_shops text[]; is_admin boolean;
 begin
   if auth.uid() is null then raise exception 'Sign in required' using errcode='42501'; end if;
   if jsonb_typeof(payload) is distinct from 'object' then raise exception 'Invalid store data'; end if;
   select * into w from public.optical_workspaces where owner_id=team_owner for update;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
-  if team_owner<>auth.uid() then
+  is_admin := optical_private.is_store_admin(team_owner);
+  if team_owner<>auth.uid() and not is_admin then
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=optical_private.session_email();
     if not found then raise exception 'Store access removed' using errcode='42501'; end if;
   end if;
   -- errcode PT409 (not 40001): PostgREST auto-retries serialization_failure (40001) until upstream timeout, so a version conflict must use a non-retryable SQLSTATE.
   if w.version<>expected_version then raise exception 'Store changed in another session. Download unsaved data, then reload.' using errcode='PT409'; end if;
   d := w.data;
-  if team_owner=auth.uid() then
+  if team_owner=auth.uid() or is_admin then
     foreach k in array array['shops','users','products','customers','invoices','suppliers','doctors','staff','expenses','purchases','wa_templates','followups','payments'] loop
       if jsonb_typeof(payload->('JIYA_OPTICALS_ERP_V2_'||k)) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
     end loop;
@@ -192,7 +224,7 @@ begin
   end loop;
   -- Keep historical data attached: a shop with records or assignments cannot be removed.
   if exists(select 1 from public.optical_team_members m, unnest(m.shop_ids) sid where m.owner_id=team_owner and not(sid=any(all_shops))) then raise exception 'Remove team assignments before deleting a shop'; end if;
-  if team_owner=auth.uid() then d:=optical_private.expand_catalog(d); end if;
+  if team_owner=auth.uid() or is_admin then d:=optical_private.expand_catalog(d); end if;
   update public.optical_workspaces set data=d, version=version+1 where owner_id=team_owner;
   return w.version+1;
 end $$;
@@ -201,7 +233,7 @@ create or replace function optical_private.team_members(team_owner uuid) returns
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb;
 begin
-  if auth.uid() is null or auth.uid()<>team_owner then raise exception 'Admin access required' using errcode='42501'; end if;
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then raise exception 'Admin access required' using errcode='42501'; end if;
   select coalesce(jsonb_agg(jsonb_build_object('email',m.email,'shopIds',m.shop_ids,
     'registered',exists(select 1 from auth.users u where lower(u.email)=m.email and u.email_confirmed_at is not null))), '[]') into result
   from public.optical_team_members m where owner_id=team_owner;
@@ -212,10 +244,12 @@ create or replace function optical_private.team_assign(team_owner uuid, member_e
 language plpgsql security definer set search_path = '' as $$
 declare d jsonb; normalized text := lower(trim(member_email));
 begin
-  if auth.uid() is null or auth.uid()<>team_owner then raise exception 'Admin access required' using errcode='42501'; end if;
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then raise exception 'Admin access required' using errcode='42501'; end if;
   select data into d from public.optical_workspaces where owner_id=team_owner for update;
   if not found then raise exception 'Store not found'; end if;
-  if remove_member then delete from public.optical_team_members where owner_id=team_owner and email=normalized;
+  if remove_member then
+    delete from public.optical_team_members where owner_id=team_owner and email=normalized;
+    delete from public.optical_member_role where owner_id=team_owner and email=normalized;
   else
     if normalized is null or normalized !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then raise exception 'Enter a valid email'; end if;
     if normalized=optical_private.session_email() then raise exception 'Admin already has access to all shops'; end if;
@@ -332,7 +366,7 @@ returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb; owner_mail text;
 begin
-  if auth.uid() is null or auth.uid() <> team_owner then
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then
     raise exception 'Admin access required' using errcode = '42501';
   end if;
   select lower(email) into owner_mail from auth.users where id = team_owner;
@@ -381,10 +415,10 @@ returns void
 language plpgsql security definer set search_path = '' as $$
 declare normalized text := lower(trim(member_email));
 begin
-  if auth.uid() is null or auth.uid() <> team_owner then
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then
     raise exception 'Admin access required' using errcode = '42501';
   end if;
-  if new_role is null or new_role not in ('Shop Manager','Optometrist','Cashier','Lab Technician') then
+  if new_role is null or new_role not in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician') then
     raise exception 'Unknown role';
   end if;
   if not exists (select 1 from public.optical_team_members where owner_id = team_owner and email = normalized) then
@@ -414,8 +448,10 @@ create or replace function public.optical_member_set_role(team_owner uuid, membe
   returns void language sql security invoker set search_path = ''
   as $$ select optical_private.member_set_role(team_owner, member_email, new_role) $$;
 
--- Return the saved profile after refresh. Only the real owner is an Admin;
--- member role labels never widen the shop scope granted by team_load.
+-- Return the saved profile after refresh. The real owner is always Admin; a
+-- member's role label (including a promoted 'Admin') comes from whatever
+-- team_load already decided via optical_private.is_store_admin - this just
+-- mirrors that into the display label, it does not grant anything further.
 create or replace function optical_private.team_load_with_profile(team_owner uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare result jsonb; person public.optical_user_directory; label text;
@@ -428,7 +464,7 @@ begin
   end if;
   if team_owner<>auth.uid() then
     select r.role into label from public.optical_member_role r where r.owner_id=team_owner and r.email=optical_private.session_email();
-    result := jsonb_set(result,'{user,role}',to_jsonb(case when label in ('Shop Manager','Optometrist','Cashier','Lab Technician') then label else 'Shop Manager' end));
+    result := jsonb_set(result,'{user,role}',to_jsonb(case when label in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician') then label else 'Shop Manager' end));
   end if;
   return result;
 end $$;

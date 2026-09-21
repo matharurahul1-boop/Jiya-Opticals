@@ -16,7 +16,7 @@ interface Member {
   isAdmin?: boolean;
 }
 
-const ROLES: UserRole[] = ['Shop Manager', 'Optometrist', 'Cashier', 'Lab Technician'];
+const ROLES: UserRole[] = ['Admin', 'Shop Manager', 'Optometrist', 'Cashier', 'Lab Technician'];
 
 // Supabase RPC failures come back as a plain PostgrestError object, not an Error
 // instance, so `String(err)` would render "[object Object]". Pull out the useful text.
@@ -121,6 +121,8 @@ export function TeamManager() {
         <h1 className="text-2xl font-bold">{t("Team &amp; shop access")}</h1>
         <p className="text-stone-600 mt-1">
           {t("Admins see every shop. A team member appears here once you assign them a shop; their name and username fill in after they sign up with that email. You can change their role and shops any time — the email stays fixed. ")}</p>
+        <p className="text-stone-500 mt-1 text-sm">
+          {t("Set a member's role to Admin to give them the same full access as you — every shop, masters, inventory and team management. ")}</p>
       </header>
 
       {error && (

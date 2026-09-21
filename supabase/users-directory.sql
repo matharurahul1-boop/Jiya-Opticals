@@ -89,7 +89,7 @@ returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb; owner_mail text;
 begin
-  if auth.uid() is null or auth.uid() <> team_owner then
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then
     raise exception 'Admin access required' using errcode = '42501';
   end if;
   select lower(email) into owner_mail from auth.users where id = team_owner;
@@ -138,10 +138,10 @@ returns void
 language plpgsql security definer set search_path = '' as $$
 declare normalized text := lower(trim(member_email));
 begin
-  if auth.uid() is null or auth.uid() <> team_owner then
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then
     raise exception 'Admin access required' using errcode = '42501';
   end if;
-  if new_role is null or new_role not in ('Shop Manager','Optometrist','Cashier','Lab Technician') then
+  if new_role is null or new_role not in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician') then
     raise exception 'Unknown role';
   end if;
   if not exists (select 1 from public.optical_team_members where owner_id = team_owner and email = normalized) then
@@ -171,8 +171,10 @@ create or replace function public.optical_member_set_role(team_owner uuid, membe
   returns void language sql security invoker set search_path = ''
   as $$ select optical_private.member_set_role(team_owner, member_email, new_role) $$;
 
--- Return the saved profile after refresh. Only the real owner is an Admin;
--- member role labels never widen the shop scope granted by team_load.
+-- Return the saved profile after refresh. The real owner is always Admin; a
+-- member's role label (including a promoted 'Admin') comes from whatever
+-- team_load already decided via optical_private.is_store_admin - this just
+-- mirrors that into the display label, it does not grant anything further.
 create or replace function optical_private.team_load_with_profile(team_owner uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare result jsonb; person public.optical_user_directory; label text;
@@ -185,7 +187,7 @@ begin
   end if;
   if team_owner<>auth.uid() then
     select r.role into label from public.optical_member_role r where r.owner_id=team_owner and r.email=optical_private.session_email();
-    result := jsonb_set(result,'{user,role}',to_jsonb(case when label in ('Shop Manager','Optometrist','Cashier','Lab Technician') then label else 'Shop Manager' end));
+    result := jsonb_set(result,'{user,role}',to_jsonb(case when label in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician') then label else 'Shop Manager' end));
   end if;
   return result;
 end $$;
