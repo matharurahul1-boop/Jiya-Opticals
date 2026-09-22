@@ -16,7 +16,12 @@ test('complete live SQL installs twice and every required schema check passes', 
     // Exercise upgrade from the original owner-only setup too.
     await db.exec(readFileSync('supabase/setup.sql','utf8'));
     const full = readFileSync('supabase/LIVE_SETUP.sql','utf8');
-    await db.exec(full);await db.exec(full);
+    await db.exec(full);
+    // Existing installs excluded Admin; re-running CREATE TABLE alone cannot upgrade them.
+    await db.exec(`alter table public.optical_member_role drop constraint optical_member_role_role_check;
+      alter table public.optical_member_role add constraint optical_member_role_role_check
+      check(role in ('Shop Manager','Optometrist','Cashier','Lab Technician'));`);
+    await db.exec(full);
     const audit = await db.query<{status:string}>(readFileSync('supabase/VERIFY_LIVE.sql','utf8'));
     assert.equal(audit.rows.length,40);
     assert.deepEqual(audit.rows.filter(r=>r.status!=='PASS'),[]);

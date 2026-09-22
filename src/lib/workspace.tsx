@@ -49,7 +49,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
 
 // A single conditional write keeps invoice, stock and balances together.
 // Concurrent sessions cannot silently overwrite each other's workspace.
-export function useCloudSave(ownerId: string | undefined, initialVersion: number, snapshot: Snapshot, onRemote?: (data: Snapshot) => void) {
+export function useCloudSave(ownerId: string | undefined, initialVersion: number, snapshot: Snapshot, onRemote?: (data: Snapshot, user: WorkspaceAccess['user']) => void) {
   const applyRemote = useRef(onRemote);
   applyRemote.current = onRemote;
   const serialized = JSON.stringify(snapshot);
@@ -67,24 +67,38 @@ export function useCloudSave(ownerId: string | undefined, initialVersion: number
   useEffect(() => {
     if (!ownerId) return;
     let active = true;
-    const timer = window.setInterval(async () => {
-      if (running.current || locked) return;
-      const checkedVersion = version.current;
-      const { data, error } = await supabase!.rpc('optical_team_load', { team_owner: ownerId });
-      if (!active || running.current || version.current !== checkedVersion) return;
-      if (data && data.version !== checkedVersion && latest.current === saved.current && applyRemote.current) {
-        const normalized = JSON.parse(latest.current);
-        for (const key of Object.keys(normalized)) normalized[key] = data.data[key] ?? (Array.isArray(normalized[key]) ? [] : normalized[key]);
-        const next = JSON.stringify(normalized);
-        version.current = data.version; saved.current = next; latest.current = next;
-        applyRemote.current(normalized); setStatus('Saved to Supabase');
-      } else if (error?.code === '42501' || error?.code === 'PT409' || (data && data.version !== checkedVersion)) {
-        conflict.current = true; failed.current = true; setLocked(true);
-        setStatus('Reload required');
-        setError(error ? 'Your store access has changed. Reload to continue.' : 'The store or shop assignments changed in another session. Download any unsaved data, then reload.');
-      }
-    }, 30000);
-    return () => { active = false; window.clearInterval(timer); };
+    let checking = false;
+    const refresh = async () => {
+      if (running.current || locked || checking) return;
+      checking = true;
+      try {
+        const checkedVersion = version.current;
+        const { data, error } = await supabase!.rpc('optical_team_load', { team_owner: ownerId });
+        if (!active || running.current || version.current !== checkedVersion) return;
+        if (data && data.version !== checkedVersion && latest.current === saved.current && applyRemote.current) {
+          const normalized = JSON.parse(latest.current);
+          for (const key of Object.keys(normalized)) normalized[key] = data.data[key] ?? (Array.isArray(normalized[key]) ? [] : normalized[key]);
+          const next = JSON.stringify(normalized);
+          version.current = data.version; saved.current = next; latest.current = next;
+          applyRemote.current(normalized, data.user); setStatus('Saved to Supabase');
+        } else if (error?.code === '42501' || error?.code === 'PT409' || (data && data.version !== checkedVersion)) {
+          conflict.current = true; failed.current = true; setLocked(true);
+          setStatus('Reload required');
+          setError(error ? 'Your store access has changed. Reload to continue.' : 'The store or shop assignments changed in another session. Download any unsaved data, then reload.');
+        }
+      } catch {
+        // A temporary offline state must not discard local edits or revoke access.
+      } finally { checking = false; }
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      active = false; window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [ownerId, locked]);
   useEffect(() => {
     if (!ownerId) return;

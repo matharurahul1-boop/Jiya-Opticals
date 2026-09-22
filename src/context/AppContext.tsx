@@ -368,7 +368,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     [LOCAL_STORAGE_KEY + '_wa_templates']: whatsappTemplates,
     [LOCAL_STORAGE_KEY + '_followups']: followUps,
     [LOCAL_STORAGE_KEY + '_payments']: payments,
-  }, (remote) => {
+  }, (remote, user) => {
+    setCurrentUser(user);
     setShops(remote[LOCAL_STORAGE_KEY+'_shops'] as ShopBranch[]);
     setUsers(remote[LOCAL_STORAGE_KEY+'_users'] as UserAccount[]);
     setStoreProfile(remote[LOCAL_STORAGE_KEY+'_profile'] as StoreProfile);

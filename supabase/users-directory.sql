@@ -45,6 +45,9 @@ create table if not exists public.optical_member_role (
   primary key (owner_id, email)
 );
 alter table public.optical_member_role enable row level security;
+alter table public.optical_member_role drop constraint if exists optical_member_role_role_check;
+alter table public.optical_member_role add constraint optical_member_role_role_check
+  check (role in ('Admin','Shop Manager','Optometrist','Cashier','Lab Technician'));
 revoke all on public.optical_member_role from anon, authenticated;
 
 -- --------------------------------------------------------------------------

@@ -97,7 +97,7 @@ export function TeamManager() {
   };
 
   const setRole = async (memberEmail: string, role: string) => {
-    if (busy) return;
+    if (busy || saveStatus !== 'Saved to Supabase') return;
     setBusy(true);
     setError('');
     try {
@@ -106,7 +106,12 @@ export function TeamManager() {
         member_email: memberEmail,
         new_role: role
       });
-      if (error) throw error;
+      if (error) {
+        if (role === 'Admin' && /Unknown role|optical_member_role_role_check/i.test(error.message)) {
+          throw new Error('The database needs an update before it can grant Admin access. Apply the latest supabase/LIVE_SETUP.sql, then select Admin again. No role change was saved.');
+        }
+        throw error;
+      }
       window.location.reload();
     } catch (error) {
       setError(errText(error));
@@ -197,12 +202,12 @@ export function TeamManager() {
         ) : (
           members.map((member) => (
             <div key={member.email} className="p-4 border-b flex flex-wrap gap-3 justify-between items-start">
-              <div className="min-w-0">
+              <div className="min-w-0 break-words">
                 <strong>{member.fullName || member.email}</strong>
                 {member.username && <span className="text-stone-400 text-sm"> · @{member.username}</span>}
                 {member.fullName && <span className="block text-xs text-stone-500">{member.email}</span>}
                 <p className="text-sm text-stone-600">
-                  {member.isAdmin
+                  {member.isAdmin || member.role === 'Admin'
                     ? t("All branches")
                     : member.shopIds.map((id) => shops.find((s) => s.id === id)?.name || 'Removed shop').join(', ') ||
                       'No shop'}
@@ -220,7 +225,8 @@ export function TeamManager() {
                 <div className="flex flex-wrap items-center gap-3">
                   {member.role !== undefined && (
                     <select
-                      disabled={busy}
+                      disabled={busy || saveStatus !== 'Saved to Supabase'}
+                      aria-label={`Role for ${member.email}`}
                       value={member.role || 'Shop Manager'}
                       onChange={(e) => void setRole(member.email, e.target.value)}
                       className="border rounded-lg p-1.5 text-sm bg-white"
