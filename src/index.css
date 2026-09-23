@@ -199,6 +199,46 @@ body {
 }
 .toast-in { animation: toastin .2s ease-out both; }
 
+/* The invoice is a body portal: remove the application from print layout entirely.
+   Fixed overlays and scroll containers otherwise clip mobile print output. */
+@media print {
+  body.printing-invoice > :not(.invoice-modal) { display:none !important; }
+  html:has(body.printing-invoice), body.printing-invoice {
+    height:auto !important; min-height:0 !important; overflow:visible !important;
+    margin:0 !important; padding:0 !important; background:white !important;
+  }
+  body.printing-invoice .invoice-modal,
+  body.printing-invoice .invoice-dialog,
+  body.printing-invoice .invoice-preview {
+    position:static !important; display:block !important;
+    width:100% !important; max-width:none !important;
+    height:auto !important; max-height:none !important; min-height:0 !important;
+    overflow:visible !important; margin:0 !important; padding:0 !important;
+    border:0 !important; border-radius:0 !important; box-shadow:none !important;
+    background:white !important; backdrop-filter:none !important;
+  }
+  .invoice-modal { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .invoice-modal .no-print { display:none !important; }
+  .invoice-sheet { width:100%; max-width:none; overflow-wrap:break-word; }
+  .invoice-heading { gap:16px; }
+  .invoice-heading > div { min-width:0; }
+  .invoice-heading > div:first-child { flex:1; }
+  .invoice-heading > div:last-child { flex:0 0 38%; }
+  .invoice-sheet > .grid > div { min-width:0; }
+  .invoice-items { table-layout:auto; }
+  .invoice-items th, .invoice-items td { overflow-wrap:normal; word-break:normal; }
+  .invoice-items th:not(:nth-child(2)), .invoice-items td[data-label] { white-space:nowrap; }
+  .invoice-items td:nth-child(2) { overflow-wrap:anywhere; }
+  .invoice-items thead { display:table-header-group; }
+  .invoice-items tr, .invoice-heading, .invoice-sheet > .grid {
+    break-inside:avoid; page-break-inside:avoid;
+  }
+  .invoice-thermal {
+    width:74mm; max-width:100%; margin:0; padding:0;
+    border:0; box-shadow:none; overflow-wrap:break-word;
+  }
+}
+
 @layer utilities {
   @media print {
     body {

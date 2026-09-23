@@ -1,5 +1,6 @@
 import { t } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, Mail, MessageSquare, Printer, Share2, X, ImageDown, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Invoice } from '../types';
@@ -12,6 +13,12 @@ export const InvoicePrintModal: React.FC = () => {
   const [busyImg, setBusyImg] = useState(false);
   const [toast, setToast] = useState<{ tone: 'ok' | 'info' | 'err'; msg: string } | null>(null);
   const [upiQrSrc, setUpiQrSrc] = useState('');
+
+  useEffect(() => {
+    if (!selectedInvoiceForPrint) return;
+    document.body.classList.add('printing-invoice');
+    return () => document.body.classList.remove('printing-invoice');
+  }, [selectedInvoiceForPrint]);
 
   const invoiceDue = selectedInvoiceForPrint?.balanceDue ?? 0;
   useEffect(() => {
@@ -151,8 +158,9 @@ export const InvoicePrintModal: React.FC = () => {
     });
   };
 
-  return (
+  return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Invoice preview" className="invoice-modal fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+      <style>{`@media print { @page { size: ${printFormat === 'A4' ? 'A4 portrait' : 'auto'}; margin: ${printFormat === 'A4' ? '10mm' : '3mm'}; } }`}</style>
       {toast && (
         <div
           className={`toast-in fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] max-w-sm px-4 py-3 rounded-xl text-sm font-medium shadow-2xl border no-print ${
@@ -479,7 +487,7 @@ export const InvoicePrintModal: React.FC = () => {
             </div>
           ) : (
             /* =================== 80mm POS THERMAL RECEIPT =================== */
-            <div className="max-w-xs mx-auto p-2 font-mono text-xs text-stone-900 space-y-2 border border-stone-200 shadow-xs bg-white">
+            <div className="invoice-thermal max-w-xs mx-auto p-2 font-mono text-xs text-stone-900 space-y-2 border border-stone-200 shadow-xs bg-white">
               <div className="text-center border-b border-dashed border-stone-400 pb-2">
                 <h2 className="font-black text-sm uppercase">{storeProfile.name}</h2>
                 <p className="text-[10px] text-stone-600">{storeProfile.addressLine1}</p>
@@ -538,6 +546,7 @@ export const InvoicePrintModal: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
