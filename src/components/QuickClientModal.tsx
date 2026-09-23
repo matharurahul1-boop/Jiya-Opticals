@@ -15,7 +15,7 @@ export const QuickClientModal: React.FC = () => {
     selectedShopFilter,
     setSelectedShopFilter,
     promptShopSelect,
-    currentUser
+    shops
   } = useApp();
 
   const [tabMode, setTabMode] = useState<'create' | 'search'>('create');
@@ -26,6 +26,7 @@ export const QuickClientModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [city, setCity] = useState('New Delhi');
   const [address, setAddress] = useState('');
+  const [createError, setCreateError] = useState('');
 
   const [createdOrFoundCustomer, setCreatedOrFoundCustomer] = useState<Customer | null>(null);
 
@@ -39,34 +40,45 @@ export const QuickClientModal: React.FC = () => {
     setEmail('');
     setAddress('');
     setSearchPhoneOrName('');
+    setCreateError('');
   };
 
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError('');
     if (!name.trim() || !mobile.trim()) {
       alert('Please enter both customer name and mobile number.');
       return;
     }
 
     const performAdd = (targetShopId: string) => {
-      const newCust = addCustomer({
-        name: name.trim(),
-        mobile: mobile.trim(),
-        email: email.trim() || undefined,
-        city: city.trim(),
-        address: address.trim(),
-        shopId: targetShopId
-      });
-      setCreatedOrFoundCustomer(newCust);
-      setSelectedCustomerForAction(newCust);
+      try {
+        const newCust = addCustomer({
+          name: name.trim(),
+          mobile: mobile.trim(),
+          email: email.trim() || undefined,
+          city: city.trim(),
+          address: address.trim(),
+          shopId: targetShopId
+        });
+        setCreatedOrFoundCustomer(newCust);
+        setSelectedCustomerForAction(newCust);
+      } catch (error) {
+        setCreateError(error instanceof Error ? error.message : 'Unable to create client. Please try again.');
+      }
     };
 
-    if (currentUser.role === 'Admin' && selectedShopFilter === 'all') {
+    if (!shops.length) {
+      setCreateError('Create a branch before registering a client.');
+      return;
+    }
+
+    if (selectedShopFilter === 'all' && shops.length > 1) {
       promptShopSelect('Assign New Client To Branch', (shopId) => {
         performAdd(shopId);
       });
     } else {
-      performAdd(selectedShopFilter !== 'all' ? selectedShopFilter : 'shop-1');
+      performAdd(selectedShopFilter !== 'all' ? selectedShopFilter : shops[0].id);
     }
   };
 
@@ -171,6 +183,7 @@ export const QuickClientModal: React.FC = () => {
 
               {tabMode === 'create' ? (
                 <form onSubmit={handleCreateCustomer} className="space-y-3.5">
+                  {createError && <p role="alert" className="text-sm text-rose-700">{createError}</p>}
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
                       {t("Full Name * ")}</label>

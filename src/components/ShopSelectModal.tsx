@@ -17,7 +17,7 @@ export const ShopSelectModal: React.FC = () => {
   return (
     <div 
       id="shop-select-modal-backdrop"
-      className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4"
     >
       <div 
         id="shop-select-modal-card"

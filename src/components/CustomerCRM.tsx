@@ -39,6 +39,7 @@ export const CustomerCRM: React.FC = () => {
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [payAmount, setPayAmount] = useState<number>(0);
@@ -75,6 +76,7 @@ export const CustomerCRM: React.FC = () => {
   const totalCustomersCount = customers.length;
 
   const handleOpenAdd = () => {
+    setCreateError('');
     setFormData({
       name: '',
       mobile: '',
@@ -88,17 +90,24 @@ export const CustomerCRM: React.FC = () => {
 
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError('');
     if (!formData.name.trim() || !formData.mobile.trim()) {
       alert('Name and Mobile are required');
       return;
     }
 
-    const created = addCustomer({
-      ...formData,
-      email: formData.email.trim() || undefined
-    });
-    setSelectedCustomer(created);
-    setShowAddModal(false);
+    try {
+      const created = addCustomer({
+        ...formData,
+        name: formData.name.trim(),
+        mobile: formData.mobile.trim(),
+        email: formData.email.trim() || undefined
+      });
+      setSelectedCustomer(created);
+      setShowAddModal(false);
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : 'Unable to create client. Please try again.');
+    }
   };
 
   const handleOpenEdit = (c: Customer) => {
@@ -611,6 +620,7 @@ export const CustomerCRM: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
+              {createError && <p role="alert" className="text-rose-700">{createError}</p>}
               <div>
                 <label className="block text-stone-600 mb-1">{t("Customer Full Name *")}</label>
                 <input
