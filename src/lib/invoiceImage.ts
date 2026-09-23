@@ -289,7 +289,7 @@ export async function invoiceToPngBlob(
 }
 
 /** Copy blob to clipboard; returns true on success. */
-export async function copyBlobToClipboard(blob: Blob): Promise<boolean> {
+export async function copyBlobToClipboard(blob: Blob | Promise<Blob>): Promise<boolean> {
   try {
     const anyWin = window as unknown as { ClipboardItem?: typeof ClipboardItem };
     if (!navigator.clipboard || !anyWin.ClipboardItem) return false;

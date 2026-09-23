@@ -20,7 +20,9 @@ import {
   Wallet 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Customer } from '../types';
+import { Customer, Invoice } from '../types';
+import { invoiceToPngBlob, copyBlobToClipboard, downloadBlob } from '../lib/invoiceImage';
+import { resolveUpiQr } from '../lib/upiQr';
 
 export const CustomerCRM: React.FC = () => {
   const { 
@@ -40,6 +42,38 @@ export const CustomerCRM: React.FC = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [invoiceCustomer, setInvoiceCustomer] = useState<Customer | null>(null);
+  const [copyingInvoice, setCopyingInvoice] = useState<string | null>(null);
+  const [invoiceFeedback, setInvoiceFeedback] = useState('');
+
+  const copyInvoice = async (invoice: Invoice) => {
+    setCopyingInvoice(invoice.id);
+    setInvoiceFeedback('');
+    try {
+      const image = resolveUpiQr(storeProfile, invoice.balanceDue > 0 ? invoice.balanceDue : undefined)
+        .then(qr => invoiceToPngBlob(invoice, storeProfile, { upiQrDataUrl: qr }));
+      // Start the clipboard write during the click, preserving mobile user activation.
+      const copied = copyBlobToClipboard(image);
+      const [blob, didCopy] = await Promise.all([image, copied]);
+      if (didCopy) {
+        setInvoiceFeedback(`Invoice ${invoice.invoiceNo} image copied. Open WhatsApp below, then paste the image into the chat and send.`);
+      } else {
+        downloadBlob(blob, `Invoice-${invoice.invoiceNo.replace(/[^\w-]+/g, '_')}.png`);
+        setInvoiceFeedback(`Clipboard unavailable. Invoice ${invoice.invoiceNo} image downloaded. Open WhatsApp and attach the downloaded image.`);
+      }
+    } catch {
+      setInvoiceFeedback('Could not create the invoice image. Please try again.');
+    } finally {
+      setCopyingInvoice(null);
+    }
+  };
+
+  const openInvoiceWhatsApp = (invoice: Invoice) => {
+    const digits = invoice.customerMobile.replace(/\D/g, '');
+    const phone = digits.length === 10 ? `91${digits}` : digits;
+    const text = `Invoice ${invoice.invoiceNo} from ${storeProfile.name}. Total: ₹${invoice.netPayable}.`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [payAmount, setPayAmount] = useState<number>(0);
@@ -391,6 +425,13 @@ export const CustomerCRM: React.FC = () => {
                     </td>
                     <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
+                        onClick={() => { setInvoiceCustomer(c); setInvoiceFeedback(''); }}
+                        className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 rounded cursor-pointer"
+                        title={t('Copy or resend a saved invoice')}
+                      >
+                        {t('Copy Invoice')}
+                      </button>
+                      <button
                         onClick={() => handleOpenEdit(c)}
                         className="p-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700 rounded cursor-pointer"
                         title={t("Edit Customer Details & Email")}
@@ -607,6 +648,31 @@ export const CustomerCRM: React.FC = () => {
           )}
         </div>
       </div>
+
+      {invoiceCustomer && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div role="dialog" aria-modal="true" aria-label="Copy or resend invoice" className="bg-white rounded-xl shadow-xl p-5 w-full max-w-lg max-h-[90dvh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-bold">{t('Invoices')} — {invoiceCustomer.name}</h3>
+              <button type="button" aria-label="Close invoice list" disabled={!!copyingInvoice} onClick={() => setInvoiceCustomer(null)} className="p-2 disabled:opacity-50">✕</button>
+            </div>
+            <p className="text-xs text-stone-600">{t('First copy the invoice image, then open WhatsApp and paste it into the chat. If copying is unavailable, attach the downloaded image.')}</p>
+            {invoiceFeedback && <p role="status" className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3">{invoiceFeedback}</p>}
+            {invoices.filter(invoice => invoice.customerId === invoiceCustomer.id).length === 0 && <p className="text-sm text-stone-500">{t('No saved invoices for this client yet.')}</p>}
+            {invoices.filter(invoice => invoice.customerId === invoiceCustomer.id).map(invoice => (
+              <div key={invoice.id} className="border border-stone-200 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between gap-2 text-sm"><strong>{invoice.invoiceNo}</strong><span>₹{invoice.netPayable}</span></div>
+                <p className="text-xs text-stone-500">{invoice.date} · {invoice.orderStatus}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" disabled={!!copyingInvoice} onClick={() => copyInvoice(invoice)} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold disabled:opacity-50">{copyingInvoice === invoice.id ? t('Copying…') : t('Copy Invoice Image')}</button>
+                  <button type="button" disabled={!!copyingInvoice} onClick={() => openInvoiceWhatsApp(invoice)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold disabled:opacity-50">{t('Open WhatsApp')}</button>
+                  <button type="button" disabled={!!copyingInvoice} onClick={() => { setInvoiceCustomer(null); setSelectedInvoiceForPrint(invoice); }} className="px-3 py-2 bg-stone-100 rounded-lg text-xs">{t('View Bill')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add Customer Modal */}
       {showAddModal && (

@@ -199,6 +199,16 @@ export const BillingPOS: React.FC = () => {
     setCartItems(updated);
   };
 
+  const updateItemRate = (index: number, rate: number) => {
+    if (!Number.isFinite(rate) || rate < 0) return;
+    setCartItems(items => items.map((item, i) => {
+      if (i !== index) return item;
+      const updated = { ...item, unitPrice: rate };
+      recalcLineItem(updated);
+      return updated;
+    }));
+  };
+
   const updateItemDiscount = (index: number, discountPercent: number) => {
     const updated = [...cartItems];
     updated[index].discountPercent = Math.max(0, Math.min(100, discountPercent));
@@ -568,7 +578,16 @@ export const BillingPOS: React.FC = () => {
                           </div>
                         </td>
                         <td data-label={t('Rate (₹)')} className="py-2.5 px-2 text-right font-medium text-stone-800">
-                          ₹{item.unitPrice}
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            aria-label={`${t('Rate (₹)')} - ${item.name}`}
+                            value={item.unitPrice}
+                            onChange={(e) => updateItemRate(idx, Number(e.target.value))}
+                            className="w-24 max-w-full bg-white border border-stone-300 rounded px-2 py-1 text-right focus:outline-none focus:border-amber-500"
+                          />
                         </td>
                         <td data-label={t('Disc %')} className="py-2.5 px-2 text-center">
                           <NumberInput

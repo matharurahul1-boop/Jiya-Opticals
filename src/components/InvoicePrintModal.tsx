@@ -218,7 +218,7 @@ export const InvoicePrintModal: React.FC = () => {
               title={t("Copy the invoice as an image to the clipboard")}
             >
               <ImageDown className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("Copy image")}</span>
+              <span>{t("Copy image")}</span>
             </button>
 
             <button
