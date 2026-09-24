@@ -500,9 +500,9 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
           {/* GST rate by product category */}
           <div className="bg-[#f8fbfb] border border-amber-200 rounded-xl p-3.5 space-y-3">
             <div>
-              <span className="text-xs font-bold text-amber-900 block">{t("GST Output Tax by Category (GSTR-1)")}</span>
+              <span className="text-xs font-bold text-amber-900 block">{t("Product GST reference rates")}</span>
               <p className="text-[11px] text-stone-500">
-                {t("Set the GST % you charge for each category (e.g. Sunglasses 18%). New bill lines pick this up automatically; a single line can still be changed at billing. ")}</p>
+                {t("This store uses the composition scheme. Sales bills do not collect GST. These reference rates are for product records only. ")}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {PRODUCT_CATEGORIES.map((cat) => (

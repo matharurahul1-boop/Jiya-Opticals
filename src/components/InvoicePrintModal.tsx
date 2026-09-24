@@ -1,3 +1,4 @@
+import { COMPOSITION_DECLARATION } from '../lib/billOfSupply';
 import { t } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -47,7 +48,9 @@ export const InvoicePrintModal: React.FC = () => {
 
   const buildInvoiceText = () =>
     `*${storeProfile.name}* \n` +
-    `🧾 Tax Invoice: *${inv.invoiceNo}*\n` +
+    `${COMPOSITION_DECLARATION}\n` +
+    `${storeProfile.gstin ? `GSTIN: ${storeProfile.gstin}\n` : ''}` +
+    `🧾 Bill of Supply: *${inv.invoiceNo}*\n` +
     `👤 Customer: ${inv.customerName}\n` +
     `📅 Date: ${inv.date}\n` +
     `👓 Items: ${inv.items.map((i) => `${i.name} (Qty: ${i.qty})`).join(', ')}\n` +
@@ -103,7 +106,6 @@ export const InvoicePrintModal: React.FC = () => {
   };
 
   const handleEmailInvoice = () => {
-    const taxableAmt = inv.taxableTotal ?? (inv.subtotal - inv.totalDiscount);
     const itemsList = inv.items
       .map((i, idx) => `${idx + 1}. ${i.name} (Qty: ${i.qty}) - ₹${i.totalAmount}`)
       .join('\n');
@@ -115,10 +117,10 @@ export const InvoicePrintModal: React.FC = () => {
         `Pupillary Distance (PD): ${inv.prescription.pdMm} mm\n`
       : '';
 
-    const subject = `Tax Invoice #${inv.invoiceNo} - ${storeProfile.name}`;
-    const body = `Dear ${inv.customerName},\n\n` +
+    const subject = `Bill of Supply #${inv.invoiceNo} - ${storeProfile.name}`;
+    const body = `${COMPOSITION_DECLARATION}\n\n` + `Dear ${inv.customerName},\n\n` +
       `Thank you for your business at ${storeProfile.name}!\n` +
-      `Here are your tax invoice & optical order details:\n\n` +
+      `Here are your bill of supply & optical order details:\n\n` +
       `========================================\n` +
       `STORE: ${storeProfile.name}\n` +
       `GSTIN: ${storeProfile.gstin}\n` +
@@ -136,8 +138,6 @@ export const InvoicePrintModal: React.FC = () => {
       `${itemsList}\n` +
       `${inv.fittingTotal > 0 ? `Fitting & Glazing Charges: ₹${inv.fittingTotal}\n` : ''}` +
       `----------------------------------------\n` +
-      `TAXABLE AMOUNT: ₹${taxableAmt.toFixed(2)}\n` +
-      `TOTAL GST: ₹${(inv.cgstTotal + inv.sgstTotal).toFixed(2)}\n` +
       `GRAND TOTAL: ₹${inv.netPayable}\n` +
       `ADVANCE PAID: ₹${inv.advancePaid} (${inv.paymentMode})\n` +
       `${inv.balanceDue > 0 ? `BALANCE DUE: ₹${inv.balanceDue}\n` : 'PAYMENT STATUS: FULLY PAID ✅\n'}` +
@@ -154,7 +154,7 @@ export const InvoicePrintModal: React.FC = () => {
       recipientMobile: inv.customerMobile,
       subject,
       body,
-      documentType: 'Tax Invoice'
+      documentType: 'Bill of Supply'
     });
   };
 
@@ -187,7 +187,7 @@ export const InvoicePrintModal: React.FC = () => {
                   printFormat === 'A4' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-700 hover:text-stone-900'
                 }`}
               >
-                {t("A4 / A5 Laser Tax Invoice ")}</button>
+                {t("A4 / A5 Laser Bill of Supply ")}</button>
               <button
                 onClick={() => setPrintFormat('Thermal')}
                 className={`px-3 py-1 rounded font-semibold transition-colors cursor-pointer ${
@@ -249,11 +249,13 @@ export const InvoicePrintModal: React.FC = () => {
           </div>
         </div>
 
+        {!storeProfile.gstin?.trim() && <p className="no-print px-4 py-2 text-xs text-amber-900 bg-amber-50">GSTIN missing: add your actual GSTIN in Masters &amp; Settings &gt; Store Profile &amp; GSTIN before issuing this bill.</p>}
         {/* Printable Document Body */}
         <div className="invoice-preview p-4 sm:p-6 overflow-y-auto flex-1 bg-white text-stone-900 printable-area">
           {printFormat === 'A4' ? (
-            /* =================== A4 / A5 GST TAX INVOICE =================== */
+            /* =================== A4 / A5 BILL OF SUPPLY =================== */
             <div className="invoice-sheet max-w-2xl mx-auto space-y-4 text-xs font-sans">
+              <p className="text-[10px] font-semibold">{COMPOSITION_DECLARATION}</p>
               {/* Header */}
               <div className="invoice-heading border-b-2 border-stone-900 pb-3 flex justify-between items-start">
                 <div>
@@ -275,7 +277,7 @@ export const InvoicePrintModal: React.FC = () => {
 
                 <div className="text-right">
                   <div className="inline-block bg-stone-900 text-white text-[10px] uppercase font-bold px-2.5 py-1 rounded">
-                    {t("Tax Invoice / Bill of Supply ")}</div>
+                    {t("Bill of Supply")}</div>
                   <div className="mt-2 text-xs space-y-0.5">
                     <p className="font-bold text-stone-900 text-sm">{t("Invoice #: ")}{inv.invoiceNo}</p>
                     <p className="text-stone-600">{t("Date: ")}{inv.date} ({inv.time})</p>
@@ -370,7 +372,6 @@ export const InvoicePrintModal: React.FC = () => {
                     <th className="py-1.5 px-2 text-center">{t("HSN")}</th>
                     <th className="py-1.5 px-2 text-center">{t("Qty")}</th>
                     <th className="py-1.5 px-2 text-right">{t("Rate (₹)")}</th>
-                    <th className="py-1.5 px-2 text-center">{t("GST")}</th>
                     <th className="py-1.5 px-2 text-right">{t("Total (₹)")}</th>
                   </tr>
                 </thead>
@@ -389,9 +390,6 @@ export const InvoicePrintModal: React.FC = () => {
                       </td>
                       <td data-label={t('Qty')} className="py-1.5 px-2 text-center font-bold text-stone-900">{item.qty}</td>
                       <td data-label={t('Rate (₹)')} className="py-1.5 px-2 text-right">{item.unitPrice.toFixed(2)}</td>
-                      <td data-label={t('GST')} className="py-1.5 px-2 text-center text-[10px] text-stone-600">
-                        {item.gstRate}%
-                      </td>
                       <td data-label={t('Total (₹)')} className="py-1.5 px-2 text-right font-bold text-stone-900">
                         {item.totalAmount.toFixed(2)}
                       </td>
@@ -400,7 +398,7 @@ export const InvoicePrintModal: React.FC = () => {
                   {inv.fittingTotal > 0 && (
                     <tr>
                       <td className="py-1.5 px-2 text-stone-500">*</td>
-                      <td colSpan={5} className="py-1.5 px-2 font-medium text-stone-800">
+                      <td colSpan={4} className="py-1.5 px-2 font-medium text-stone-800">
                         {t("Optical Fitting & Glazing Lab Charges ")}</td>
                       <td className="py-1.5 px-2 text-right font-bold text-stone-900">
                         {inv.fittingTotal.toFixed(2)}
@@ -442,7 +440,7 @@ export const InvoicePrintModal: React.FC = () => {
                 {/* Amount Totals */}
                 <div className="space-y-1 text-xs text-stone-800">
                   <div className="flex justify-between">
-                    <span>{t("Taxable Subtotal:")}</span>
+                    <span>{t("Subtotal:")}</span>
                     <span>₹{inv.subtotal.toFixed(2)}</span>
                   </div>
                   {inv.totalDiscount > 0 && (
@@ -451,14 +449,6 @@ export const InvoicePrintModal: React.FC = () => {
                       <span>-₹{inv.totalDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-stone-600 text-[11px]">
-                    <span>{t("CGST:")}</span>
-                    <span>₹{inv.cgstTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-stone-600 text-[11px]">
-                    <span>{t("SGST:")}</span>
-                    <span>₹{inv.sgstTotal.toFixed(2)}</span>
-                  </div>
                   <div className="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-300 pt-1.5">
                     <span>{t("Grand Total:")}</span>
                     <span>₹{inv.netPayable.toFixed(2)}</span>
@@ -488,6 +478,8 @@ export const InvoicePrintModal: React.FC = () => {
           ) : (
             /* =================== 80mm POS THERMAL RECEIPT =================== */
             <div className="invoice-thermal max-w-xs mx-auto p-2 font-mono text-xs text-stone-900 space-y-2 border border-stone-200 shadow-xs bg-white">
+              <p className="text-[10px] text-center font-semibold">{COMPOSITION_DECLARATION}</p>
+              <p className="text-center font-bold">BILL OF SUPPLY</p>
               <div className="text-center border-b border-dashed border-stone-400 pb-2">
                 <h2 className="font-black text-sm uppercase">{storeProfile.name}</h2>
                 <p className="text-[10px] text-stone-600">{storeProfile.addressLine1}</p>

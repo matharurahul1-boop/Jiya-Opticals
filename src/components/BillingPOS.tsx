@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { resolveUpiQr } from '../lib/upiQr';
-import { categoryGst, PRODUCT_CATEGORIES } from '../lib/gst';
+import { PRODUCT_CATEGORIES } from '../lib/gst';
 import {
   Customer,
   EyePower,
@@ -149,7 +149,7 @@ export const BillingPOS: React.FC = () => {
       recalcLineItem(updated[existingIndex]);
       setCartItems(updated);
     } else {
-      const gstRate = categoryGst(storeProfile, product.category, product.gstRate);
+      const gstRate = 0; // Composition scheme: no customer GST collection.
       const gstFraction = gstRate / (100 + gstRate);
       const taxable = product.salePrice - product.salePrice * gstFraction;
       const taxTotal = product.salePrice - taxable;
@@ -178,7 +178,8 @@ export const BillingPOS: React.FC = () => {
   const recalcLineItem = (item: InvoiceItem) => {
     const gross = item.unitPrice * item.qty;
     const discounted = gross - (gross * item.discountPercent) / 100;
-    const gstFraction = item.gstRate / (100 + item.gstRate);
+    item.gstRate = 0;
+    const gstFraction = 0;
     const taxable = discounted - discounted * gstFraction;
     const taxTotal = discounted - taxable;
 
@@ -397,7 +398,7 @@ export const BillingPOS: React.FC = () => {
           <div>
             <h1 className="text-lg font-bold text-stone-900 flex items-center gap-2">
               {t("Billing POS Counter ")}<span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
-                {t("GST BILLING ")}</span>
+                {t("COMPOSITION BILLING ")}</span>
             </h1>
             <p className="text-xs text-stone-500">
               {t("Scan barcode or select frames, lenses, and attach prescription. ")}</p>
@@ -546,7 +547,6 @@ export const BillingPOS: React.FC = () => {
                       <th className="py-2 px-2 text-center">{t("Qty")}</th>
                       <th className="py-2 px-2 text-right">{t("Rate")}</th>
                       <th className="py-2 px-2 text-center">{t("Disc %")}</th>
-                      <th className="py-2 px-2 text-right">{t("GST %")}</th>
                       <th className="py-2 px-2 text-right">{t("Total")}</th>
                       <th className="py-2 px-1 text-center"></th>
                     </tr>
@@ -599,9 +599,6 @@ export const BillingPOS: React.FC = () => {
                             onChange={(e) => updateItemDiscount(idx, Number(e.target.value))}
                             className="w-12 bg-stone-50 border border-stone-200 text-center rounded text-xs py-0.5 text-stone-800"
                           />
-                        </td>
-                        <td data-label={t('GST %')} className="py-2.5 px-2 text-right text-stone-500">
-                          {item.gstRate}%
                         </td>
                         <td data-label={t('Total (₹)')} className="py-2.5 px-2 text-right font-bold text-amber-700">
                           ₹{item.totalAmount}
@@ -996,10 +993,6 @@ export const BillingPOS: React.FC = () => {
                   <span>-₹{(itemsDiscountTotal + flatDiscount).toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-stone-500 text-[11px]">
-                <span>{t("Total GST Included:")}</span>
-                <span>₹{totalTax.toFixed(2)}</span>
-              </div>
               <div className="flex justify-between text-base font-bold text-stone-900 border-t border-stone-200 pt-2">
                 <span>{t("Net Payable:")}</span>
                 <span className="text-amber-800">₹{netPayable}</span>
@@ -1015,7 +1008,7 @@ export const BillingPOS: React.FC = () => {
                 className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2"
               >
                 <Printer className="w-4 h-4" />
-                {t("SAVE & PRINT TAX INVOICE ")}</button>
+                {t("SAVE & PRINT BILL OF SUPPLY ")}</button>
 
               <button
                 type="button"

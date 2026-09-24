@@ -1,3 +1,4 @@
+import { COMPOSITION_DECLARATION } from './billOfSupply';
 import { Invoice, StoreProfile } from '../types';
 
 /**
@@ -57,6 +58,9 @@ function draw(
     }
   };
 
+  text(COMPOSITION_DECLARATION, x, y, '600 11px system-ui, sans-serif', INK);
+  y += 24;
+
   // ---- Header
   text((store.name || 'JIYA OPTICALS').toUpperCase(), x, y + 30, '800 32px system-ui, sans-serif', INK);
   y += 44;
@@ -95,7 +99,7 @@ function draw(
     ctx.fillStyle = '#fff';
     ctx.font = '800 13px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('TAX INVOICE', x + 12, y);
+    ctx.fillText('BILL OF SUPPLY', x + 12, y);
   }
   text(`#${inv.invoiceNo}`, x + 168, y, '800 15px system-ui, sans-serif', INK);
   text(`${inv.date}  ${inv.time || ''}`, right, y, '500 13px system-ui, sans-serif', MUTED, 'right');
@@ -188,8 +192,6 @@ function draw(
   };
   trow('Subtotal', rupee(inv.subtotal));
   if (inv.totalDiscount > 0) trow('Discount', '- ' + rupee(inv.totalDiscount), false, ACCENT);
-  trow('CGST', rupee(inv.cgstTotal));
-  trow('SGST', rupee(inv.sgstTotal));
   y += 2;
   rule(y - 12, LINE);
   if (!measure) {
