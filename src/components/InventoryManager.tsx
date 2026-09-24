@@ -111,7 +111,8 @@ export const InventoryManager: React.FC = () => {
   const categories: ProductCategory[] = PRODUCT_CATEGORIES;
   const frameTypes = ['Full Rim', 'Half Rim', 'Rimless', 'N/A', ...products.map(p => p.frameType), ...addedFrameTypes, formData.frameType]
     .filter((value): value is string => Boolean(value?.trim()))
-    .filter((value, index, values) => values.findIndex(other => other.toLowerCase() === value.toLowerCase()) === index);
+    .filter((value, index, values) => values.findIndex(other => other.toLowerCase() === value.toLowerCase()) === index)
+    .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base', numeric: true }));
 
   const handleAddFrameType = () => {
     const name = newFrameType.trim().replace(/\s+/g, ' ');
@@ -138,7 +139,7 @@ export const InventoryManager: React.FC = () => {
     const matchesLowStock = !showLowStockOnly || isLowStockRow(p);
 
     return matchesShop && matchesCategory && matchesSearch && matchesLowStock;
-  });
+  }).sort((a, b) => a.name.trim().localeCompare(b.name.trim(), 'en', { sensitivity: 'base', numeric: true }));
   const materialGroups = Array.from(new Set(filteredProducts.map(catalogKey))).map(id=>({
     id, rows:filteredProducts.filter(p=>catalogKey(p)===id),
   }));
