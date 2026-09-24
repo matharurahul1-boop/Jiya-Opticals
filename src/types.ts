@@ -70,7 +70,7 @@ export interface Product {
   brand: string;
   modelNo: string;
   color: string;
-  frameType?: 'Full Rim' | 'Half Rim' | 'Rimless' | 'Supra' | 'N/A';
+  frameType?: string;
   size?: string;
   hsnCode: string;
   purchasePrice: number;

@@ -68,6 +68,9 @@ export const InventoryManager: React.FC = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showAddFrameType, setShowAddFrameType] = useState(false);
+  const [newFrameType, setNewFrameType] = useState('');
+  const [addedFrameTypes, setAddedFrameTypes] = useState<string[]>([]);
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [newStockInput, setNewStockInput] = useState<number>(0);
 
@@ -106,6 +109,19 @@ export const InventoryManager: React.FC = () => {
   });
 
   const categories: ProductCategory[] = PRODUCT_CATEGORIES;
+  const frameTypes = ['Full Rim', 'Half Rim', 'Rimless', 'N/A', ...products.map(p => p.frameType), ...addedFrameTypes, formData.frameType]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .filter((value, index, values) => values.findIndex(other => other.toLowerCase() === value.toLowerCase()) === index);
+
+  const handleAddFrameType = () => {
+    const name = newFrameType.trim().replace(/\s+/g, ' ');
+    if (!name) return;
+    const value = frameTypes.find(type => type.toLowerCase() === name.toLowerCase()) || name;
+    setAddedFrameTypes(previous => previous.includes(value) ? previous : [...previous, value]);
+    setFormData(previous => ({ ...previous, frameType: value }));
+    setNewFrameType('');
+    setShowAddFrameType(false);
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesShop =
@@ -133,6 +149,8 @@ export const InventoryManager: React.FC = () => {
   const lowStockCount = filteredProducts.filter(isLowStockRow).length;
 
   const handleOpenAdd = () => {
+    setShowAddFrameType(false);
+    setNewFrameType('');
     const randomBarcode = `890${Math.floor(100000000 + Math.random() * 900000000)}`;
     setFormData({
       barcode: randomBarcode,
@@ -158,6 +176,8 @@ export const InventoryManager: React.FC = () => {
   };
 
   const handleOpenEdit = (p: Product) => {
+    setShowAddFrameType(false);
+    setNewFrameType('');
     setEditingProduct(p);
     setFormData({
       barcode: p.barcode,
@@ -191,8 +211,8 @@ export const InventoryManager: React.FC = () => {
       alert('Select the shop receiving the opening stock. Material details are shared across all shops.');
       return;
     }
-    if (!formData.salePrice || formData.salePrice <= 0) {
-      alert('Enter the sale price for this material.');
+    if (!Number.isFinite(formData.salePrice) || formData.salePrice < 0) {
+      alert(t('Sale price must be zero or greater.'));
       return;
     }
 
@@ -702,17 +722,36 @@ export const InventoryManager: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">{t("Frame Type")}</label>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <label htmlFor="material-frame-type" className="text-stone-600 font-semibold">{t("Frame Type")}</label>
+                    <button type="button" onClick={() => setShowAddFrameType(true)} className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                      <Plus className="w-3 h-3" />{t("Quick Add")}
+                    </button>
+                  </div>
                   <select
+                    id="material-frame-type"
                     value={formData.frameType}
-                    onChange={(e) => setFormData({ ...formData, frameType: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, frameType: e.target.value })}
                     className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900"
                   >
-                    <option value="Full Rim">{t("Full Rim")}</option>
-                    <option value="Half Rim">{t("Half Rim (Supra)")}</option>
-                    <option value="Rimless">{t("Rimless")}</option>
-                    <option value="N/A">{t("N/A (Lens / Accessory)")}</option>
+                    {frameTypes.map(type => <option key={type} value={type}>{type === 'Half Rim' ? t('Half Rim (Supra)') : type === 'N/A' ? t('N/A (Lens / Accessory)') : type}</option>)}
                   </select>
+                  {showAddFrameType && <div className="mt-2 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                    <input
+                      autoFocus
+                      aria-label={t('New frame type')}
+                      placeholder={t('New frame type')}
+                      value={newFrameType}
+                      onChange={e => setNewFrameType(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFrameType(); } }}
+                      className="w-full min-w-0 rounded border border-stone-300 bg-white p-2"
+                    />
+                    <div className="flex gap-3">
+                      <button type="button" disabled={!newFrameType.trim()} onClick={handleAddFrameType} className="font-semibold text-emerald-700 disabled:opacity-40">{t('Add & Select')}</button>
+                      <button type="button" onClick={() => { setShowAddFrameType(false); setNewFrameType(''); }} className="text-stone-600">{t('Cancel')}</button>
+                    </div>
+                    <p className="text-stone-600">{t('Save the material to reuse this frame type later.')}</p>
+                  </div>}
                 </div>
                 <div>
                   <label className="block text-stone-600 mb-1 font-semibold">{t("Size Specs / Base Curve")}</label>
@@ -759,7 +798,7 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">{t("Sale Price (₹)")}</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Sale Price (₹) (optional)")}</label>
                   <NumberInput
                     type="number"
                     min="0"
@@ -768,6 +807,7 @@ export const InventoryManager: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, salePrice: Number(e.target.value) })}
                     className="w-full bg-white border border-stone-300 rounded p-1.5 text-emerald-700 font-bold"
                   />
+                  <p className="mt-1 text-stone-500">{t("Leave blank to save as ₹0. You can update it later.")}</p>
                 </div>
                 <div>
                   <label className="block text-stone-600 mb-1 font-semibold">{t("GST %")}</label>
