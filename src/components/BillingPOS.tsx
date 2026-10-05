@@ -150,6 +150,32 @@ export const BillingPOS: React.FC = () => {
     return true;
   };
 
+  // A USB/Bluetooth scanner just types the code and presses Enter. If nothing editable is
+  // focused, collect those fast keystrokes and treat them as a scan so the counter never
+  // has to click the scan box first.
+  const scanRef = useRef(handleScannedCode);
+  scanRef.current = handleScannedCode;
+  useEffect(() => {
+    let buffer = '';
+    let last = 0;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const now = Date.now();
+      if (now - last > 120) buffer = '';
+      last = now;
+      if (e.key === 'Enter') {
+        if (buffer.length >= 4) { e.preventDefault(); scanRef.current(buffer); }
+        buffer = '';
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   const addProductToCart = (product: Product, unit?: string) => {
     const existingIndex = cartItems.findIndex((it) => it.productId === product.id);
 
