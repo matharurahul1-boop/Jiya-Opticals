@@ -702,7 +702,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   const addCustomer = (customerData: Omit<Customer, 'id' | 'createdAt' | 'totalSpent' | 'outstandingBalance' | 'prescriptions'>): Customer => {
     const newCustomer: Customer = {
       ...customerData,
-      id: `cust-${Date.now()}`,
+      id: `cust-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       createdAt: new Date().toISOString().split('T')[0],
       totalSpent: 0,
       outstandingBalance: 0,

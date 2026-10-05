@@ -22,7 +22,8 @@ import { CameraBarcodeScannerModal } from './components/CameraBarcodeScannerModa
 import { ShopSelectModal } from './components/ShopSelectModal';
 import { QuickClientModal } from './components/QuickClientModal';
 import { ManualEmailModal } from './components/ManualEmailModal';
-import { DrishtiSyncPanel } from './components/DrishtiSyncPanel';
+// Drishti sync disabled for now (in-app QR tags are used instead):
+// import { DrishtiSyncPanel } from './components/DrishtiSyncPanel';
 import { FloatingMenu } from './components/FloatingMenu';
 
 const MainLayout: React.FC = () => {
@@ -62,7 +63,7 @@ const MainLayout: React.FC = () => {
           {activeTab === 'followups' && <FollowUpAndBroadcast />}
           {activeTab === 'purchases' && <PurchasesManager />}
           {activeTab === 'daybook' && <DayBookReports />}
-          {activeTab === 'drishti' && canAccessTab('drishti') && <DrishtiSyncPanel />}
+          {/* {activeTab === 'drishti' && canAccessTab('drishti') && <DrishtiSyncPanel />} */}
           {(activeTab === 'masters' || activeTab === 'settings') && canAccessTab('masters') && <MastersConfig />}
           </>}
         </main>

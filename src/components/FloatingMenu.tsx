@@ -73,7 +73,8 @@ export const FloatingMenu: React.FC = () => {
     { id: 'followups', label: 'Follow-ups', labelHi: 'फॉलोअप', icon: Send, badge: pendingFollowUps },
     { id: 'purchases', label: 'Purchases', labelHi: 'खरीद', icon: Truck },
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet },
-    { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine },
+    // Drishti sync disabled for now (in-app QR tags are used instead):
+    // { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings }
   ];

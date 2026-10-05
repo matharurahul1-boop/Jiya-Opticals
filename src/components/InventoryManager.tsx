@@ -225,7 +225,9 @@ export const InventoryManager: React.FC = () => {
           id: editingProduct.id
         });
       } else {
-        addProduct(formData);
+        const created = addProduct(formData);
+        // Offer the QR tag labels right away; scanning a tag adds this item to a bill.
+        setSelectedProductForBarcode(created);
       }
       setShowAddModal(false);
     } catch (err) {
@@ -409,6 +411,8 @@ export const InventoryManager: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Drishti Desktop Sync entry disabled for now: items get the app's own QR tags
+          (Create Material -> Print Tag), and scanning a tag adds the item to a bill.
       <button
         onClick={() => setActiveTab('drishti')}
         className="w-full flex items-center justify-between gap-3 bg-white border border-stone-200 hover:border-amber-300 hover:bg-amber-50/40 transition-colors p-3.5 rounded-xl shadow-xs text-left cursor-pointer"
@@ -424,6 +428,7 @@ export const InventoryManager: React.FC = () => {
         </span>
         <ChevronRight className="w-4 h-4 text-stone-400" />
       </button>
+      */}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">

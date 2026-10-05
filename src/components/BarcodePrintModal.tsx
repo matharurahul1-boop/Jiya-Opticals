@@ -15,7 +15,7 @@ export const BarcodePrintModal: React.FC = () => {
   const payload = selectedProductForBarcode?.qrCode || selectedProductForBarcode?.barcode || '';
   useEffect(() => {
     let active = true; setQrImage(''); setQrError('');
-    if (payload) QRCode.toDataURL(payload, { errorCorrectionLevel: 'M', margin: 4, width: 512 }).then(url => { if (active) setQrImage(url); }).catch(() => { if (active) setQrError('This code cannot fit in a QR label. Use the original Drishti sticker.'); });
+    if (payload) QRCode.toDataURL(payload, { errorCorrectionLevel: 'M', margin: 4, width: 512 }).then(url => { if (active) setQrImage(url); }).catch(() => { if (active) setQrError('This code is too long to fit in a QR label.'); });
     return () => { active = false; };
   }, [payload]);
 
@@ -83,7 +83,7 @@ export const BarcodePrintModal: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-3 text-xs bg-amber-50 space-y-2 no-print"><p>{t("QR reprint uses the original code value. Existing Drishti stickers can still be scanned. Select the TSC driver in the print dialog; set 100% scale and match your actual label roll.")}</p><div className="flex gap-3"><label>{t("Width (mm) ")}<input className="border w-14" type="number" min="25" max="110" value={labelWidth} onChange={e => setLabelWidth(Math.min(110,Math.max(25,Number(e.target.value)||60)))} /></label><label>{t("Height (mm) ")}<input className="border w-14" type="number" min="30" max="150" value={labelHeight} onChange={e => setLabelHeight(Math.min(150,Math.max(30,Number(e.target.value)||40)))} /></label></div>{qrError && <p role="alert" className="text-red-700">{qrError}</p>}</div>
+        <div className="p-3 text-xs bg-amber-50 space-y-2 no-print"><p>{t("Stick this tag on the item. Scanning it in Billing (camera or scanner) adds this item to the bill for the selected shop. Set 100% scale in the print dialog and match your label roll size.")}</p><div className="flex gap-3"><label>{t("Width (mm) ")}<input className="border w-14" type="number" min="25" max="110" value={labelWidth} onChange={e => setLabelWidth(Math.min(110,Math.max(25,Number(e.target.value)||60)))} /></label><label>{t("Height (mm) ")}<input className="border w-14" type="number" min="30" max="150" value={labelHeight} onChange={e => setLabelHeight(Math.min(150,Math.max(30,Number(e.target.value)||40)))} /></label></div>{qrError && <p role="alert" className="text-red-700">{qrError}</p>}</div>
 
         {/* Printable Stickers Sheet */}
         <div className="p-6 overflow-y-auto flex-1 bg-stone-100 text-stone-900 printable-area">

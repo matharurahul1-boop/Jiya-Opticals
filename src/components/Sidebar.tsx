@@ -161,7 +161,8 @@ export const Sidebar: React.FC = () => {
     },
     { id: 'purchases', label: 'Purchases', labelHi: 'खरीद', icon: Truck, group: 'ops' },
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet, group: 'ops' },
-    { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine, group: 'ops' },
+    // Drishti sync disabled for now (in-app QR tags are used instead):
+    // { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine, group: 'ops' },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users, group: 'admin' },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings, group: 'admin' }
   ];
