@@ -1,7 +1,7 @@
 import { t } from '../lib/i18n';
 import { NumberInput } from './NumberInput';
 import { QuickAddPerson } from './QuickAddPerson';
-import { findScannedProduct } from '../lib/barcodes';
+import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
 import { applyStockMovement } from '../lib/catalog';
 import React, { useEffect, useRef, useState } from 'react';
 import { 
@@ -130,22 +130,32 @@ export const BillingPOS: React.FC = () => {
     e.preventDefault();
     if (!barcodeInput.trim()) return;
 
-    const found = findScannedProduct(products, barcodeInput);
-
-    if (found) {
-      addProductToCart(found);
-      setBarcodeInput('');
-    } else {
-      alert(`Product with barcode "${barcodeInput}" not uniquely matched in this shop. Check sync and duplicate codes.`);
-    }
+    if (handleScannedCode(barcodeInput)) setBarcodeInput('');
   };
 
-  const addProductToCart = (product: Product) => {
+  // A tag scanned at the counter: add the material, and remember the exact piece
+  // so the same tag cannot be sold twice.
+  const handleScannedCode = (raw: string): boolean => {
+    const found = findScannedProduct(products, raw);
+    if (!found) {
+      alert(`Item with code "${raw.trim()}" was not found in this shop. Check the tag, the selected shop and stock.`);
+      return false;
+    }
+    const unit = scannedUnitCode(products, raw);
+    if (unit) {
+      if (found.soldUnitCodes?.includes(unit)) { alert(`Tag ${unit} is already sold. Check the piece in hand.`); return false; }
+      if (cartItems.some((it) => it.unitCodes?.includes(unit))) { alert(`Tag ${unit} is already in this bill.`); return false; }
+    }
+    addProductToCart(found, unit);
+    return true;
+  };
+
+  const addProductToCart = (product: Product, unit?: string) => {
     const existingIndex = cartItems.findIndex((it) => it.productId === product.id);
 
     if (existingIndex > -1) {
       const updated = [...cartItems];
-      updated[existingIndex].qty += 1;
+      updated[existingIndex] = { ...updated[existingIndex], qty: updated[existingIndex].qty + 1, unitCodes: unit ? [...(updated[existingIndex].unitCodes || []), unit] : updated[existingIndex].unitCodes };
       recalcLineItem(updated[existingIndex]);
       setCartItems(updated);
     } else {
@@ -169,7 +179,8 @@ export const BillingPOS: React.FC = () => {
         sgstAmount: Number((taxTotal / 2).toFixed(2)),
         igstAmount: 0,
         totalAmount: product.salePrice,
-        frameModel: product.modelNo
+        frameModel: product.modelNo,
+        unitCodes: unit ? [unit] : undefined
       };
       setCartItems([...cartItems, newItem]);
     }
@@ -195,7 +206,7 @@ export const BillingPOS: React.FC = () => {
       return;
     }
     const updated = [...cartItems];
-    updated[index].qty = newQty;
+    updated[index] = { ...updated[index], qty: newQty, unitCodes: updated[index].unitCodes?.slice(0, newQty) };
     recalcLineItem(updated[index]);
     setCartItems(updated);
   };
@@ -411,14 +422,7 @@ export const BillingPOS: React.FC = () => {
             type="button"
             id="btn-pos-camera-scan"
             onClick={() => {
-              openCameraScanner((scannedCode) => {
-                const found = findScannedProduct(products, scannedCode);
-                if (found) {
-                  addProductToCart(found);
-                } else {
-                  alert(`Item with barcode "${scannedCode}" not uniquely matched in this shop. Check sync and duplicate codes.`);
-                }
-              });
+              openCameraScanner((scannedCode) => { handleScannedCode(scannedCode); });
             }}
             className="px-3 py-2 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-stone-700 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-xs cursor-pointer transition-colors"
             title={t("Scan with Camera")}

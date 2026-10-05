@@ -95,6 +95,7 @@ interface AppContextType {
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   adjustStock: (id: string, newQty: number) => void;
+  reserveTagSerials: (productId: string, count: number, from?: number) => number;
   transferStock: (id: string, targetShopId: string, qty: number) => void;
 
   customers: Customer[];
@@ -687,6 +688,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     setProducts(prev=>prev.filter(p=>!ids.includes(p.id)));
   };
 
+  // Hands out the next per-piece tag serials for a material (shared across its shop rows)
+  // and records them as used, so every printed tag code is unique.
+  const reserveTagSerials = (productId: string, count: number, from?: number): number => {
+    const row = products.find((p) => p.id === productId);
+    if (!row || !Number.isInteger(count) || count < 1) throw new Error('Choose how many tags to print.');
+    const key = catalogKey(row);
+    const start = Math.max(1, ...products.filter((p) => catalogKey(p) === key).map((p) => p.nextSerial || 1));
+    const first = from && from > 0 ? from : start;
+    setProducts((prev) => prev.map((p) => (catalogKey(p) === key ? { ...p, nextSerial: Math.max(start, first + count) } : p)));
+    return first;
+  };
+
   const adjustStock = (id: string, newQty: number) => {
     if(!Number.isInteger(newQty)||newQty<0)throw new Error('Stock must be a non-negative whole number.');
     setProducts((prev) =>
@@ -799,7 +812,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     };
 
     // 1. Deduct Product stock
-    setProducts(stockAfterSale);
+    setProducts(stockAfterSale.map((p) => {
+      const sold = invoiceData.items.filter((it) => it.productId === p.id).flatMap((it) => it.unitCodes || []);
+      return sold.length ? { ...p, soldUnitCodes: [...(p.soldUnitCodes || []), ...sold] } : p;
+    }));
 
     // 2. Update customer spent & balance
     setCustomers((prev) =>
@@ -1055,6 +1071,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         updateProduct,
         deleteProduct,
         adjustStock,
+        reserveTagSerials,
         transferStock,
         customers:scoped(customers),
         addCustomer,

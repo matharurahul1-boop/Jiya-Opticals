@@ -24,6 +24,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
 import { catalogKey } from '../lib/catalog';
+import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
 import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS } from '../lib/gst';
 
 export const InventoryManager: React.FC = () => {
@@ -43,8 +44,20 @@ export const InventoryManager: React.FC = () => {
     setActiveTab,
     isCloud,
     invoices,
-    purchases
+    purchases,
+    openCameraScanner
   } = useApp();
+
+  // Scan a piece tag (scanner, camera or typed code) to see which material it is.
+  const [scanInput, setScanInput] = useState('');
+  const [scanMsg, setScanMsg] = useState('');
+  const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
+  const lookupCode = (raw: string) => {
+    const found = findScannedProduct(products, raw);
+    if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanned(null); return; }
+    setScanMsg('');
+    setScanned({ product: found, unit: scannedUnitCode(products, raw) });
+  };
 
   // A shared material auto-gets a zero-stock row in every shop; a row for a shop that
   // never carried the item is not "low stock". Only rows with stock now, or with sale/
@@ -429,6 +442,17 @@ export const InventoryManager: React.FC = () => {
         <ChevronRight className="w-4 h-4 text-stone-400" />
       </button>
       */}
+      <div className="flex gap-2 items-center bg-white border border-stone-200 rounded-xl p-2.5 shadow-xs">
+        <form className="flex-1 flex gap-2 min-w-0" onSubmit={(e) => { e.preventDefault(); if (scanInput.trim()) { lookupCode(scanInput); setScanInput(''); } }}>
+          <div className="relative flex-1 min-w-0">
+            <ScanLine className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input value={scanInput} onChange={(e) => setScanInput(e.target.value)} placeholder={t("Scan item tag or type its code to see details…")} className="w-full pl-9 pr-3 py-2 text-sm bg-stone-50 border border-stone-200 rounded-lg font-mono" />
+          </div>
+          <button className="px-3 py-2 bg-stone-900 text-white text-xs font-bold rounded-lg">{t("Find")}</button>
+        </form>
+        <button type="button" onClick={() => openCameraScanner(lookupCode)} className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5"><ScanLine className="w-4 h-4" />{t("Camera")}</button>
+      </div>
+      {scanMsg && <p role="alert" className="text-sm text-rose-700">{scanMsg}</p>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">
@@ -620,6 +644,57 @@ export const InventoryManager: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Scanned tag details */}
+      {scanned && (() => {
+        const { product: sp, unit } = scanned;
+        const rows = products.filter((p) => catalogKey(p) === catalogKey(sp));
+        const sold = unit ? rows.some((r) => r.soldUnitCodes?.includes(unit)) : false;
+        const soldOn = unit ? invoices.find((inv) => inv.items.some((it) => it.unitCodes?.includes(unit))) : undefined;
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
+            <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-stone-900 break-words">{sp.name}</h3>
+                  <p className="text-xs text-stone-500">{sp.brand} · {sp.modelNo} · {sp.color}</p>
+                </div>
+                <button onClick={() => setScanned(null)} aria-label={t("Close")} className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 rounded-lg shrink-0">✕</button>
+              </div>
+              {unit && (
+                <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${sold ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
+                  {t("This piece")}: <span className="font-mono">{unit}</span> — {sold ? `${t("SOLD")}${soldOn ? ` (${soldOn.invoiceNo}, ${soldOn.date})` : ''}` : t("not sold yet")}
+                </div>
+              )}
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                <div><dt className="text-stone-400 uppercase text-[10px]">{t("Category")}</dt><dd>{sp.category}</dd></div>
+                <div><dt className="text-stone-400 uppercase text-[10px]">{t("Barcode")}</dt><dd className="font-mono break-all">{sp.barcode}</dd></div>
+                {sp.size && <div><dt className="text-stone-400 uppercase text-[10px]">{t("Size")}</dt><dd>{sp.size}</dd></div>}
+                {sp.frameType && sp.frameType !== 'N/A' && <div><dt className="text-stone-400 uppercase text-[10px]">{t("Frame type")}</dt><dd>{sp.frameType}</dd></div>}
+                <div><dt className="text-stone-400 uppercase text-[10px]">MRP</dt><dd>₹{sp.mrp}</dd></div>
+                <div><dt className="text-stone-400 uppercase text-[10px]">{t("Sale price")}</dt><dd className="font-bold">₹{sp.salePrice}</dd></div>
+                <div><dt className="text-stone-400 uppercase text-[10px]">GST</dt><dd>{sp.gstRate}%</dd></div>
+                <div><dt className="text-stone-400 uppercase text-[10px]">HSN</dt><dd>{sp.hsnCode || '-'}</dd></div>
+              </dl>
+              <div>
+                <p className="text-[10px] uppercase text-stone-400 mb-1">{t("Stock by shop")}</p>
+                <div className="space-y-1">
+                  {rows.map((r) => (
+                    <div key={r.id} className="flex justify-between bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-xs">
+                      <span>{(shops.find((s) => s.id === r.shopId)?.name || 'Unallocated').split(' - ')[0]}{r.location ? ` · ${r.location}` : ''}</span>
+                      <strong>{r.stockQty}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
+                <button onClick={() => setScanned(null)} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold">{t("Done")}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Add / Edit Product Modal */}
       {showAddModal && (

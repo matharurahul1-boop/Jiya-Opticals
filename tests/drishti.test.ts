@@ -84,3 +84,24 @@ test('Drishti sync is atomic, idempotent, shop-scoped and preserves ERP stock', 
     await assert.rejects(upload([sourceItem]), /permission denied/);
   } finally { await db.close(); }
 });
+
+import { code128Runs } from '../src/lib/code128';
+import { unitCode, scannedUnitCode } from '../src/lib/barcodes';
+
+test('per-piece Code 128 tags decode unchanged and resolve to their material', () => {
+  const item = { id: 'one', barcode: '890180663928', qrCode: undefined } as unknown as Product;
+  for (const text of ['890180663928-001', 'ABC-123', unitCode('890180663928', 10)]) {
+    const runs = code128Runs(text);
+    const scale = 3, quiet = 10, height = 60;
+    const width = (runs.reduce((a, b) => a + b, 0) + quiet * 2) * scale;
+    const pixels = new Uint8ClampedArray(width * height).fill(255);
+    let x = quiet * scale, bar = true;
+    for (const w of runs) { if (bar) for (let dx = 0; dx < w * scale; dx++) for (let y = 0; y < height; y++) pixels[y * width + x + dx] = 0; x += w * scale; bar = !bar; }
+    const bitmap = new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(pixels, width, height)));
+    assert.equal(new MultiFormatReader().decodeWithState(bitmap).getText(), text);
+  }
+  assert.equal(findScannedProduct([item], '890180663928-007')?.id, 'one');
+  assert.equal(scannedUnitCode([item], '890180663928-007'), '890180663928-007');
+  assert.equal(scannedUnitCode([item], '890180663928'), undefined);
+  assert.equal(findScannedProduct([item], '111111-007'), undefined);
+});

@@ -46,7 +46,7 @@ export const GlobalSearch: React.FC<Props> = ({ placeholder = 'Search invoice, m
         .filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
-            p.barcode.includes(searchQuery.trim()) ||
+            p.barcode.includes(searchQuery.trim()) || (searchQuery.trim().startsWith(p.barcode) && p.barcode.length > 3) ||
             p.modelNo.toLowerCase().includes(q) ||
             p.brand.toLowerCase().includes(q)
         )

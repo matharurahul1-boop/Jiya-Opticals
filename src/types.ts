@@ -81,6 +81,10 @@ export interface Product {
   minStockAlert: number;
   supplierId?: string;
   location?: string; // Shelf / Rack
+  /** Next per-piece tag serial to print (barcode-001, -002 ...). */
+  nextSerial?: number;
+  /** Per-piece tag codes already sold on a bill. */
+  soldUnitCodes?: string[];
 }
 
 export type PaymentMode = 'Cash' | 'UPI / QR' | 'Credit / Debit Card' | 'Customer Credit' | 'Split Payment';
@@ -105,6 +109,8 @@ export interface InvoiceItem {
   frameModel?: string;
   lensDetails?: string;
   fittingCharge?: number;
+  /** Per-piece tag codes scanned for this line. */
+  unitCodes?: string[];
 }
 
 export type OrderStatus = 'Direct Sale' | 'Order Booked' | 'In Progress' | 'Fitting Done' | 'Ready for Delivery' | 'Delivered' | 'Cancelled';
