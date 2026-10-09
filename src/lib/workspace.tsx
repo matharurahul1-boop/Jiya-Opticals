@@ -1,4 +1,5 @@
 import { JoinShop } from '../components/JoinShop';
+import { OrgSetup } from '../components/OrgSetup';
 import { cloudErrorMessage } from './cloudErrors';
 import { initialStoreProfile } from '../data/initialData';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,9 +14,15 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const onApproved = useCallback(() => setAttempt(n=>n+1), []);
-  const [busy, setBusy] = useState(false);
-  // One store per deployment. Whichever store the account can reach is opened straight away —
-  // there is no "organisation" to choose. Shop selection happens inside the app.
+  // Set at sign-up by 'Register new organization' (org = start one, join = join one by code). Classic sign-ups have none.
+  const [who, setWho] = useState<{ email: string; intent: string; ready: boolean }>({ email: '', intent: '', ready: false });
+  useEffect(() => {
+    void supabase!.auth.getSession().then(({ data }) => {
+      const user = data.session?.user;
+      setWho({ email: user?.email || '', intent: String((user?.user_metadata as Record<string, unknown> | undefined)?.intent || ''), ready: true });
+    });
+  }, []);
+  // Whichever store the account can reach is opened straight away. Shop selection happens inside the app.
   useEffect(() => {
     let active = true; setError('');
     supabase!.rpc('optical_team_list').then(({data,error}) => {
@@ -41,7 +48,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
     {error && <div role="alert" className="text-red-700">{error}</div>}
     {!teams && !error && <p>Opening your store…</p>}
     {selected && !error && <p>Loading store…</p>}
-    {noAccess && <JoinShop onApproved={onApproved} />}
+    {noAccess && who.ready && (who.intent === 'org' ? <OrgSetup email={who.email} onDone={onApproved} /> : <JoinShop onApproved={onApproved} byCode={who.intent === 'join'} />)}
     <button className="underline mr-4" onClick={()=>setAttempt(n=>n+1)}>Refresh</button>
     <button className="underline" onClick={()=>void supabase!.auth.signOut()}>Sign out</button>
   </div></div>;

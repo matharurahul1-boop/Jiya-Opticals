@@ -11,7 +11,9 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'org'>('signin');
+  // 'org' = Register new organization: either start one ('org') or join one with its code ('join').
+  const [orgIntent, setOrgIntent] = useState<'org' | 'join'>('org');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   useEffect(() => {
@@ -52,15 +54,15 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
       e.preventDefault();
       if (busy) return;
       setError(''); setMessage('');
-      if (mode === 'signup' && password !== confirmPassword) {
+      if (mode !== 'signin' && password !== confirmPassword) {
         setError('Passwords do not match.'); return;
       }
       setBusy(true);
       try {
-        if (mode === 'signup') {
+        if (mode !== 'signin') {
           const { data, error } = await supabase!.auth.signUp({
             email: email.trim(), password,
-            options: { emailRedirectTo: window.location.origin },
+            options: { emailRedirectTo: window.location.origin, ...(mode === 'org' ? { data: { intent: orgIntent } } : {}) },
           });
           if (error) throw error;
           if (!data.session) {
@@ -75,23 +77,26 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
       finally { setBusy(false); }
     }}>
       <img className="auth-logo" src="/brand/logo.svg" alt="Jiya Opticals logo" />
-      <span className="optical-eyebrow">{mode === 'signup' ? 'START YOUR PRACTICE WORKSPACE' : 'YOUR OPTICAL WORKSPACE'}</span>
-      <h2>{mode === 'signup' ? t("Create your account") : t("Welcome back")}</h2>
-      <p className="auth-intro">{mode === 'signup' ? 'A little less admin. More time for eye care.' : 'Sign in to take care of your day, your clients and your stores.'}</p>
+      <span className="optical-eyebrow">{mode === 'org' ? 'ORGANIZATIONS' : mode === 'signup' ? 'START YOUR PRACTICE WORKSPACE' : 'YOUR OPTICAL WORKSPACE'}</span>
+      <h2>{mode === 'org' ? 'Register your organization' : mode === 'signup' ? t("Create your account") : t("Welcome back")}</h2>
+      <p className="auth-intro">{mode === 'org' ? 'Create your own workspace, or join one with the code your admin shared.' : mode === 'signup' ? 'A little less admin. More time for eye care.' : 'Sign in to take care of your day, your clients and your stores.'}</p>
+      {mode === 'org' && <div className="grid grid-cols-2 gap-2" role="group" aria-label="What would you like to do">{([['org', 'Set up a new organization'], ['join', 'Join an organization']] as const).map(([value, label]) => <button type="button" key={value} aria-pressed={orgIntent === value} onClick={() => setOrgIntent(value)} className={'rounded-xl border p-3 text-sm ' + (orgIntent === value ? 'border-amber-700 bg-amber-50 font-semibold' : 'bg-white')}>{label}</button>)}</div>}
       <fieldset disabled={busy} className="space-y-4">
       <label className="block">{t("Email")}<input className="border rounded p-2 w-full" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label className="block">{t("Password")}<input className="border rounded p-2 w-full" type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 8 : undefined} required value={password} onChange={e => setPassword(e.target.value)} /></label>
-      {mode === 'signup' && <>
+      <label className="block">{t("Password")}<input className="border rounded p-2 w-full" type="password" autoComplete={mode !== 'signin' ? 'new-password' : 'current-password'} minLength={mode !== 'signin' ? 8 : undefined} required value={password} onChange={e => setPassword(e.target.value)} /></label>
+      {mode !== 'signin' && <>
         <p className="text-sm text-stone-500">{t("Use at least 8 characters.")}</p>
         <label className="block">{t("Confirm password")}<input className="border rounded p-2 w-full" type="password" autoComplete="new-password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} /></label>
       </>}
       </fieldset>
       {error && <p role="alert" className="text-red-700">{error}</p>}
       {message && <p role="status" className="text-green-800">{message}</p>}
-      <button disabled={busy} className="bg-amber-700 text-white rounded p-3 w-full disabled:opacity-60">{busy ? (mode === 'signup' ? 'Creating account…' : 'Signing in…') : (mode === 'signup' ? 'Sign up' : 'Sign in')}</button>
+      <button disabled={busy} className="bg-amber-700 text-white rounded p-3 w-full disabled:opacity-60">{busy ? (mode !== 'signin' ? 'Creating account…' : 'Signing in…') : (mode !== 'signin' ? 'Sign up' : 'Sign in')}</button>
       <button type="button" disabled={busy} className="text-amber-800 underline w-full disabled:opacity-60" onClick={() => {
         setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); setPassword(''); setConfirmPassword('');
       }}>{mode === 'signin' ? t("New here? Create an account") : t("Already have an account? Sign in")}</button>
+      {mode === 'signin' && <button type="button" disabled={busy} className="w-full rounded-xl border border-amber-700 text-amber-900 p-3 disabled:opacity-60" onClick={() => { setMode('org'); setError(''); setMessage(''); setPassword(''); setConfirmPassword(''); }}>Register new organization</button>}
+      {mode === 'org' && <p className="text-sm text-stone-500">{orgIntent === 'org' ? 'After you confirm your email and sign in, a short guided setup creates your organization and first shop.' : 'After you confirm your email and sign in, enter your organization code and pick your shop. The admin approves your request.'}</p>}
       {mode === 'signup' && <p className="text-sm text-stone-500">{t("After sign-in, select your shop and request access. Your workspace opens after the admin approves.")}</p>}
     </form>
     <p className="auth-footnote">JIYA OPTICALS <span>•</span> Designed around better eye care</p>

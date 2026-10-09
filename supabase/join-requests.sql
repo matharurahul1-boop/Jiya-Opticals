@@ -1,4 +1,6 @@
 begin;
+-- Organizations (orgs.sql) are hidden from the open shop list; declared here too so this script also runs on its own.
+alter table public.optical_workspaces add column if not exists join_code text;
 create table if not exists public.optical_join_requests (
   owner_id uuid not null references public.optical_workspaces(owner_id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -17,7 +19,7 @@ begin
   if optical_private.session_email() is null then raise exception 'Confirmed sign-in required' using errcode='42501'; end if;
   return (select coalesce(jsonb_agg(jsonb_build_object('ownerId',w.owner_id,'name',w.data->'JIYA_OPTICALS_ERP_V2_profile'->>'name',
     'shops',(select coalesce(jsonb_agg(jsonb_build_object('id',s->>'id','name',s->>'name')),'[]') from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_shops','[]')) s),
-    'request',(select jsonb_build_object('shopId',r.shop_id,'status',r.status) from public.optical_join_requests r where r.owner_id=w.owner_id and r.user_id=auth.uid()))),'[]') from public.optical_workspaces w);
+    'request',(select jsonb_build_object('shopId',r.shop_id,'status',r.status) from public.optical_join_requests r where r.owner_id=w.owner_id and r.user_id=auth.uid()))),'[]') from public.optical_workspaces w where w.join_code is null);
 end $$;
 
 create or replace function optical_private.join_request(team_owner uuid, requested_shop text) returns void
@@ -64,5 +66,22 @@ revoke all on function optical_private.join_options(),optical_private.join_reque
 grant execute on function optical_private.join_options(),optical_private.join_request(uuid,text),optical_private.join_pending(uuid),optical_private.join_review(uuid,uuid,boolean) to authenticated;
 revoke all on function public.optical_join_options(),public.optical_join_request(uuid,text),public.optical_join_pending(uuid),public.optical_join_review(uuid,uuid,boolean) from public,anon;
 grant execute on function public.optical_join_options(),public.optical_join_request(uuid,text),public.optical_join_pending(uuid),public.optical_join_review(uuid,uuid,boolean) to authenticated;
+
+-- Organizations are private: found only by their join code (or because this person already asked to join).
+create or replace function optical_private.join_org(code text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare wanted text := upper(regexp_replace(coalesce(code,''),'[^A-Za-z0-9]','','g'));
+begin
+  if optical_private.session_email() is null then raise exception 'Confirmed sign-in required' using errcode='42501'; end if;
+  if wanted <> '' and not exists(select 1 from public.optical_workspaces where join_code=wanted) then raise exception 'No organization found for this code'; end if;
+  return (select coalesce(jsonb_agg(jsonb_build_object('ownerId',w.owner_id,'name',w.data->'JIYA_OPTICALS_ERP_V2_profile'->>'name',
+    'shops',(select coalesce(jsonb_agg(jsonb_build_object('id',s->>'id','name',s->>'name')),'[]') from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_shops','[]')) s),
+    'request',(select jsonb_build_object('shopId',r.shop_id,'status',r.status) from public.optical_join_requests r where r.owner_id=w.owner_id and r.user_id=auth.uid()))),'[]')
+    from public.optical_workspaces w
+    where w.join_code is not null and (w.join_code=wanted or exists(select 1 from public.optical_join_requests r where r.owner_id=w.owner_id and r.user_id=auth.uid())));
+end $$;
+create or replace function public.optical_join_org(code text) returns jsonb language sql security invoker set search_path='' as $$select optical_private.join_org(code)$$;
+revoke all on function optical_private.join_org(text),public.optical_join_org(text) from public,anon;
+grant execute on function optical_private.join_org(text),public.optical_join_org(text) to authenticated;
 notify pgrst,'reload schema';
 commit;

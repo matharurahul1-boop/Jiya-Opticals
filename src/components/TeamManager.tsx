@@ -40,6 +40,14 @@ export function TeamManager() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
+  // Only organizations registered through 'Register new organization' have a join code.
+  const [orgCode, setOrgCode] = useState('');
+  useEffect(() => {
+    if (!ownerId || currentUser.role !== 'Admin') return;
+    let active = true;
+    void supabase!.rpc('optical_org_code', { team_owner: ownerId }).then(({ data }) => { if (active && typeof data === 'string') setOrgCode(data); });
+    return () => { active = false; };
+  }, [ownerId, currentUser.role]);
 
   useEffect(() => {
     if (!ownerId || currentUser.role !== 'Admin') {
@@ -122,6 +130,7 @@ export function TeamManager() {
   return (
     <section className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
       <JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} />
+      {orgCode && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5"><h2 className="font-bold">Organization code</h2><p className="text-2xl font-bold tracking-[0.3em] mt-1 select-all">{orgCode}</p><p className="text-sm text-stone-600 mt-2">Share this code with new staff. They pick <strong>Register new organization → Join an organization</strong> on the sign-in page, sign up, enter the code and choose a shop. Their request appears above for you to approve.</p></div>}
       <header>
         <h1 className="text-2xl font-bold">{t("Team &amp; shop access")}</h1>
         <p className="text-stone-600 mt-1">
