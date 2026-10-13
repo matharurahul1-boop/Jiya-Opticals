@@ -14,6 +14,7 @@ import {
   Wallet,
   Send,
   ScanLine,
+  ShieldCheck,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen
@@ -163,6 +164,7 @@ export const Sidebar: React.FC = () => {
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet, group: 'ops' },
     // Drishti sync disabled for now (in-app QR tags are used instead):
     // { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine, group: 'ops' },
+    { id: 'management', label: 'Management', labelHi: 'प्रबंधन', icon: ShieldCheck, group: 'admin' },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users, group: 'admin' },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings, group: 'admin' }
   ];

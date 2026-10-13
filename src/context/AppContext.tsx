@@ -1,3 +1,4 @@
+import { usePlatformAdmin } from '../lib/platform';
 import { supabase } from '../lib/supabase';
 import { getLanguage,setLocale } from '../lib/i18n';
 import { applyStockMovement, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
@@ -52,6 +53,7 @@ export type NavTab =
   | 'settings'
   | 'shops'
   | 'team'
+  | 'management'
   | 'drishti';
 
 interface AppContextType {
@@ -466,8 +468,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   const activeShop: ShopBranch = 
     shops.find((s) => s.id === selectedShopFilter) || shops[0] || initialShops[0];
 
+  const platformAdmin = usePlatformAdmin();
   const canAccessTab = (tab: NavTab): boolean => {
     if(tab==='profile')return true;
+    if(tab==='management')return platformAdmin;
     const role = currentUser.role;
     if (ownerId && role !== 'Admin') return ['dashboard','billing','eyetesting','inventory','customers','followups','daybook'].includes(tab);
     if (role === 'Admin') return true;

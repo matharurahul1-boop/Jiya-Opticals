@@ -12,6 +12,7 @@ import {
   Truck,
   Wallet,
   ScanLine,
+  ShieldCheck,
   Building,
   Settings,
   ScanBarcode
@@ -75,6 +76,7 @@ export const FloatingMenu: React.FC = () => {
     { id: 'daybook', label: 'Day Book', labelHi: 'बहीखाता', icon: Wallet },
     // Drishti sync disabled for now (in-app QR tags are used instead):
     // { id: 'drishti', label: 'Drishti Sync', labelHi: 'दृष्टि सिंक', icon: ScanLine },
+    { id: 'management', label: 'Management', labelHi: 'प्रबंधन', icon: ShieldCheck },
     { id: 'team', label: 'Team & Access', labelHi: 'टीम', icon: Users },
     { id: 'masters', label: 'Masters & Settings', labelHi: 'मास्टर व सेटिंग', icon: Settings }
   ];

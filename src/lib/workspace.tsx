@@ -1,5 +1,7 @@
 import { JoinShop } from '../components/JoinShop';
 import { OrgSetup } from '../components/OrgSetup';
+import { ManagementConsole } from '../components/ManagementConsole';
+import { usePlatformAdmin } from './platform';
 import { cloudErrorMessage } from './cloudErrors';
 import { initialStoreProfile } from '../data/initialData';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,6 +17,7 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const [attempt, setAttempt] = useState(0);
   const onApproved = useCallback(() => setAttempt(n=>n+1), []);
   // Set at sign-up by 'Register new organization' (org = start one, join = join one by code). Classic sign-ups have none.
+  const platformAdmin = usePlatformAdmin();
   const [who, setWho] = useState<{ email: string; intent: string; ready: boolean }>({ email: '', intent: '', ready: false });
   useEffect(() => {
     void supabase!.auth.getSession().then(({ data }) => {
@@ -43,6 +46,8 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   },[selected,attempt]);
   if (row) return <>{children(row.data,row.version,row)}</>;
   const noAccess = teams && teams.length === 0;
+  // A management account with no store of its own opens the management console directly.
+  if (noAccess && platformAdmin) return <div className="min-h-screen bg-[#f4f8f8]"><div className="flex justify-end gap-4 p-4"><button className="underline" onClick={() => setAttempt(n => n + 1)}>Refresh</button><button className="underline" onClick={() => void supabase!.auth.signOut()}>Sign out</button></div><ManagementConsole /></div>;
   return <div className="min-h-screen bg-[#f4f8f8] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
     <h1 className="text-2xl font-bold">Jiya Opticals</h1>
     {error && <div role="alert" className="text-red-700">{error}</div>}

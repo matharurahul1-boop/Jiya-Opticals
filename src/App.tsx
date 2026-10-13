@@ -4,6 +4,7 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { CloudWorkspace } from './lib/workspace';
 import React from 'react';
 import { TeamManager } from './components/TeamManager';
+import { ManagementConsole } from './components/ManagementConsole';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { MobileTopBar } from './components/MobileTopBar';
@@ -53,6 +54,7 @@ const MainLayout: React.FC = () => {
         >
           {needsShop ? <section className="p-6 space-y-4"><h2 className="text-xl font-bold">Choose a shop to continue</h2><p>Clients, stock and transactions stay with the selected shop.</p><div className="flex flex-wrap gap-3">{shops.map(shop => <button key={shop.id} className="bg-white border border-amber-300 rounded-xl p-4" onClick={() => setSelectedShopFilter(shop.id)}>{shop.name}</button>)}</div></section> : <>
           {activeTab === 'shops' && canAccessTab('shops') && <MastersConfig key="shops" startTab="Shops" />}
+          {activeTab === 'management' && canAccessTab('management') && <ManagementConsole />}
           {activeTab === 'team' && canAccessTab('team') && <TeamManager />}
             {activeTab === 'dashboard' && <>{ownerId && currentUser.role === 'Admin' && <div className="px-6 pt-6"><JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} /></div>}<Dashboard /></>}
           {activeTab === 'profile' && <ProfileScreen />}
