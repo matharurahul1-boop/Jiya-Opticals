@@ -5,6 +5,7 @@ import { CloudWorkspace } from './lib/workspace';
 import React from 'react';
 import { TeamManager } from './components/TeamManager';
 import { ManagementConsole } from './components/ManagementConsole';
+import { SubscriptionBanner } from './components/SubscriptionBanner';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { MobileTopBar } from './components/MobileTopBar';
@@ -56,7 +57,7 @@ const MainLayout: React.FC = () => {
           {activeTab === 'shops' && canAccessTab('shops') && <MastersConfig key="shops" startTab="Shops" />}
           {activeTab === 'management' && canAccessTab('management') && <ManagementConsole />}
           {activeTab === 'team' && canAccessTab('team') && <TeamManager />}
-            {activeTab === 'dashboard' && <>{ownerId && currentUser.role === 'Admin' && <div className="px-6 pt-6"><JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} /></div>}<Dashboard /></>}
+            {activeTab === 'dashboard' && <>{ownerId && currentUser.role === 'Admin' && <div className="px-6 pt-6 space-y-4"><SubscriptionBanner ownerId={ownerId} /><JoinApprovals ownerId={ownerId} shops={shops} canReview={saveStatus === 'Saved to Supabase'} /></div>}<Dashboard /></>}
           {activeTab === 'profile' && <ProfileScreen />}
           {activeTab === 'billing' && <BillingPOS />}
           {activeTab === 'eyetesting' && <EyeTesting />}

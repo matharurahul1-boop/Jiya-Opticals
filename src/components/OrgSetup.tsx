@@ -29,6 +29,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [code, setCode] = useState('');
+  const [trialEnds, setTrialEnds] = useState('');
   const set = <K extends keyof Answers>(key: K, value: Answers[K]) => setA(prev => ({ ...prev, [key]: value }));
 
   const shop = useMemo(() => ({
@@ -60,6 +61,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
         org_name: a.name.trim(), profile, first_shop: shop, templates: initialWhatsAppTemplates,
       });
       if (rpcError) throw rpcError;
+      setTrialEnds(data.expiresAt ? new Date(data.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'long' }) : '');
       setCode(data.joinCode);
     } catch (e) { setError(cloudErrorMessage(e)); }
     finally { setBusy(false); }
@@ -71,6 +73,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
   if (code) return <div className="space-y-5">
     <img src="/brand/logo.svg" alt="" className="w-12 h-12" />
     <h2 className="text-2xl font-semibold">{a.name.trim()} is ready</h2>
+    {trialEnds && <p role="status" className="bg-emerald-50 text-emerald-900 rounded-xl p-4 text-sm">Your <strong>15-day free trial</strong> runs until <strong>{trialEnds}</strong>. After that, access pauses until your subscription is renewed. Your data stays safe.</p>}
     <div role="status" className="bg-amber-50 rounded-xl p-5 space-y-2">
       <p className="text-sm">Your organization code. Share it with staff you want to add:</p>
       <p className="text-3xl font-bold tracking-[0.3em] select-all">{code}</p>

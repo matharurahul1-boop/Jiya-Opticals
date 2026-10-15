@@ -98,6 +98,7 @@ interface AppContextType {
   deleteProduct: (id: string) => void;
   adjustStock: (id: string, newQty: number) => void;
   reserveTagSerials: (productId: string, count: number, from?: number) => number;
+  setTagDisabled: (productId: string, unit: string, disabled: boolean) => void;
   transferStock: (id: string, targetShopId: string, qty: number) => void;
 
   customers: Customer[];
@@ -704,6 +705,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     return first;
   };
 
+  // Switch one piece's tag off/on for every shop row of the material, so Billing blocks it everywhere.
+  const setTagDisabled = (productId: string, unit: string, disabled: boolean) => {
+    const row = products.find((p) => p.id === productId);
+    if (!row) return;
+    const key = catalogKey(row);
+    setProducts((prev) => prev.map((p) => {
+      if (catalogKey(p) !== key) return p;
+      const rest = (p.disabledUnitCodes || []).filter((c) => c !== unit);
+      return { ...p, disabledUnitCodes: disabled ? [...rest, unit] : rest };
+    }));
+  };
+
   const adjustStock = (id: string, newQty: number) => {
     if(!Number.isInteger(newQty)||newQty<0)throw new Error('Stock must be a non-negative whole number.');
     setProducts((prev) =>
@@ -1076,6 +1089,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         deleteProduct,
         adjustStock,
         reserveTagSerials,
+        setTagDisabled,
         transferStock,
         customers:scoped(customers),
         addCustomer,

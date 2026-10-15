@@ -96,7 +96,7 @@ export function SupabaseGate({ children }: { children: (id?: string) => React.Re
         setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMessage(''); setPassword(''); setConfirmPassword('');
       }}>{mode === 'signin' ? t("New here? Create an account") : t("Already have an account? Sign in")}</button>
       {mode === 'signin' && <button type="button" disabled={busy} className="w-full rounded-xl border border-amber-700 text-amber-900 p-3 disabled:opacity-60" onClick={() => { setMode('org'); setError(''); setMessage(''); setPassword(''); setConfirmPassword(''); }}>Register new organization</button>}
-      {mode === 'org' && <p className="text-sm text-stone-500">{orgIntent === 'org' ? 'After you confirm your email and sign in, a short guided setup creates your organization and first shop.' : 'After you confirm your email and sign in, enter your organization code and pick your shop. The admin approves your request.'}</p>}
+      {mode === 'org' && <p className="text-sm text-stone-500">{orgIntent === 'org' ? 'After you confirm your email and sign in, a short guided setup creates your organization and first shop. Includes a 15-day free trial.' : 'After you confirm your email and sign in, enter your organization code and pick your shop. The admin approves your request.'}</p>}
       {mode === 'signup' && <p className="text-sm text-stone-500">{t("After sign-in, select your shop and request access. Your workspace opens after the admin approves.")}</p>}
     </form>
     <p className="auth-footnote">JIYA OPTICALS <span>•</span> Designed around better eye care</p>

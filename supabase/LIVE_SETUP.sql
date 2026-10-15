@@ -14,6 +14,19 @@ create table if not exists public.optical_workspaces (
   data jsonb not null check (jsonb_typeof(data) = 'object'),
   version integer not null default 1 check (version > 0)
 );
+-- Organizations registered through the app (join_code set) run on a subscription; the original store has none.
+alter table public.optical_workspaces add column if not exists join_code text;
+alter table public.optical_workspaces add column if not exists created_at timestamptz not null default now();
+alter table public.optical_workspaces add column if not exists updated_at timestamptz not null default now();
+do $$ begin
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='optical_workspaces' and column_name='subscription_expires_at') then
+    alter table public.optical_workspaces add column subscription_expires_at timestamptz;
+    alter table public.optical_workspaces add column subscription_active boolean not null default true;
+    alter table public.optical_workspaces add column subscription_trial boolean not null default true;
+    -- Organizations that already exist get the standard 15-day trial, counted from today.
+    update public.optical_workspaces set subscription_expires_at = now() + interval '15 days' where join_code is not null;
+  end if;
+end $$;
 alter table public.optical_workspaces enable row level security;
 -- All application access goes through checked RPCs, never an unrestricted JSON read.
 revoke all on public.optical_workspaces from anon, authenticated;
@@ -74,6 +87,13 @@ language sql stable security definer set search_path = '' as $$
   )
 $$;
 
+-- True when an organization's subscription is switched off or has run out. The original store is never locked.
+create or replace function optical_private.org_locked(team_owner uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.optical_workspaces w where w.owner_id = team_owner and w.join_code is not null
+    and (not w.subscription_active or (w.subscription_expires_at is not null and w.subscription_expires_at <= now())))
+$$;
+
 create or replace function optical_private.team_list() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb;
@@ -115,6 +135,7 @@ begin
   actor_email := optical_private.session_email();
   select * into w from public.optical_workspaces where owner_id=team_owner;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
+  if optical_private.org_locked(team_owner) then raise exception 'SUBSCRIPTION_ENDED: this organization''s subscription has ended' using errcode='42501'; end if;
   is_admin := optical_private.is_store_admin(team_owner);
   if team_owner=auth.uid() or is_admin then d := w.data;
   else
@@ -170,6 +191,7 @@ begin
   if jsonb_typeof(payload) is distinct from 'object' then raise exception 'Invalid store data'; end if;
   select * into w from public.optical_workspaces where owner_id=team_owner for update;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
+  if optical_private.org_locked(team_owner) then raise exception 'SUBSCRIPTION_ENDED: this organization''s subscription has ended' using errcode='42501'; end if;
   is_admin := optical_private.is_store_admin(team_owner);
   if team_owner<>auth.uid() and not is_admin then
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=optical_private.session_email();
@@ -191,7 +213,7 @@ begin
       if jsonb_typeof(incoming) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
       if k='products' and exists(
         select 1 from jsonb_array_elements(incoming) a left join jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b on a->>'id'=b->>'id'
-        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes'])
+        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes'])
       ) then raise exception 'Only admin may edit shared material details' using errcode='42501'; end if;
       if exists(select 1 from jsonb_array_elements(incoming) e where not coalesce(e->>'shopId'=any(allowed),false) or coalesce(e->>'id','')='') then
         raise exception 'Record outside assigned shops' using errcode='42501';
@@ -626,8 +648,9 @@ begin
   d := jsonb_set(d, '{JIYA_OPTICALS_ERP_V2_wa_templates}', templates);
   d := jsonb_set(d, '{JIYA_OPTICALS_ERP_V2_profile}', profile || jsonb_build_object('name', trim(org_name)));
   code := optical_private.new_join_code();
-  insert into public.optical_workspaces(owner_id, data, join_code) values(auth.uid(), d, code);
-  return jsonb_build_object('ownerId', auth.uid(), 'joinCode', code);
+  -- Every new organization starts with a 15-day free trial.
+  insert into public.optical_workspaces(owner_id, data, join_code, subscription_expires_at, subscription_trial) values(auth.uid(), d, code, now() + interval '15 days', true);
+  return jsonb_build_object('ownerId', auth.uid(), 'joinCode', code, 'expiresAt', now() + interval '15 days');
 end $$;
 
 -- The organization's join code, for its admins only (null for classic stores).
@@ -638,15 +661,26 @@ begin
   return (select join_code from public.optical_workspaces where owner_id = team_owner);
 end $$;
 
+-- Subscription state for the organization's own admins (null for the original store).
+create or replace function optical_private.org_status(team_owner uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then raise exception 'Admin access required' using errcode='42501'; end if;
+  return (select case when w.join_code is null then null else jsonb_build_object('active', w.subscription_active, 'trial', w.subscription_trial, 'expiresAt', w.subscription_expires_at) end
+    from public.optical_workspaces w where w.owner_id = team_owner);
+end $$;
+create or replace function public.optical_org_status(team_owner uuid) returns jsonb
+language sql security invoker set search_path = '' as $$ select optical_private.org_status(team_owner) $$;
+
 create or replace function public.optical_org_create(org_name text, profile jsonb, first_shop jsonb, templates jsonb default '[]') returns jsonb
 language sql security invoker set search_path = '' as $$ select optical_private.org_create(org_name, profile, first_shop, templates) $$;
 create or replace function public.optical_org_code(team_owner uuid) returns text
 language sql security invoker set search_path = '' as $$ select optical_private.org_code(team_owner) $$;
 
-revoke all on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid) from public, anon;
-grant execute on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid) to authenticated;
-revoke all on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid) from public, anon;
-grant execute on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid) to authenticated;
+revoke all on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid), optical_private.org_status(uuid) from public, anon;
+grant execute on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid), optical_private.org_status(uuid) to authenticated;
+revoke all on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid), public.optical_org_status(uuid) from public, anon;
+grant execute on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid), public.optical_org_status(uuid) to authenticated;
 
 
 -- ===== join-requests.sql =====
@@ -796,6 +830,9 @@ begin
       perform optical_private.audit(old.owner_id, 'organization_deleted', jsonb_build_object('name', old.data->'JIYA_OPTICALS_ERP_V2_profile'->>'name'));
     else
       new.updated_at := now();
+      if new.subscription_active is distinct from old.subscription_active or new.subscription_expires_at is distinct from old.subscription_expires_at then
+        perform optical_private.audit(new.owner_id, 'subscription_changed', jsonb_build_object('active', new.subscription_active, 'expiresAt', new.subscription_expires_at, 'was', old.subscription_expires_at));
+      end if;
       -- Saves happen every few seconds while working: log at most one 'data_saved' per 30 minutes.
       select max(at) into last_at from public.optical_audit_log where owner_id = new.owner_id and action = 'data_saved';
       if last_at is null or last_at < now() - interval '30 minutes' then
@@ -930,6 +967,7 @@ begin
       'kind', case when w.join_code is null then 'classic' else 'organization' end,
       'joinCode', w.join_code,
       'createdAt', w.created_at, 'updatedAt', w.updated_at,
+      'subscriptionActive', w.subscription_active, 'subscriptionTrial', w.subscription_trial, 'subscriptionExpiresAt', w.subscription_expires_at,
       'shops', (select coalesce(jsonb_agg(s->>'name'), '[]') from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_shops','[]')) s),
       'customers', jsonb_array_length(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_customers','[]')),
       'invoices', jsonb_array_length(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_invoices','[]')),
@@ -966,15 +1004,33 @@ begin
     from (select * from public.optical_audit_log where before_id is null or id < before_id order by id desc limit least(greatest(coalesce(max_rows, 200), 1), 500)) l);
 end $$;
 
+-- Switch an organization's subscription on/off and/or set its renewal date. Setting a date marks it as a paid subscription.
+create or replace function optical_private.platform_set_subscription(team_owner uuid, p_active boolean default null, p_expires timestamptz default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare w public.optical_workspaces;
+begin
+  if not optical_private.is_platform_admin() then raise exception 'Management access required' using errcode = '42501'; end if;
+  select * into w from public.optical_workspaces where owner_id = team_owner for update;
+  if not found then raise exception 'Organization not found'; end if;
+  if w.join_code is null then raise exception 'The original store has no subscription'; end if;
+  update public.optical_workspaces set
+    subscription_active = coalesce(p_active, subscription_active),
+    subscription_expires_at = coalesce(p_expires, subscription_expires_at),
+    subscription_trial = case when p_expires is not null then false else subscription_trial end
+  where owner_id = team_owner returning * into w;
+  return jsonb_build_object('active', w.subscription_active, 'trial', w.subscription_trial, 'expiresAt', w.subscription_expires_at);
+end $$;
+
+create or replace function public.optical_platform_set_subscription(team_owner uuid, p_active boolean default null, p_expires timestamptz default null) returns jsonb language sql security invoker set search_path = '' as $$ select optical_private.platform_set_subscription(team_owner, p_active, p_expires) $$;
 create or replace function public.optical_is_platform_admin() returns boolean language sql security invoker set search_path = '' as $$ select optical_private.is_platform_admin() $$;
 create or replace function public.optical_platform_overview() returns jsonb language sql security invoker set search_path = '' as $$ select optical_private.platform_overview() $$;
 create or replace function public.optical_platform_logs(max_rows integer default 200, before_id bigint default null) returns jsonb language sql security invoker set search_path = '' as $$ select optical_private.platform_logs(max_rows, before_id) $$;
 
 revoke all on function optical_private.audit(uuid,text,jsonb), optical_private.trg_workspace(), optical_private.trg_join(), optical_private.trg_member(), optical_private.trg_role(), optical_private.trg_directory(), optical_private.trg_signup() from public, anon, authenticated;
-revoke all on function optical_private.is_platform_admin(), optical_private.platform_overview(), optical_private.platform_logs(integer,bigint) from public, anon;
-grant execute on function optical_private.is_platform_admin(), optical_private.platform_overview(), optical_private.platform_logs(integer,bigint) to authenticated;
-revoke all on function public.optical_is_platform_admin(), public.optical_platform_overview(), public.optical_platform_logs(integer,bigint) from public, anon;
-grant execute on function public.optical_is_platform_admin(), public.optical_platform_overview(), public.optical_platform_logs(integer,bigint) to authenticated;
+revoke all on function optical_private.is_platform_admin(), optical_private.platform_overview(), optical_private.platform_logs(integer,bigint), optical_private.platform_set_subscription(uuid,boolean,timestamptz) from public, anon;
+grant execute on function optical_private.is_platform_admin(), optical_private.platform_overview(), optical_private.platform_logs(integer,bigint), optical_private.platform_set_subscription(uuid,boolean,timestamptz) to authenticated;
+revoke all on function public.optical_is_platform_admin(), public.optical_platform_overview(), public.optical_platform_logs(integer,bigint), public.optical_platform_set_subscription(uuid,boolean,timestamptz) from public, anon;
+grant execute on function public.optical_is_platform_admin(), public.optical_platform_overview(), public.optical_platform_logs(integer,bigint), public.optical_platform_set_subscription(uuid,boolean,timestamptz) to authenticated;
 
 notify pgrst, 'reload schema';
 commit;

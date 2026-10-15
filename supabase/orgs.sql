@@ -49,8 +49,9 @@ begin
   d := jsonb_set(d, '{JIYA_OPTICALS_ERP_V2_wa_templates}', templates);
   d := jsonb_set(d, '{JIYA_OPTICALS_ERP_V2_profile}', profile || jsonb_build_object('name', trim(org_name)));
   code := optical_private.new_join_code();
-  insert into public.optical_workspaces(owner_id, data, join_code) values(auth.uid(), d, code);
-  return jsonb_build_object('ownerId', auth.uid(), 'joinCode', code);
+  -- Every new organization starts with a 15-day free trial.
+  insert into public.optical_workspaces(owner_id, data, join_code, subscription_expires_at, subscription_trial) values(auth.uid(), d, code, now() + interval '15 days', true);
+  return jsonb_build_object('ownerId', auth.uid(), 'joinCode', code, 'expiresAt', now() + interval '15 days');
 end $$;
 
 -- The organization's join code, for its admins only (null for classic stores).
@@ -61,14 +62,25 @@ begin
   return (select join_code from public.optical_workspaces where owner_id = team_owner);
 end $$;
 
+-- Subscription state for the organization's own admins (null for the original store).
+create or replace function optical_private.org_status(team_owner uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null or not optical_private.is_store_admin(team_owner) then raise exception 'Admin access required' using errcode='42501'; end if;
+  return (select case when w.join_code is null then null else jsonb_build_object('active', w.subscription_active, 'trial', w.subscription_trial, 'expiresAt', w.subscription_expires_at) end
+    from public.optical_workspaces w where w.owner_id = team_owner);
+end $$;
+create or replace function public.optical_org_status(team_owner uuid) returns jsonb
+language sql security invoker set search_path = '' as $$ select optical_private.org_status(team_owner) $$;
+
 create or replace function public.optical_org_create(org_name text, profile jsonb, first_shop jsonb, templates jsonb default '[]') returns jsonb
 language sql security invoker set search_path = '' as $$ select optical_private.org_create(org_name, profile, first_shop, templates) $$;
 create or replace function public.optical_org_code(team_owner uuid) returns text
 language sql security invoker set search_path = '' as $$ select optical_private.org_code(team_owner) $$;
 
-revoke all on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid) from public, anon;
-grant execute on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid) to authenticated;
-revoke all on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid) from public, anon;
-grant execute on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid) to authenticated;
+revoke all on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid), optical_private.org_status(uuid) from public, anon;
+grant execute on function optical_private.new_join_code(), optical_private.org_create(text,jsonb,jsonb,jsonb), optical_private.org_code(uuid), optical_private.org_status(uuid) to authenticated;
+revoke all on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid), public.optical_org_status(uuid) from public, anon;
+grant execute on function public.optical_org_create(text,jsonb,jsonb,jsonb), public.optical_org_code(uuid), public.optical_org_status(uuid) to authenticated;
 notify pgrst, 'reload schema';
 commit;

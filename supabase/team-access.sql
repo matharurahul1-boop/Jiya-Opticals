@@ -7,6 +7,19 @@ create table if not exists public.optical_workspaces (
   data jsonb not null check (jsonb_typeof(data) = 'object'),
   version integer not null default 1 check (version > 0)
 );
+-- Organizations registered through the app (join_code set) run on a subscription; the original store has none.
+alter table public.optical_workspaces add column if not exists join_code text;
+alter table public.optical_workspaces add column if not exists created_at timestamptz not null default now();
+alter table public.optical_workspaces add column if not exists updated_at timestamptz not null default now();
+do $$ begin
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='optical_workspaces' and column_name='subscription_expires_at') then
+    alter table public.optical_workspaces add column subscription_expires_at timestamptz;
+    alter table public.optical_workspaces add column subscription_active boolean not null default true;
+    alter table public.optical_workspaces add column subscription_trial boolean not null default true;
+    -- Organizations that already exist get the standard 15-day trial, counted from today.
+    update public.optical_workspaces set subscription_expires_at = now() + interval '15 days' where join_code is not null;
+  end if;
+end $$;
 alter table public.optical_workspaces enable row level security;
 -- All application access goes through checked RPCs, never an unrestricted JSON read.
 revoke all on public.optical_workspaces from anon, authenticated;
@@ -67,6 +80,13 @@ language sql stable security definer set search_path = '' as $$
   )
 $$;
 
+-- True when an organization's subscription is switched off or has run out. The original store is never locked.
+create or replace function optical_private.org_locked(team_owner uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.optical_workspaces w where w.owner_id = team_owner and w.join_code is not null
+    and (not w.subscription_active or (w.subscription_expires_at is not null and w.subscription_expires_at <= now())))
+$$;
+
 create or replace function optical_private.team_list() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare result jsonb;
@@ -108,6 +128,7 @@ begin
   actor_email := optical_private.session_email();
   select * into w from public.optical_workspaces where owner_id=team_owner;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
+  if optical_private.org_locked(team_owner) then raise exception 'SUBSCRIPTION_ENDED: this organization''s subscription has ended' using errcode='42501'; end if;
   is_admin := optical_private.is_store_admin(team_owner);
   if team_owner=auth.uid() or is_admin then d := w.data;
   else
@@ -163,6 +184,7 @@ begin
   if jsonb_typeof(payload) is distinct from 'object' then raise exception 'Invalid store data'; end if;
   select * into w from public.optical_workspaces where owner_id=team_owner for update;
   if not found then raise exception 'Store not found' using errcode='42501'; end if;
+  if optical_private.org_locked(team_owner) then raise exception 'SUBSCRIPTION_ENDED: this organization''s subscription has ended' using errcode='42501'; end if;
   is_admin := optical_private.is_store_admin(team_owner);
   if team_owner<>auth.uid() and not is_admin then
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=optical_private.session_email();
@@ -184,7 +206,7 @@ begin
       if jsonb_typeof(incoming) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
       if k='products' and exists(
         select 1 from jsonb_array_elements(incoming) a left join jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b on a->>'id'=b->>'id'
-        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes'])
+        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes'])
       ) then raise exception 'Only admin may edit shared material details' using errcode='42501'; end if;
       if exists(select 1 from jsonb_array_elements(incoming) e where not coalesce(e->>'shopId'=any(allowed),false) or coalesce(e->>'id','')='') then
         raise exception 'Record outside assigned shops' using errcode='42501';

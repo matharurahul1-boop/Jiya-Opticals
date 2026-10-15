@@ -14,6 +14,8 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   const [selected, setSelected] = useState('');
   const [row, setRow] = useState<(WorkspaceAccess & { data: Snapshot; version: number }) | null>(null);
   const [error, setError] = useState('');
+  // The organization's subscription has ended (server answers SUBSCRIPTION_ENDED).
+  const [ended, setEnded] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const onApproved = useCallback(() => setAttempt(n=>n+1), []);
   // Set at sign-up by 'Register new organization' (org = start one, join = join one by code). Classic sign-ups have none.
@@ -37,14 +39,23 @@ export function CloudWorkspace({ ownerId, children }: { ownerId: string; childre
   }, [ownerId,attempt]);
   useEffect(() => {
     if (!selected) return;
-    let active=true; setRow(null); setError('');
+    let active=true; setRow(null); setError(''); setEnded(false);
     supabase!.rpc('optical_team_load',{team_owner:selected}).then(({data,error}) => {
       if (!active) return;
+      if (error && /SUBSCRIPTION_ENDED/.test(error.message || '')) { setEnded(true); return; }
       if (error) setError(cloudErrorMessage(error)); else setRow(data);
     });
     return () => { active=false; };
   },[selected,attempt]);
   if (row) return <>{children(row.data,row.version,row)}</>;
+  if (ended) return <div className="min-h-screen bg-[#f4f8f8] p-6 flex items-center justify-center"><div className="bg-white p-8 rounded-2xl border max-w-lg w-full space-y-4">
+    <img src="/brand/logo.svg" alt="" className="w-12 h-12" />
+    <h1 className="text-2xl font-bold">Subscription ended</h1>
+    <p role="alert">Your organization's free trial or subscription has ended, so access is paused. Your data is safe and nothing has been deleted.</p>
+    <p className="text-sm text-stone-600">Contact your software provider to renew. Once they switch your subscription back on, press Refresh to continue.</p>
+    <button className="underline mr-4" onClick={()=>setAttempt(n=>n+1)}>Refresh</button>
+    <button className="underline" onClick={()=>void supabase!.auth.signOut()}>Sign out</button>
+  </div></div>;
   const noAccess = teams && teams.length === 0;
   // A management account with no store of its own opens the management console directly.
   if (noAccess && platformAdmin) return <div className="min-h-screen bg-[#f4f8f8]"><div className="flex justify-end gap-4 p-4"><button className="underline" onClick={() => setAttempt(n => n + 1)}>Refresh</button><button className="underline" onClick={() => void supabase!.auth.signOut()}>Sign out</button></div><ManagementConsole /></div>;

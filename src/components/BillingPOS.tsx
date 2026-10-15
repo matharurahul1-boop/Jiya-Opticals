@@ -143,6 +143,7 @@ export const BillingPOS: React.FC = () => {
     }
     const unit = scannedUnitCode(products, raw);
     if (unit) {
+      if (found.disabledUnitCodes?.includes(unit)) { alert(`Tag ${unit} is disabled (lost, damaged or withdrawn). Enable it in Inventory first if it is back in stock.`); return false; }
       if (found.soldUnitCodes?.includes(unit)) { alert(`Tag ${unit} is already sold. Check the piece in hand.`); return false; }
       if (cartItems.some((it) => it.unitCodes?.includes(unit))) { alert(`Tag ${unit} is already in this bill.`); return false; }
     }

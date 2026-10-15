@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { cloudErrorMessage } from '../lib/cloudErrors';
 
-interface Org { ownerId: string; name: string; ownerEmail: string; kind: 'classic' | 'organization'; joinCode: string | null; createdAt: string; updatedAt: string; shops: string[]; customers: number; invoices: number; products: number; sales: number; pendingRequests: number; members: { email: string; role: string; shopIds: string[] }[] }
+interface Org { ownerId: string; name: string; ownerEmail: string; kind: 'classic' | 'organization'; joinCode: string | null; createdAt: string; updatedAt: string; shops: string[]; customers: number; invoices: number; products: number; sales: number; pendingRequests: number; subscriptionActive: boolean; subscriptionTrial: boolean; subscriptionExpiresAt: string | null; members: { email: string; role: string; shopIds: string[] }[] }
 interface Person { id: string; email: string; fullName: string; phone: string; createdAt: string; lastSignIn: string | null; confirmed: boolean; owns: string[]; memberOf: string[]; pending: string[] }
 interface Log { id: number; at: string; actor: string | null; org: string | null; ownerId: string | null; action: string; detail: Record<string, unknown> }
 
@@ -10,14 +10,51 @@ const when = (v?: string | null) => v ? new Date(v).toLocaleString('en-IN', { da
 const ACTIONS: Record<string, string> = {
   signed_up: 'Signed up', user_first_seen: 'First visit', sign_in: 'Signed in', organization_created: 'Organization created', store_created: 'Store created', organization_deleted: 'Organization deleted',
   join_requested: 'Asked to join', join_approved: 'Join approved', join_rejected: 'Join rejected', member_assigned: 'Member assigned', member_shops_changed: 'Member shops changed',
-  member_removed: 'Member removed', role_changed: 'Role changed', data_saved: 'Data saved',
+  member_removed: 'Member removed', role_changed: 'Role changed', data_saved: 'Data saved', subscription_changed: 'Subscription changed',
 };
 const describe = (l: Log) => {
   const d = l.detail || {};
   const bits = [d.name, d.applicant, d.member, d.role, d.intent && `via ${d.intent === 'org' ? 'new organization' : d.intent === 'join' ? 'join organization' : d.intent}`,
-    d.shop && `shop ${d.shop}`, d.invoices !== undefined && `${d.invoices} invoices · ${d.customers} clients · ${d.products} items`].filter(Boolean);
+    d.shop && `shop ${d.shop}`, d.expiresAt !== undefined && `${d.active === false ? 'OFF' : 'ON'}, until ${when(String(d.expiresAt))}`, d.invoices !== undefined && `${d.invoices} invoices · ${d.customers} clients · ${d.products} items`].filter(Boolean);
   return bits.join(' · ');
 };
+
+const endOfDay = (yyyyMmDd: string) => { const [y, m, d] = yyyyMmDd.split('-').map(Number); return new Date(y, m - 1, d, 23, 59, 59).toISOString(); };
+const dayValue = (v: string | null) => { if (!v) return ''; const d = new Date(v); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+/** Switch an organization on/off and set its renewal date. */
+function SubscriptionControls({ org, onChanged, onError }: { org: Org; onChanged: () => void; onError: (m: string) => void }) {
+  const [date, setDate] = useState(dayValue(org.subscriptionExpiresAt));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => setDate(dayValue(org.subscriptionExpiresAt)), [org.subscriptionExpiresAt]);
+  const expiresMs = org.subscriptionExpiresAt ? new Date(org.subscriptionExpiresAt).getTime() : 0;
+  const expired = !!org.subscriptionExpiresAt && expiresMs <= Date.now();
+  const left = Math.ceil((expiresMs - Date.now()) / 864e5);
+  const status = !org.subscriptionActive ? ['Switched off', 'bg-red-100 text-red-800'] : expired ? ['Expired', 'bg-red-100 text-red-800'] : [`${org.subscriptionTrial ? 'Trial' : 'Active'} · ${left} day${left === 1 ? '' : 's'} left`, left <= 5 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'];
+  const call = async (active: boolean | null, expires: string | null) => {
+    if (busy) return;
+    setBusy(true);
+    const r = await supabase!.rpc('optical_platform_set_subscription', { team_owner: org.ownerId, p_active: active, p_expires: expires });
+    setBusy(false);
+    if (r.error) onError(cloudErrorMessage(r.error)); else onChanged();
+  };
+  const plus30 = () => { const base = Math.max(Date.now(), expiresMs); const d = new Date(base + 30 * 864e5); void call(true, endOfDay(dayValue(d.toISOString()))); };
+  return <div className="rounded-xl bg-stone-50 border p-3 space-y-2 text-sm">
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="font-medium">Subscription</span>
+      <span className={'text-xs rounded-full px-2 py-0.5 ' + status[1]}>{status[0]}</span>
+      <button role="switch" aria-checked={org.subscriptionActive} aria-label={`Subscription for ${org.name}`} disabled={busy} onClick={() => void call(!org.subscriptionActive, null)}
+        className={'ml-auto relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 ' + (org.subscriptionActive ? 'bg-emerald-600' : 'bg-stone-400')}>
+        <span className={'absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ' + (org.subscriptionActive ? 'left-6' : 'left-0.5')} /></button>
+    </div>
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="text-xs text-stone-500">Renewal date<input type="date" value={date} onChange={e => setDate(e.target.value)} className="block border rounded-lg px-2 py-1.5 text-sm text-stone-900 bg-white" /></label>
+      <button disabled={busy || !date || date === dayValue(org.subscriptionExpiresAt)} onClick={() => void call(true, endOfDay(date))} className="rounded-lg bg-amber-700 text-white px-3 py-2 disabled:opacity-50">Save date &amp; switch on</button>
+      <button disabled={busy} onClick={plus30} className="rounded-lg border px-3 py-2 disabled:opacity-50 bg-white">Renew +30 days</button>
+    </div>
+    <p className="text-xs text-stone-500">Access stops automatically after the date (the whole day counts). Switching off blocks it immediately; the data is never deleted.</p>
+  </div>;
+}
 
 /** Read-only view of every organization, person and event on the platform. Visible only to platform admins. */
 export function ManagementConsole() {
@@ -85,6 +122,7 @@ export function ManagementConsole() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
           <span>{o.shops.length} shops</span><span>{o.customers} clients</span><span>{o.invoices} invoices</span><span>{o.products} stock rows</span><span>Sales {money(o.sales)}</span>
         </div>
+        {o.kind === 'organization' && <SubscriptionControls org={o} onChanged={() => void load()} onError={setError} />}
         <p className="text-sm"><span className="text-stone-500">Shops:</span> {o.shops.join(', ') || '—'}</p>
         <div className="text-sm"><span className="text-stone-500">Team ({o.members.length}){o.pendingRequests ? ` · ${o.pendingRequests} waiting for approval` : ''}:</span>
           {o.members.length ? <ul className="mt-1 space-y-0.5">{o.members.map(m => <li key={m.email} className="break-all">{m.email} <span className="text-stone-500">— {m.role}</span></li>)}</ul> : <span> none yet</span>}</div>

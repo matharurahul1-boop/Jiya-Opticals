@@ -38,6 +38,7 @@ export const InventoryManager: React.FC = () => {
     transferStock,
     currentUser,
     setSelectedProductForBarcode,
+    setTagDisabled,
     shops,
     selectedShopFilter,
     setSelectedShopFilter,
@@ -650,6 +651,7 @@ export const InventoryManager: React.FC = () => {
         const { product: sp, unit } = scanned;
         const rows = products.filter((p) => catalogKey(p) === catalogKey(sp));
         const sold = unit ? rows.some((r) => r.soldUnitCodes?.includes(unit)) : false;
+        const disabled = unit ? rows.some((r) => r.disabledUnitCodes?.includes(unit)) : false;
         const soldOn = unit ? invoices.find((inv) => inv.items.some((it) => it.unitCodes?.includes(unit))) : undefined;
         return (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
@@ -662,8 +664,8 @@ export const InventoryManager: React.FC = () => {
                 <button onClick={() => setScanned(null)} aria-label={t("Close")} className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 rounded-lg shrink-0">✕</button>
               </div>
               {unit && (
-                <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${sold ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
-                  {t("This piece")}: <span className="font-mono">{unit}</span> — {sold ? `${t("SOLD")}${soldOn ? ` (${soldOn.invoiceNo}, ${soldOn.date})` : ''}` : t("not sold yet")}
+                <div className={`rounded-lg px-3 py-2 text-xs font-semibold ${sold || disabled ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
+                  {t("This piece")}: <span className="font-mono">{unit}</span> — {sold ? `${t("SOLD")}${soldOn ? ` (${soldOn.invoiceNo}, ${soldOn.date})` : ''} · ${t("tag closed")}` : disabled ? t("DISABLED — cannot be billed") : t("in stock, not sold yet")}
                 </div>
               )}
               <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
@@ -687,6 +689,9 @@ export const InventoryManager: React.FC = () => {
                   ))}
                 </div>
               </div>
+              {unit && !sold && (
+                <button onClick={() => { if (disabled || confirm(`Disable tag ${unit}? It will not be billable until you enable it again. Stock count is not changed — adjust it separately if the piece is lost.`)) setTagDisabled(sp.id, unit, !disabled); }} className={`w-full py-2 rounded-lg text-xs font-bold border ${disabled ? 'border-emerald-300 text-emerald-800 bg-emerald-50' : 'border-rose-300 text-rose-700 bg-rose-50'}`}>{disabled ? t("Enable this tag again") : t("Disable this tag")}</button>
+              )}
               <div className="flex gap-2 pt-1">
                 <button onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
                 <button onClick={() => setScanned(null)} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold">{t("Done")}</button>

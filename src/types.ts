@@ -85,6 +85,8 @@ export interface Product {
   nextSerial?: number;
   /** Per-piece tag codes already sold on a bill. */
   soldUnitCodes?: string[];
+  /** Per-piece tag codes switched off by hand (lost, damaged, returned); they cannot be billed until enabled again. */
+  disabledUnitCodes?: string[];
 }
 
 export type PaymentMode = 'Cash' | 'UPI / QR' | 'Credit / Debit Card' | 'Customer Credit' | 'Split Payment';
