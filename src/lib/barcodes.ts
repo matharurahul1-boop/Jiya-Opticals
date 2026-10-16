@@ -1,4 +1,5 @@
 import type { Product } from '../types';
+import { catalogKey } from './catalog';
 
 /** One physical piece of a material: base barcode plus a 3+ digit serial, e.g. 890180663928-007. */
 export const unitCode = (barcode: string, serial: number) => `${barcode}-${String(serial).padStart(3, '0')}`;
@@ -10,7 +11,9 @@ export function splitUnitCode(raw: string): { base: string; serial: number } | u
 
 function matchBase(products: Product[], code: string): Product | undefined {
   const matches = products.filter(p => p.barcode === code || p.qrCode === code);
-  return matches.length === 1 ? matches[0] : undefined;
+  // One material has a stock row per shop, all with the same barcode: that is still one match.
+  const materials = new Set(matches.map(catalogKey));
+  return materials.size === 1 ? matches[0] : undefined;
 }
 
 // Keep leading zeroes and letter case. Never parse QR text as a URL or number.

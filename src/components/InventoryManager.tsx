@@ -17,6 +17,7 @@ import {
   Search,
   SlidersHorizontal,
   Store,
+  ListChecks,
   Tag,
   Trash2,
   Upload
@@ -25,6 +26,7 @@ import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
 import { catalogKey } from '../lib/catalog';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
+import { TagManagerModal } from './TagManagerModal';
 import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS } from '../lib/gst';
 
 export const InventoryManager: React.FC = () => {
@@ -53,10 +55,12 @@ export const InventoryManager: React.FC = () => {
   const [scanInput, setScanInput] = useState('');
   const [scanMsg, setScanMsg] = useState('');
   const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
+  const [scanMiss, setScanMiss] = useState('');
+  const [manageTagsFor, setManageTagsFor] = useState<Product | null>(null);
   const lookupCode = (raw: string) => {
     const found = findScannedProduct(products, raw);
-    if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanned(null); return; }
-    setScanMsg('');
+    if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanMiss(raw.trim()); setScanned(null); return; }
+    setScanMsg(''); setScanMiss('');
     setScanned({ product: found, unit: scannedUnitCode(products, raw) });
   };
 
@@ -453,7 +457,19 @@ export const InventoryManager: React.FC = () => {
         </form>
         <button type="button" onClick={() => openCameraScanner(lookupCode)} className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5"><ScanLine className="w-4 h-4" />{t("Camera")}</button>
       </div>
-      {scanMsg && <p role="alert" className="text-sm text-rose-700">{scanMsg}</p>}
+      {scanMsg && (() => {
+        // Show valid codes: materials that resemble what was typed, otherwise the first few in the catalogue.
+        const words = scanMiss.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+        const seen = new Set<string>();
+        const unique = products.filter((p) => p.barcode && !seen.has(catalogKey(p)) && !!seen.add(catalogKey(p)));
+        const similar = unique.filter((p) => words.some((w) => (p.barcode + ' ' + p.name + ' ' + p.brand + ' ' + p.modelNo).toLowerCase().includes(w)));
+        const list = (similar.length ? similar : unique).slice(0, 8);
+        return <div role="alert" className="text-sm space-y-2">
+          <p className="text-rose-700">{scanMsg}</p>
+          {list.length > 0 && <div><p className="text-xs text-stone-600 mb-1">{similar.length ? t("Did you mean one of these valid codes?") : t("Valid codes in your catalogue (tap one):")}</p>
+            <div className="flex flex-wrap gap-2">{list.map((p) => <button key={catalogKey(p)} type="button" onClick={() => lookupCode(p.barcode)} className="text-left bg-white border border-stone-300 hover:border-amber-500 rounded-lg px-3 py-1.5"><span className="block font-mono text-xs break-all">{p.barcode}</span><span className="block text-[11px] text-stone-500">{p.name}</span></button>)}</div></div>}
+        </div>;
+      })()}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">
@@ -636,6 +652,7 @@ export const InventoryManager: React.FC = () => {
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
                     <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>
+                    <button onClick={()=>setManageTagsFor(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Manage tags (enable / disable)")}><ListChecks className="w-4 h-4"/></button>
                     {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
                   </td>
                 </tr>;
@@ -645,6 +662,8 @@ export const InventoryManager: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {manageTagsFor && <TagManagerModal product={manageTagsFor} onClose={() => setManageTagsFor(null)} />}
 
       {/* Scanned tag details */}
       {scanned && (() => {
@@ -694,6 +713,7 @@ export const InventoryManager: React.FC = () => {
               )}
               <div className="flex gap-2 pt-1">
                 <button onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
+                <button onClick={() => { setManageTagsFor(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("All tags")}</button>
                 <button onClick={() => setScanned(null)} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold">{t("Done")}</button>
               </div>
             </div>
