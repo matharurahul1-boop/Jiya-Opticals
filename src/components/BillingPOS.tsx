@@ -332,6 +332,9 @@ export const BillingPOS: React.FC = () => {
     setNewCustAddress('');
   };
 
+  // Tagged pieces in the bill: before saving, ask for each whether its tag is closed (sold out) or stays enabled.
+  const [tagPrompt, setTagPrompt] = useState<{ andPrint: boolean } | null>(null);
+  const [keepEnabled, setKeepEnabled] = useState<string[]>([]);
   const handleCheckout = (andPrint: boolean = true) => {
     if (!selectedCustomerId) {
       alert('Please select or create a Customer before checking out.');
@@ -341,6 +344,11 @@ export const BillingPOS: React.FC = () => {
       alert('Cart is empty. Please add items to generate invoice.');
       return;
     }
+    if (cartItems.some((it) => it.unitCodes?.length)) { setKeepEnabled([]); setTagPrompt({ andPrint }); return; }
+    completeCheckout(andPrint, []);
+  };
+
+  const completeCheckout = (andPrint: boolean, keepTagsEnabled: string[]) => {
 
     const currentCustomer = customers.find((c) => c.id === selectedCustomerId);
     if (!currentCustomer) return;
@@ -404,7 +412,7 @@ export const BillingPOS: React.FC = () => {
       deliveryDate: orderType === 'Order' ? deliveryDate : undefined,
       prescription: attachedRx,
       notes: orderNotes
-    });
+    }, keepTagsEnabled);
 
     if (andPrint) {
       setSelectedInvoiceForPrint(invoice);
@@ -427,6 +435,34 @@ export const BillingPOS: React.FC = () => {
 
   return (
     <div id="billing-pos-container" className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+      {tagPrompt && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Tags in this bill">
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-4 text-sm">
+            <div>
+              <h3 className="font-bold text-stone-900 text-base">Tags in this bill</h3>
+              <p className="text-xs text-stone-500 mt-1">If the piece is sold out, disable its tag so it can never be billed again. Keep it enabled only if the tag should still work.</p>
+            </div>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {cartItems.flatMap((it) => (it.unitCodes || []).map((code) => ({ code, name: it.name }))).map(({ code, name }) => {
+                const kept = keepEnabled.includes(code);
+                return (
+                  <div key={code} className="border border-stone-200 rounded-xl p-3 space-y-2">
+                    <div><p className="font-mono text-xs break-all">{code}</p><p className="text-xs text-stone-500 break-words">{name}</p></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" aria-pressed={!kept} onClick={() => setKeepEnabled((prev) => prev.filter((c) => c !== code))} className={'rounded-lg py-2 text-xs font-bold border ' + (!kept ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-stone-600')}>Disable (sold out)</button>
+                      <button type="button" aria-pressed={kept} onClick={() => setKeepEnabled((prev) => (prev.includes(code) ? prev : [...prev, code]))} className={'rounded-lg py-2 text-xs font-bold border ' + (kept ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-stone-600')}>Keep enabled</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setTagPrompt(null)} className="flex-1 py-2.5 rounded-lg border font-bold text-xs">Cancel</button>
+              <button type="button" onClick={() => { const p = tagPrompt; setTagPrompt(null); completeCheckout(p.andPrint, keepEnabled); }} className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs">Save bill</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* POS Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">

@@ -108,7 +108,7 @@ interface AppContextType {
   receiveCustomerPayment: (customerId: string, amount: number, paymentMode: string, invoiceId?: string) => void;
 
   invoices: Invoice[];
-  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>) => Invoice;
+  createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled?: string[]) => Invoice;
   updateOrderStatus: (invoiceId: string, newStatus: OrderStatus) => void;
   collectInvoiceBalance: (invoiceId: string, amount: number, paymentMode: string) => void;
 
@@ -806,7 +806,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     return `${prefix}${currentMax + 1}`;
   };
 
-  const createInvoice = (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>): Invoice => {
+  const createInvoice = (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled: string[] = []): Invoice => {
     const now = new Date();
     const dateStr = localDate();
     const timeStr = now.toTimeString().slice(0, 5);
@@ -830,7 +830,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
 
     // 1. Deduct Product stock
     setProducts(stockAfterSale.map((p) => {
-      const sold = invoiceData.items.filter((it) => it.productId === p.id).flatMap((it) => it.unitCodes || []);
+      const sold = invoiceData.items.filter((it) => it.productId === p.id).flatMap((it) => it.unitCodes || []).filter((c) => !keepTagsEnabled.includes(c));
       return sold.length ? { ...p, soldUnitCodes: [...(p.soldUnitCodes || []), ...sold] } : p;
     }));
 

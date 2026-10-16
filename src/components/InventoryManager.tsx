@@ -17,7 +17,6 @@ import {
   Search,
   SlidersHorizontal,
   Store,
-  ListChecks,
   Tag,
   Trash2,
   Upload
@@ -26,7 +25,6 @@ import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
 import { catalogKey } from '../lib/catalog';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
-import { TagManagerModal } from './TagManagerModal';
 import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS } from '../lib/gst';
 
 export const InventoryManager: React.FC = () => {
@@ -56,7 +54,6 @@ export const InventoryManager: React.FC = () => {
   const [scanMsg, setScanMsg] = useState('');
   const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
   const [scanMiss, setScanMiss] = useState('');
-  const [manageTagsFor, setManageTagsFor] = useState<Product | null>(null);
   const lookupCode = (raw: string) => {
     const found = findScannedProduct(products, raw);
     if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanMiss(raw.trim()); setScanned(null); return; }
@@ -652,7 +649,6 @@ export const InventoryManager: React.FC = () => {
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
                     <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>
-                    <button onClick={()=>setManageTagsFor(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Manage tags (enable / disable)")}><ListChecks className="w-4 h-4"/></button>
                     {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
                   </td>
                 </tr>;
@@ -662,8 +658,6 @@ export const InventoryManager: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {manageTagsFor && <TagManagerModal product={manageTagsFor} onClose={() => setManageTagsFor(null)} />}
 
       {/* Scanned tag details */}
       {scanned && (() => {
@@ -713,7 +707,6 @@ export const InventoryManager: React.FC = () => {
               )}
               <div className="flex gap-2 pt-1">
                 <button onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
-                <button onClick={() => { setManageTagsFor(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("All tags")}</button>
                 <button onClick={() => setScanned(null)} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold">{t("Done")}</button>
               </div>
             </div>
