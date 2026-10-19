@@ -1,3 +1,4 @@
+import { paidOnDate } from '../lib/expenses';
 import { t } from '../lib/i18n';
 import React from 'react';
 import { MonthlyRevenueChart } from './MonthlyRevenueChart';
@@ -82,11 +83,10 @@ export const Dashboard: React.FC = () => {
     .filter((i) => i.paymentMode === 'UPI / QR')
     .reduce((sum, i) => sum + i.amount, 0);
 
-  const todayExpenses = filteredExpenses
-    .filter((e) => e.date === todayStr)
-    .reduce((sum, e) => sum + e.amount, 0);
+  // Money that actually went out today (a part-paid bill counts only what was paid).
+  const todayExpenses = filteredExpenses.reduce((sum, e) => sum + paidOnDate(e, todayStr), 0);
 
-  const netCashInHandEstimate = todayCashSales - filteredExpenses.filter(e => e.date === todayStr && e.paymentMode === 'Cash').reduce((sum, e) => sum + e.amount, 0);
+  const netCashInHandEstimate = todayCashSales - filteredExpenses.reduce((sum, e) => sum + paidOnDate(e, todayStr, 'Cash'), 0);
 
   // Orders Pipeline
   const pendingOrders = filteredInvoices.filter(

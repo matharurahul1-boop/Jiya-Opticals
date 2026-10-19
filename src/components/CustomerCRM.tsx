@@ -448,7 +448,7 @@ export const CustomerCRM: React.FC = () => {
                       >
                         <Edit3 className="w-3 h-3" />
                       </button>
-                      {currentUser.role === 'Admin' && (
+                      {(currentUser.role === 'Admin' || currentUser.role === 'Shop Manager') && (
                         <button
                           onClick={() => handleDelete(c)}
                           className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 rounded cursor-pointer"
@@ -502,6 +502,16 @@ export const CustomerCRM: React.FC = () => {
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
+                    {(currentUser.role === 'Admin' || currentUser.role === 'Shop Manager') && (
+                      <button
+                        onClick={() => handleDelete(selectedCustomer)}
+                        className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded text-xs transition-colors cursor-pointer"
+                        title={t("Delete this client")}
+                        aria-label={t("Delete this client")}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-stone-500 mt-0.5">📱 +91 {selectedCustomer.mobile} • {selectedCustomer.city}</p>
                   <p className="text-xs text-sky-700 font-medium mt-0.5 flex items-center gap-1">

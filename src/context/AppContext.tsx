@@ -2,6 +2,7 @@ import { usePlatformAdmin } from '../lib/platform';
 import { supabase } from '../lib/supabase';
 import { getLanguage,setLocale } from '../lib/i18n';
 import { invoiceNoPrefix, nextInvoiceNo } from '../lib/invoiceNo';
+import { applyExpensePayment } from '../lib/expenses';
 import { applyStockMovement, isCustomItem, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
 import { Snapshot, useCloudSave } from '../lib/workspace';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -128,6 +129,7 @@ interface AppContextType {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, 'id' | 'date'>) => void;
   deleteExpense: (id: string) => void;
+  payExpense: (id: string, amount: number, mode: 'Cash' | 'UPI' | 'Bank Transfer') => void;
 
   purchases: Purchase[];
   addPurchase: (purchase: Omit<Purchase, 'id' | 'purchaseNo'>) => void;
@@ -749,9 +751,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     setCustomers((prev) => prev.map((c) => (c.id === customer.id ? customer : c)));
   };
 
-  // Admin only. The client's saved bills stay in the books; their prescriptions and follow-ups go with them.
+  // Admin or Shop Manager. The client's saved bills stay in the books; their prescriptions and follow-ups go with them.
   const deleteCustomer = (customerId: string) => {
-    assertAdmin();
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can delete a client.');
     const target = customers.find((c) => c.id === customerId);
     if (!target) return;
     if (target.outstandingBalance > 0) throw new Error('This client still owes ₹' + target.outstandingBalance + '. Collect or settle the balance before deleting.');
@@ -939,13 +941,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   };
 
   const addExpense = (expenseData: Omit<Expense, 'id' | 'date'>) => {
+    const id = `exp-${Date.now()}`;
+    const today = localDate();
+    const paid = Math.max(0, Math.min(expenseData.amount, expenseData.paidAmount ?? expenseData.amount));
     const newExp: Expense = {
       ...expenseData,
-      id: `exp-${Date.now()}`,
+      id,
       shopId: resolveShop(expenseData.shopId),
-      date: localDate()
+      date: today,
+      paidAmount: paid,
+      payments: paid > 0 ? [{ id: `${id}-p1`, date: today, amount: paid, mode: expenseData.paymentMode }] : []
     };
     setExpenses((prev) => [newExp, ...prev]);
+  };
+
+  // A later payment against a bill that was only part-paid: pending goes down, cash-out is dated today.
+  const payExpense = (id: string, amount: number, mode: 'Cash' | 'UPI' | 'Bank Transfer') => {
+    const target = expenses.find((e) => e.id === id);
+    if (!target) throw new Error('This expense no longer exists.');
+    const updated = applyExpensePayment(target, amount, mode, localDate());
+    setExpenses((prev) => prev.map((e) => (e.id === id ? updated : e)));
   };
 
   const deleteExpense = (id: string) => {
@@ -1116,6 +1131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         expenses:scoped(expenses),
         addExpense,
         deleteExpense,
+        payExpense,
         purchases:scoped(purchases),
         addPurchase,
 

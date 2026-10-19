@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Expense } from '../types';
+import { expensePaid, expensePending, paidOnDate } from '../lib/expenses';
 
 export const DayBookReports: React.FC = () => {
   const { 
@@ -25,6 +26,7 @@ export const DayBookReports: React.FC = () => {
     expenses, 
     addExpense, 
     deleteExpense, 
+    payExpense,
     storeProfile 
   } = useApp();
 
@@ -37,13 +39,21 @@ export const DayBookReports: React.FC = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expCategory, setExpCategory] = useState<Expense['category']>('Tea & Refreshments');
   const [expAmount, setExpAmount] = useState<number>(150);
+  // Paid now. Empty = pay the whole bill; less than the total leaves a pending balance.
+  const [expPaidNow, setExpPaidNow] = useState<number | null>(null);
+  const [payingExp, setPayingExp] = useState<Expense | null>(null);
+  const [payAmt, setPayAmt] = useState<number>(0);
+  const [payMode, setPayMode] = useState<'Cash' | 'UPI' | 'Bank Transfer'>('Cash');
+  const [expSearch, setExpSearch] = useState('');
+  const [expFrom, setExpFrom] = useState('');
+  const [expTo, setExpTo] = useState('');
   const [expPaidTo, setExpPaidTo] = useState('Pantry / Local');
   const [expRemarks, setExpRemarks] = useState('');
   const [expPayMode, setExpPayMode] = useState<'Cash' | 'UPI' | 'Bank Transfer'>('Cash');
 
   // Date filtered Invoices
   const dateInvoices = invoices.filter((i) => i.date === selectedDate);
-  const dateExpenses = expenses.filter((e) => e.date === selectedDate);
+  const dateExpenses = expenses.filter((e) => e.date === selectedDate || paidOnDate(e, selectedDate) > 0);
 
   // Financial Calculations for selected date
   const totalSalesBooked = dateInvoices.reduce((sum, i) => sum + i.netPayable, 0);
@@ -57,7 +67,24 @@ export const DayBookReports: React.FC = () => {
     .filter((i) => i.paymentMode.includes('Card'))
     .reduce((sum, i) => sum + i.advancePaid, 0);
   const totalInflow = dateInvoices.reduce((sum, i) => sum + i.advancePaid, 0);
-  const totalOutflow = dateExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalOutflow = expenses.reduce((sum, e) => sum + paidOnDate(e, selectedDate), 0);
+
+  // Expense ledger: filter by vendor / category / remarks and by date range, newest first.
+  const ledger = expenses
+    .filter((e) => (!expFrom || e.date >= expFrom) && (!expTo || e.date <= expTo))
+    .filter((e) => !expSearch.trim() || [e.paidTo, e.category, e.remarks || ''].join(' ').toLowerCase().includes(expSearch.trim().toLowerCase()))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const ledgerTotal = ledger.reduce((s, e) => s + e.amount, 0);
+  const ledgerPaid = ledger.reduce((s, e) => s + expensePaid(e), 0);
+  const ledgerPending = ledger.reduce((s, e) => s + expensePending(e), 0);
+  const setPeriod = (days: number | 'all') => {
+    if (days === 'all') { setExpFrom(''); setExpTo(''); return; }
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - (days - 1));
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setExpFrom(iso(start)); setExpTo(iso(end));
+  };
 
   // GSTR-1 Breakdown (Across all invoices)
   const gstBreakdown = {
@@ -92,10 +119,13 @@ export const DayBookReports: React.FC = () => {
   const handleCreateExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (expAmount <= 0) return;
+    const paidNow = expPaidNow ?? expAmount;
+    if (paidNow < 0 || paidNow > expAmount) { alert('Paid now must be between 0 and the total amount.'); return; }
 
     addExpense({
       category: expCategory,
       amount: expAmount,
+      paidAmount: paidNow,
       paidTo: expPaidTo,
       remarks: expRemarks,
       paymentMode: expPayMode
@@ -103,6 +133,7 @@ export const DayBookReports: React.FC = () => {
 
     setShowExpenseModal(false);
     setExpRemarks('');
+    setExpPaidNow(null);
   };
 
   const handlePrintDayBook = () => {
@@ -274,6 +305,22 @@ export const DayBookReports: React.FC = () => {
               <Plus className="w-3.5 h-3.5" /> {t("+ Add Expense ")}</button>
           </div>
 
+          <div className="bg-white border border-amber-200/80 rounded-xl p-3 space-y-3 shadow-xs">
+            <div className="flex flex-wrap gap-2 items-end text-xs">
+              <input value={expSearch} onChange={(e) => setExpSearch(e.target.value)} placeholder={t("Search vendor, category, note")} aria-label="Search expenses" className="flex-1 min-w-40 bg-stone-50 border border-stone-300 rounded-lg px-3 py-2" />
+              <label className="text-stone-500">{t("From")}<input type="date" value={expFrom} onChange={(e) => setExpFrom(e.target.value)} className="block bg-stone-50 border border-stone-300 rounded-lg px-2 py-1.5 text-stone-900" /></label>
+              <label className="text-stone-500">{t("To")}<input type="date" value={expTo} onChange={(e) => setExpTo(e.target.value)} className="block bg-stone-50 border border-stone-300 rounded-lg px-2 py-1.5 text-stone-900" /></label>
+              <div className="flex gap-1.5">
+                {([['Today', 1], ['7 days', 7], ['30 days', 30], ['All', 'all']] as const).map(([label, d]) => <button key={label} type="button" onClick={() => setPeriod(d)} className="px-2.5 py-2 rounded-lg border bg-white hover:bg-stone-50">{label}</button>)}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-stone-50 border p-2"><p className="text-[10px] uppercase text-stone-500">{t("Total bills")}</p><p className="font-bold text-stone-900">₹{ledgerTotal}</p></div>
+              <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2"><p className="text-[10px] uppercase text-emerald-700">{t("Paid / advance")}</p><p className="font-bold text-emerald-800">₹{ledgerPaid}</p></div>
+              <div className="rounded-lg bg-rose-50 border border-rose-200 p-2"><p className="text-[10px] uppercase text-rose-700">{t("Pending")}</p><p className="font-bold text-rose-700">₹{ledgerPending}</p></div>
+            </div>
+          </div>
+
           <div className="bg-white border border-amber-200/80 rounded-xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
             <table className="expenses-table w-full text-left text-xs text-stone-700">
@@ -284,20 +331,26 @@ export const DayBookReports: React.FC = () => {
                   <th className="p-2.5">{t("Paid To")}</th>
                   <th className="p-2.5">{t("Remarks")}</th>
                   <th className="p-2.5">{t("Mode")}</th>
-                  <th className="p-2.5 text-right">{t("Amount (₹)")}</th>
+                  <th className="p-2.5 text-right">{t("Total (₹)")}</th>
+                  <th className="p-2.5 text-right">{t("Paid (₹)")}</th>
+                  <th className="p-2.5 text-right">{t("Pending (₹)")}</th>
                   <th className="p-2.5 text-right">{t("Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {expenses.map((exp) => (
+                {ledger.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-stone-500">{t("No expenses match these filters.")}</td></tr>}
+                {ledger.map((exp) => (
                   <tr key={exp.id} className="hover:bg-amber-50/40">
                     <td data-label={t('Date')} className="p-2.5 text-stone-500">{exp.date}</td>
                     <td data-label={t('Category')} className="p-2.5 font-bold text-stone-900">{exp.category}</td>
                     <td data-label={t('Paid To')} className="p-2.5 text-stone-700">{exp.paidTo}</td>
-                    <td data-label={t('Remarks')} className="p-2.5 text-stone-500 break-words">{exp.remarks || '-'}</td>
+                    <td data-label={t('Remarks')} className="p-2.5 text-stone-500 break-words">{exp.remarks || '-'}{(exp.payments?.length || 0) > 1 && <span className="block text-[10px] text-stone-400 mt-0.5">{exp.payments!.map((p) => `${p.date.slice(5)}: ₹${p.amount}`).join(' · ')}</span>}</td>
                     <td data-label={t('Mode')} className="p-2.5 font-mono text-[11px] text-stone-600">{exp.paymentMode}</td>
-                    <td data-label={t('Amount (₹)')} className="p-2.5 text-right font-bold text-rose-600">₹{exp.amount}</td>
-                    <td className="p-2.5 text-right">
+                    <td data-label={t('Total (₹)')} className="p-2.5 text-right font-bold text-stone-900">₹{exp.amount}</td>
+                    <td data-label={t('Paid (₹)')} className="p-2.5 text-right font-medium text-emerald-700">₹{expensePaid(exp)}</td>
+                    <td data-label={t('Pending (₹)')} className={'p-2.5 text-right font-bold ' + (expensePending(exp) > 0 ? 'text-rose-600' : 'text-stone-400')}>₹{expensePending(exp)}</td>
+                    <td className="p-2.5 text-right whitespace-nowrap">
+                      {expensePending(exp) > 0 && <button onClick={() => { setPayingExp(exp); setPayAmt(expensePending(exp)); setPayMode('Cash'); }} className="mr-2 px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">{t("Pay")}</button>}
                       <button
                         onClick={() => deleteExpense(exp.id)}
                         className="text-stone-400 hover:text-rose-600 font-bold cursor-pointer"
@@ -371,6 +424,36 @@ export const DayBookReports: React.FC = () => {
         </div>
       )}
 
+      {payingExp && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-label="Pay pending amount">
+          <form
+            className="bg-white border border-stone-200 rounded-xl p-5 max-w-sm w-full shadow-xl space-y-3 text-xs"
+            onSubmit={(e) => {
+              e.preventDefault();
+              try { payExpense(payingExp.id, payAmt, payMode); setPayingExp(null); }
+              catch (err) { alert(err instanceof Error ? err.message : 'Could not record this payment.'); }
+            }}
+          >
+            <h3 className="text-sm font-bold text-stone-900">{t("Pay pending amount")}</h3>
+            <p className="text-stone-600">{payingExp.paidTo} · {payingExp.category}<br />{t("Total")} ₹{payingExp.amount} · {t("Paid")} ₹{expensePaid(payingExp)} · <strong className="text-rose-600">{t("Pending")} ₹{expensePending(payingExp)}</strong></p>
+            <label className="block text-stone-600">{t("Amount paying now (₹)")}
+              <NumberInput type="number" min="1" max={String(expensePending(payingExp))} value={payAmt} onChange={(e) => setPayAmt(Number(e.target.value))} className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-emerald-700 font-bold text-base" />
+            </label>
+            <label className="block text-stone-600">{t("Payment Mode")}
+              <select value={payMode} onChange={(e) => setPayMode(e.target.value as any)} className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-800">
+                <option value="Cash">{t("Cash (Counter Drawer)")}</option>
+                <option value="UPI">{t("UPI / QR")}</option>
+                <option value="Bank Transfer">{t("Bank Transfer")}</option>
+              </select>
+            </label>
+            <div className="flex justify-end gap-2 pt-2 border-t border-stone-200">
+              <button type="button" onClick={() => setPayingExp(null)} className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg cursor-pointer">{t("Cancel ")}</button>
+              <button type="submit" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold cursor-pointer">{t("Record payment")}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Add Expense Voucher Modal */}
       {showExpenseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -401,7 +484,7 @@ export const DayBookReports: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-stone-600 mb-1">{t("Expense Amount (₹) *")}</label>
+                <label className="block text-stone-600 mb-1">{t("Total bill amount (₹) *")}</label>
                 <NumberInput
                   type="number"
                   required
@@ -410,6 +493,18 @@ export const DayBookReports: React.FC = () => {
                   onChange={(e) => setExpAmount(Number(e.target.value))}
                   className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-rose-700 font-bold text-base"
                 />
+              </div>
+
+              <div>
+                <label className="block text-stone-600 mb-1">{t("Paid now / advance (₹)")}</label>
+                <NumberInput
+                  type="number"
+                  min="0"
+                  value={expPaidNow ?? expAmount}
+                  onChange={(e) => setExpPaidNow(Number(e.target.value))}
+                  className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-emerald-700 font-bold"
+                />
+                <p className="text-[11px] mt-1 text-stone-500">{t("Pending balance")}: <strong className="text-rose-600">₹{Math.max(0, expAmount - (expPaidNow ?? expAmount))}</strong></p>
               </div>
 
               <div>

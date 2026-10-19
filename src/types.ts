@@ -141,6 +141,8 @@ export interface Invoice {
   sgstTotal: number;
   igstTotal: number;
   fittingTotal: number;
+  /** Itemised extra charges (lab cutting, fitting, delivery...). Their sum is fittingTotal. */
+  charges?: { label: string; amount: number }[];
   grandTotal: number;
   roundOff: number;
   netPayable: number;
@@ -218,6 +220,10 @@ export interface Expense {
   paymentMode: 'Cash' | 'UPI' | 'Bank Transfer';
   paidTo: string;
   remarks?: string;
+  /** Paid so far. Missing = paid in full (entries saved before part-payments existed). */
+  paidAmount?: number;
+  /** Each payment made against this bill, so cash out can be seen date-wise. */
+  payments?: { id: string; date: string; amount: number; mode: 'Cash' | 'UPI' | 'Bank Transfer' }[];
 }
 
 export interface PurchaseItem {

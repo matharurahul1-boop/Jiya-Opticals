@@ -104,7 +104,9 @@ export const BillingPOS: React.FC = () => {
     d.setDate(d.getDate() + 2);
     return d.toISOString().split('T')[0];
   });
-  const [fittingCharge, setFittingCharge] = useState<number>(0);
+  // Extra charges on the bill (lab cutting, lens fitting, delivery...). Their sum is the bill's fitting/extra total.
+  const [charges, setCharges] = useState<{ label: string; amount: number }[]>([]);
+  const fittingCharge = charges.reduce((sum, c) => sum + (Number.isFinite(c.amount) && c.amount > 0 ? c.amount : 0), 0);
   const [flatDiscount, setFlatDiscount] = useState<number>(0);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI / QR');
   const [advancePaid, setAdvancePaid] = useState<number>(0);
@@ -403,6 +405,7 @@ export const BillingPOS: React.FC = () => {
       sgstTotal: totalSgst,
       igstTotal: 0,
       fittingTotal: fittingCharge,
+      charges: charges.filter((c) => c.amount > 0).map((c) => ({ label: c.label.trim() || 'Additional charge', amount: c.amount })),
       grandTotal: rawGrandTotal,
       roundOff,
       netPayable,
@@ -425,7 +428,7 @@ export const BillingPOS: React.FC = () => {
     // Reset POS form
     setCartItems([]);
     setFlatDiscount(0);
-    setFittingCharge(0);
+    setCharges([]);
     setOrderNotes('');
     setPaymentRef('');
     setAttachPrescription(false);
@@ -970,16 +973,20 @@ export const BillingPOS: React.FC = () => {
 
             {/* Discount & Fitting adjustments */}
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <label className="text-stone-500 text-[11px] block mb-1">{t("Fitting Charges (₹)")}</label>
-                <NumberInput
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={fittingCharge || ''}
-                  onChange={(e) => setFittingCharge(Number(e.target.value))}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs"
-                />
+              <div className="col-span-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-stone-500 text-[11px] block">{t("Additional charges")}</label>
+                  <button type="button" onClick={() => setCharges((prev) => [...prev, { label: '', amount: 0 }])} className="text-[11px] font-bold text-emerald-700">+ {t("Add charge")}</button>
+                </div>
+                {charges.map((c, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input list="charge-labels" value={c.label} onChange={(e) => setCharges((prev) => prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} placeholder={t("e.g. Lab cutting charges")} aria-label={t("Charge description")} className="flex-1 min-w-0 bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs" />
+                    <NumberInput type="number" min="0" placeholder="0" value={c.amount || ''} onChange={(e) => setCharges((prev) => prev.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value) } : x)))} aria-label={t("Charge amount")} className="w-24 bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 text-xs" />
+                    <button type="button" aria-label={t("Remove charge")} onClick={() => setCharges((prev) => prev.filter((_, j) => j !== i))} className="p-1.5 text-stone-400 hover:text-rose-600">✕</button>
+                  </div>
+                ))}
+                <datalist id="charge-labels">{['Lab cutting charges', 'Lens fitting charges', 'Delivery charges', 'Transportation charges', 'Other charges'].map((x) => <option key={x} value={x} />)}</datalist>
+                {charges.length > 0 && <p className="text-[11px] text-stone-500">{t("Charges total")}: <strong className="text-stone-800">₹{fittingCharge}</strong></p>}
               </div>
               <div>
                 <label className="text-stone-500 text-[11px] block mb-1">{t("Flat Discount (₹)")}</label>

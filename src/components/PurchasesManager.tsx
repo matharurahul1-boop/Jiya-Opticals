@@ -45,6 +45,10 @@ export const PurchasesManager: React.FC = () => {
 
   // Inline Item Picker for purchase
   const [pickedProductId, setPickedProductId] = useState('');
+  // A line typed by hand (lens, service, anything): it is on the bill but never added to Inventory or stock.
+  const [manualLine, setManualLine] = useState(false);
+  const [manualName, setManualName] = useState('');
+  const [manualGst, setManualGst] = useState(0);
   const [itemQty, setItemQty] = useState(0);
   const [itemRate, setItemRate] = useState(0);
   const [itemMrp, setItemMrp] = useState(2500);
@@ -58,6 +62,27 @@ export const PurchasesManager: React.FC = () => {
   const [newSuppCategory, setNewSuppCategory] = useState('Frames & Sunglasses');
 
   const handleAddItemToPurchase = () => {
+    if (manualLine) {
+      if (!manualName.trim()) { alert('Type the item name.'); return; }
+      if (!Number.isInteger(itemQty) || itemQty < 1) { alert('Quantity must be a whole number, at least 1.'); return; }
+      if (!Number.isFinite(itemRate) || itemRate <= 0) { alert('Enter the rate.'); return; }
+      const total = itemQty * itemRate * (1 + manualGst / 100);
+      setPurchaseItems([...purchaseItems, {
+        productId: `custom:${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: manualName.trim(),
+        barcode: '',
+        category: 'Optical Accessory',
+        hsnCode: '',
+        qty: itemQty,
+        purchaseRate: itemRate,
+        mrp: 0,
+        salePrice: 0,
+        gstRate: manualGst,
+        total: Number(total.toFixed(2))
+      }]);
+      setManualName('');
+      return;
+    }
     const prod = products.find((p) => p.id === pickedProductId);
     if (!prod) {
       alert('Please select a product');
@@ -346,11 +371,14 @@ export const PurchasesManager: React.FC = () => {
 
               {/* Add Items Box */}
               <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-3">
-                <span className="text-xs font-bold text-amber-800 block">{t("Add Product Line Item")}</span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-amber-800 block">{t("Add Product Line Item")}</span>
+                  <label className="flex items-center gap-1.5 text-[11px] text-stone-600"><input type="checkbox" checked={manualLine} onChange={(e) => setManualLine(e.target.checked)} />{t("Type item manually (not in Inventory)")}</label>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
                   <div className="sm:col-span-2">
-                    <label className="block text-stone-500 text-[10px]">{t("Product")}</label>
-                    <select
+                    <label className="block text-stone-500 text-[10px]">{manualLine ? t("Item name") : t("Product")}</label>
+                    {manualLine ? <div className="flex gap-2"><input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder={t("e.g. Essilor 1.56 Blue Guard lens")} className="flex-1 min-w-0 bg-white border border-stone-200 rounded p-1.5 text-stone-800 text-xs" /><input type="number" min={0} max={28} value={manualGst || ''} onChange={(e) => setManualGst(Number(e.target.value) || 0)} placeholder="GST %" aria-label="GST %" className="w-16 bg-white border border-stone-200 rounded p-1.5 text-stone-800 text-xs" /></div> : <select
                       value={pickedProductId}
                       onChange={(e) => handleProductSelect(e.target.value)}
                       className="w-full bg-white border border-stone-200 rounded p-1.5 text-stone-800 text-xs"
@@ -361,7 +389,7 @@ export const PurchasesManager: React.FC = () => {
                           {p.name} ({p.brand})
                         </option>
                       ))}
-                    </select>
+                    </select>}
                   </div>
 
                   <div>

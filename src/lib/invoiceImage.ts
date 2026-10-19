@@ -178,9 +178,10 @@ function draw(
       y += 16;
     }
   }
-  if (inv.fittingTotal > 0) {
-    text('Fitting & Glazing Lab Charges', x, y, '500 13px system-ui, sans-serif', INK);
-    text(rupee(inv.fittingTotal), cAmt, y, '700 13px system-ui, sans-serif', INK, 'right');
+  const extraCharges = inv.charges?.length ? inv.charges : inv.fittingTotal > 0 ? [{ label: 'Fitting & Glazing Lab Charges', amount: inv.fittingTotal }] : [];
+  for (const c of extraCharges) {
+    text(c.label, x, y, '500 13px system-ui, sans-serif', INK);
+    text(rupee(c.amount), cAmt, y, '700 13px system-ui, sans-serif', INK, 'right');
     y += 20;
   }
 

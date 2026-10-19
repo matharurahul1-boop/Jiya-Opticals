@@ -34,7 +34,7 @@ export const BarcodePrintModal: React.FC = () => {
 
   const tags = Array.from({ length: count }, (_, i) => unitCode(product.barcode, start + i));
   const price = product.mrp || product.salePrice;
-  const title = `${product.brand} ${product.modelNo}`.trim() || product.name;
+  const title = [`${product.brand} ${product.modelNo}`.trim() || product.name, product.color && product.color.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · ');
   let barcodeOk = true;
   try { code128Svg(tags[0]); } catch { barcodeOk = false; }
 

@@ -162,6 +162,19 @@ export const InventoryManager: React.FC = () => {
     id, rows:filteredProducts.filter(p=>catalogKey(p)===id),
   }));
 
+  // Brand → model number → colour codes: materials of one model sit together under a model heading.
+  const modelGroups = (() => {
+    const order: string[] = [];
+    const map = new Map<string, { key: string; category: string; brand: string; modelNo: string; materials: typeof materialGroups }>();
+    for (const m of materialGroups) {
+      const p = m.rows[0];
+      const key = p.modelNo?.trim() ? [p.category, p.brand, p.modelNo].map((x) => (x || '').trim().toLowerCase()).join('|') : 'single:' + m.id;
+      if (!map.has(key)) { map.set(key, { key, category: p.category, brand: p.brand, modelNo: (p.modelNo || '').trim(), materials: [] }); order.push(key); }
+      map.get(key)!.materials.push(m);
+    }
+    return order.map((k) => map.get(k)!);
+  })();
+
   const totalStockCount = filteredProducts.reduce((sum, p) => sum + p.stockQty, 0);
   const totalStockValuation = filteredProducts.reduce((sum, p) => sum + p.purchasePrice * p.stockQty, 0);
   const totalRetailValuation = filteredProducts.reduce((sum, p) => sum + p.salePrice * p.stockQty, 0);
@@ -195,10 +208,39 @@ export const InventoryManager: React.FC = () => {
     setShowAddModal(true);
   };
 
+  // Another colour of an existing model: same brand, model and prices, new barcode, empty colour and stock.
+  const handleOpenAddColour = (p: Product) => {
+    setShowAddFrameType(false);
+    setNewFrameType('');
+    setFormData({
+      barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}`,
+      name: p.name,
+      category: p.category,
+      brand: p.brand,
+      modelNo: p.modelNo,
+      color: '',
+      frameType: p.frameType || 'Full Rim',
+      size: p.size || '',
+      hsnCode: p.hsnCode,
+      purchasePrice: p.purchasePrice,
+      mrp: p.mrp,
+      salePrice: p.salePrice,
+      gstRate: p.gstRate,
+      stockQty: 0,
+      minStockAlert: p.minStockAlert,
+      location: p.location || 'Rack A-1',
+      shopId: defaultAllocationShop()
+    });
+    setEditingProduct(null);
+    setExtraColors([]);
+    setShowAddModal(true);
+  };
+
   const handleOpenEdit = (p: Product) => {
     setShowAddFrameType(false);
     setNewFrameType('');
     setEditingProduct(p);
+    setExtraColors([]);
     setFormData({
       barcode: p.barcode,
       name: p.name,
@@ -243,6 +285,8 @@ export const InventoryManager: React.FC = () => {
           ...formData,
           id: editingProduct.id
         });
+        const more = extraColors.map((x) => ({ code: x.code.trim(), qty: Math.max(0, Math.floor(Number(x.qty) || 0)) })).filter((x) => x.code && x.code.toLowerCase() !== (formData.color || '').trim().toLowerCase());
+        if (more.length) addMultipleProducts(more.map((x, i) => ({ ...formData, color: x.code, stockQty: x.qty, barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}${i}`.slice(0, 12) })));
       } else {
         const created = addProduct(formData);
         const more = extraColors.map((x) => ({ code: x.code.trim(), qty: Math.max(0, Math.floor(Number(x.qty) || 0)) })).filter((x) => x.code && x.code.toLowerCase() !== (formData.color || '').trim().toLowerCase());
@@ -637,10 +681,12 @@ export const InventoryManager: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-200">
-              {materialGroups.map(({id,rows}) => {
+              {modelGroups.map((g) => <React.Fragment key={g.key}>
+              {g.modelNo && <tr className="model-heading bg-amber-50"><td colSpan={9} className="py-2.5 px-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-bold text-stone-900">{g.brand || t("No brand")} — {t("Model")} {g.modelNo}</span><span className="text-[11px] rounded-full bg-white border border-amber-200 px-2 py-0.5 text-amber-900">{g.category}</span><span className="text-[11px] text-stone-600">{g.materials.length} {g.materials.length === 1 ? t("colour") : t("colours")} · {g.materials.reduce((s, m) => s + m.rows.reduce((a, r) => a + r.stockQty, 0), 0)} {t("units")}</span>{currentUser.role === 'Admin' && <button type="button" onClick={() => handleOpenAddColour(g.materials[0].rows[0])} className="ml-auto text-xs font-bold text-emerald-700 inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add colour")}</button>}</div></td></tr>}
+              {g.materials.map(({id,rows}) => {
                 const p=rows[0],total=rows.reduce((sum,row)=>sum+row.stockQty,0);
                 return <tr key={id} className="hover:bg-stone-50/80 transition-colors">
-                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm break-words">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo} · {p.color}</div></td>
+                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm break-words">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo}{p.color ? <> · <strong className="text-stone-800">{t("Colour")} {p.color}</strong></> : null}</div></td>
                   <td data-label={t('Category')} className="px-2 text-xs text-stone-500">{p.category}</td>
                   <td data-label={t('Barcode')} className="px-2 font-mono text-xs break-all">{p.barcode}</td>
                   <td data-label={t('Shop Branch')} className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
@@ -659,6 +705,7 @@ export const InventoryManager: React.FC = () => {
                   </td>
                 </tr>;
               })}
+              </React.Fragment>)}
               {materialGroups.length===0 && <tr><td colSpan={9} className="p-12 text-center text-stone-500">{t("No materials yet. Create a material once to make it available in every shop.")}</td></tr>}
             </tbody>
           </table>
@@ -824,9 +871,9 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
               </div>
-              {!editingProduct && (
+              {(
                 <div className="rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
-                  <p className="text-stone-600">{t("Same model comes in more colours? Add each colour code with its own quantity. The colour above uses the opening stock below.")}</p>
+                  <p className="text-stone-600">{editingProduct ? t("Same model comes in more colours? Add each new colour code with its own quantity. They are saved as separate colours of this model.") : t("Same model comes in more colours? Add each colour code with its own quantity. The colour above uses the opening stock below.")}</p>
                   {extraColors.map((x, i) => (
                     <div key={i} className="flex gap-2 items-center">
                       <input type="text" aria-label={t("Colour code")} placeholder={t("Colour code e.g. C2")} value={x.code} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, code: e.target.value } : r)))} className="flex-1 min-w-0 bg-stone-50 border border-stone-300 rounded-lg p-2" />

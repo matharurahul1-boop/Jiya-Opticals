@@ -136,7 +136,7 @@ export const InvoicePrintModal: React.FC = () => {
       `${rxDetails}\n` +
       `--- BILLED ITEMS ---\n` +
       `${itemsList}\n` +
-      `${inv.fittingTotal > 0 ? `Fitting & Glazing Charges: ₹${inv.fittingTotal}\n` : ''}` +
+      `${inv.charges?.length ? inv.charges.map((c) => `${c.label}: ₹${c.amount}\n`).join('') : inv.fittingTotal > 0 ? `Fitting & Glazing Charges: ₹${inv.fittingTotal}\n` : ''}` +
       `----------------------------------------\n` +
       `GRAND TOTAL: ₹${inv.netPayable}\n` +
       `ADVANCE PAID: ₹${inv.advancePaid} (${inv.paymentMode})\n` +
@@ -398,7 +398,13 @@ export const InvoicePrintModal: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                  {inv.fittingTotal > 0 && (
+                  {inv.charges?.length ? inv.charges.map((c, ci) => (
+                    <tr key={'chg' + ci}>
+                      <td className="py-1.5 px-2 text-stone-500">*</td>
+                      <td colSpan={4} className="py-1.5 px-2 font-medium text-stone-800">{c.label}</td>
+                      <td className="py-1.5 px-2 text-right font-bold text-stone-900">{c.amount.toFixed(2)}</td>
+                    </tr>
+                  )) : inv.fittingTotal > 0 && (
                     <tr>
                       <td className="py-1.5 px-2 text-stone-500">*</td>
                       <td colSpan={4} className="py-1.5 px-2 font-medium text-stone-800">
@@ -508,7 +514,12 @@ export const InvoicePrintModal: React.FC = () => {
                     <span className="font-bold">₹{item.totalAmount}</span>
                   </div>
                 ))}
-                {inv.fittingTotal > 0 && (
+                {inv.charges?.length ? inv.charges.map((c, ci) => (
+                  <div key={'chg' + ci} className="flex justify-between">
+                    <span>{c.label}</span>
+                    <span>₹{c.amount}</span>
+                  </div>
+                )) : inv.fittingTotal > 0 && (
                   <div className="flex justify-between">
                     <span>{t("Fitting Glazing")}</span>
                     <span>₹{inv.fittingTotal}</span>
