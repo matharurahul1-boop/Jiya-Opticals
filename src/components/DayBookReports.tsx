@@ -395,6 +395,7 @@ export const DayBookReports: React.FC = () => {
                   <option value="Staff Salary">{t("Staff Salary / Advance")}</option>
                   <option value="Packaging & Printing">{t("Packaging & Printing")}</option>
                   <option value="Maintenance">{t("Maintenance")}</option>
+                  <option value="Delivery">{t("Delivery")}</option>
                   <option value="Miscellaneous">{t("Miscellaneous")}</option>
                 </select>
               </div>

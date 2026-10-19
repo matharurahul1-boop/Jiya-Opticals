@@ -213,7 +213,7 @@ export interface Expense {
   id: string;
   shopId?: string;
   date: string;
-  category: 'Shop Rent' | 'Electricity' | 'Staff Salary' | 'Lab Fitting Charges' | 'Tea & Refreshments' | 'Packaging & Printing' | 'Maintenance' | 'Miscellaneous';
+  category: 'Shop Rent' | 'Electricity' | 'Staff Salary' | 'Lab Fitting Charges' | 'Tea & Refreshments' | 'Packaging & Printing' | 'Maintenance' | 'Delivery' | 'Miscellaneous';
   amount: number;
   paymentMode: 'Cash' | 'UPI' | 'Bank Transfer';
   paidTo: string;
@@ -249,6 +249,8 @@ export interface Purchase {
   paidAmount: number;
   balanceDue: number;
   paymentMode: string;
+  /** Photo of the supplier's paper bill (small JPEG data URL). */
+  billImage?: string;
 }
 
 export interface StoreProfile {
@@ -268,6 +270,10 @@ export interface StoreProfile {
   upiName: string;
   /** Optional uploaded UPI QR image (data URL). When set, it is shown instead of an auto-generated QR. */
   upiQrDataUrl?: string;
+  /** Scanned/photographed signature printed above "Authorised Signatory" on invoices (data URL). */
+  signatureDataUrl?: string;
+  /** Letters that start every invoice number (e.g. JO). Empty = initials of the store name. */
+  invoiceCode?: string;
   bankName: string;
   bankAccountNo: string;
   bankIfsc: string;

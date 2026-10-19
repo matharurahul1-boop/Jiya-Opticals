@@ -23,6 +23,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Doctor, ShopBranch, StoreProfile, UserAccount } from '../types';
 import { fileToQrDataUrl } from '../lib/upiQr';
+import { invoiceNoPrefix } from '../lib/invoiceNo';
 import { PRODUCT_CATEGORIES } from '../lib/gst';
 
 
@@ -111,6 +112,7 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
   const [profileForm, setProfileForm] = useState<StoreProfile>({ ...storeProfile });
   const [termsText, setTermsText] = useState(storeProfile.termsAndConditions.join('\n'));
   const [qrError, setQrError] = useState('');
+  const [sigError, setSigError] = useState('');
   // Re-sync the form when the profile actually changes (e.g. cloud data hydrates
   // after mount, or another admin session saves). Without this the form keeps the
   // value captured at first mount, so edits appear to "not stick".
@@ -485,6 +487,78 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       type="button"
                       onClick={() => {
                         const updated = { ...profileForm, upiQrDataUrl: undefined };
+                        setProfileForm(updated);
+                        updateStoreProfile(updated);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" /> {t("Remove ")}</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Authorised signature + invoice numbering */}
+          <div className="bg-[#f8fbfb] border border-amber-200 rounded-xl p-3.5 space-y-3">
+            <span className="text-xs font-bold text-amber-900 block">{t("Invoice number & authorised signature")}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div>
+                <label className="block text-stone-600 mb-1 font-semibold">{t("Invoice code (letters at the start of every bill number)")}</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder={invoiceNoPrefix({ storeName: profileForm.name, shopName: 'Centre 1', date: new Date() }).split('/')[0]}
+                  value={profileForm.invoiceCode || ''}
+                  onChange={(e) => setProfileForm({ ...profileForm, invoiceCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                  className="w-full bg-white border border-stone-300 rounded p-1.5 text-stone-900 font-mono font-bold uppercase"
+                />
+              </div>
+              <p className="text-[11px] text-stone-600">
+                {t("Next bill from")} <strong>{(shops[0]?.name) || 'Centre 1'}</strong>: <span className="font-mono font-bold">{invoiceNoPrefix({ storeName: profileForm.name, invoiceCode: profileForm.invoiceCode, shopName: shops[0]?.name || 'Centre 1', date: new Date() })}001</span>. {t("Company code / financial year (changes every 1 April) / branch from the shop name / running number.")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-start gap-4 pt-1">
+              <div className="w-40 h-20 shrink-0 rounded-lg border-2 border-dashed border-amber-300 bg-white flex items-center justify-center overflow-hidden">
+                {profileForm.signatureDataUrl ? (
+                  <img src={profileForm.signatureDataUrl} alt="Authorised signature" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-[11px] text-stone-400">{t("No signature")}</span>
+                )}
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <p className="font-semibold text-stone-700">{t("Authorised signature")}</p>
+                <p className="text-stone-500 max-w-sm">{t("Upload a clear photo or scan of the signature on white paper. It prints above \"Authorised Signatory\" on invoices.")}</p>
+                {sigError && <p className="text-rose-600" role="alert">{sigError}</p>}
+                <div className="flex gap-2 pt-0.5">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    {profileForm.signatureDataUrl ? t("Replace signature") : t("Upload signature")}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        setSigError('');
+                        try {
+                          const dataUrl = await fileToQrDataUrl(file, 500);
+                          const updated = { ...profileForm, signatureDataUrl: dataUrl };
+                          setProfileForm(updated);
+                          updateStoreProfile(updated);
+                        } catch (err) {
+                          setSigError(err instanceof Error ? err.message : 'Could not use that image.');
+                        }
+                      }}
+                    />
+                  </label>
+                  {profileForm.signatureDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...profileForm, signatureDataUrl: undefined };
                         setProfileForm(updated);
                         updateStoreProfile(updated);
                       }}

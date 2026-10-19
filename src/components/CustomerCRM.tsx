@@ -17,7 +17,8 @@ import {
   User, 
   UserPlus, 
   Users, 
-  Wallet 
+  Wallet,
+  Trash2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Customer, Invoice } from '../types';
@@ -29,6 +30,8 @@ export const CustomerCRM: React.FC = () => {
     customers, 
     addCustomer, 
     updateCustomer, 
+    deleteCustomer,
+    currentUser,
     receiveCustomerPayment, 
     invoices, 
     setSelectedInvoiceForPrint, 
@@ -45,6 +48,13 @@ export const CustomerCRM: React.FC = () => {
   const [invoiceCustomer, setInvoiceCustomer] = useState<Customer | null>(null);
   const [copyingInvoice, setCopyingInvoice] = useState<string | null>(null);
   const [invoiceFeedback, setInvoiceFeedback] = useState('');
+
+  const handleDelete = (c: Customer) => {
+    const bills = invoices.filter((i) => i.customerId === c.id).length;
+    if (!confirm(`Delete client ${c.name} (${c.mobile})?\n\n${bills ? `${bills === 1 ? 'Their 1 saved bill stays' : `Their ${bills} saved bills stay`} in your records. ` : ''}Their eye-test records and follow-ups will be removed. This cannot be undone.`)) return;
+    try { deleteCustomer(c.id); setSelectedCustomer((cur) => (cur?.id === c.id ? null : cur)); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Could not delete this client.'); }
+  };
 
   const copyInvoice = async (invoice: Invoice) => {
     setCopyingInvoice(invoice.id);
@@ -438,6 +448,16 @@ export const CustomerCRM: React.FC = () => {
                       >
                         <Edit3 className="w-3 h-3" />
                       </button>
+                      {currentUser.role === 'Admin' && (
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 rounded cursor-pointer"
+                          title={t("Delete this client")}
+                          aria-label={t("Delete this client")}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                       {c.outstandingBalance > 0 && (
                         <button
                           onClick={() => handleOpenReceivePay(c)}

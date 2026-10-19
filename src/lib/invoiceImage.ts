@@ -24,7 +24,8 @@ function draw(
   inv: Invoice,
   store: StoreProfile,
   measure: boolean,
-  qrImg: HTMLImageElement | null
+  qrImg: HTMLImageElement | null,
+  sigImg: HTMLImageElement | null = null
 ): number {
   let y = PAD;
   const x = PAD;
@@ -172,6 +173,10 @@ function draw(
       text(`Model: ${it.frameModel}`, x + 10, y, '400 11px system-ui, sans-serif', MUTED);
       y += 16;
     }
+    if (it.lensDetails) {
+      text(it.lensDetails, x + 10, y, '400 11px system-ui, sans-serif', MUTED);
+      y += 16;
+    }
   }
   if (inv.fittingTotal > 0) {
     text('Fitting & Glazing Lab Charges', x, y, '500 13px system-ui, sans-serif', INK);
@@ -222,6 +227,22 @@ function draw(
     y += 18;
   }
 
+  if (sigImg) {
+    y += 8;
+    const h = 46;
+    const w = Math.min(160, (sigImg.width / sigImg.height) * h);
+    if (!measure) {
+      try {
+        ctx.drawImage(sigImg, right - w, y, w, h);
+      } catch {
+        /* ignore a broken image */
+      }
+    }
+    y += h + 4;
+    text('Authorised Signatory', right, y, '600 11px system-ui, sans-serif', MUTED, 'right');
+    y += 14;
+  }
+
   if (qrImg) {
     y += 10;
     const size = 132;
@@ -269,8 +290,9 @@ export async function invoiceToPngBlob(
 ): Promise<Blob> {
   const scale = Math.min(2, (window.devicePixelRatio || 1) * 1.5);
   const qrImg = opts.upiQrDataUrl ? await loadImage(opts.upiQrDataUrl) : null;
+  const sigImg = store.signatureDataUrl ? await loadImage(store.signatureDataUrl) : null;
   const probe = document.createElement('canvas').getContext('2d')!;
-  const height = Math.ceil(draw(probe, inv, store, true, qrImg));
+  const height = Math.ceil(draw(probe, inv, store, true, qrImg, sigImg));
 
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH * scale;
@@ -283,7 +305,7 @@ export async function invoiceToPngBlob(
   // accent top strip
   ctx.fillStyle = ACCENT;
   ctx.fillRect(0, 0, WIDTH, 6);
-  draw(ctx, inv, store, false, qrImg);
+  draw(ctx, inv, store, false, qrImg, sigImg);
 
   return await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not render invoice image'))), 'image/png')

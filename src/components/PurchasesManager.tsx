@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Product, PurchaseItem, Supplier } from '../types';
+import { compressImage } from '../lib/photo';
 
 export const PurchasesManager: React.FC = () => {
   const { 
@@ -35,6 +36,8 @@ export const PurchasesManager: React.FC = () => {
   // New Purchase Form
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [supplierBillNo, setSupplierBillNo] = useState('');
+  const [billPhoto, setBillPhoto] = useState('');
+  const [viewBill, setViewBill] = useState('');
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
   const [paidAmount, setPaidAmount] = useState<number>(0);
@@ -122,13 +125,15 @@ export const PurchasesManager: React.FC = () => {
       grandTotal: purchaseGrandTotal,
       paidAmount,
       balanceDue,
-      paymentMode
+      paymentMode,
+      billImage: billPhoto || undefined
     }); } catch(error) {alert(error instanceof Error?error.message:'Could not record purchase');return;}
 
     alert('Purchase recorded! Product inventory stocks updated.');
     setShowAddPurchaseModal(false);
     setPurchaseItems([]);
     setSupplierBillNo('');
+    setBillPhoto('');
     setPaidAmount(0);
   };
 
@@ -256,7 +261,7 @@ export const PurchasesManager: React.FC = () => {
                   <td className="py-3 px-3 font-bold text-stone-900 font-mono">{pur.purchaseNo}<span className="block mt-1 font-sans font-normal text-xs text-stone-500">{shops.find(s=>s.id===pur.shopId)?.name || 'Unallocated'}</span></td>
                   <td data-label={t('Date')} className="py-3 px-2 text-stone-500">{pur.billDate}</td>
                   <td data-label={t('Supplier Name')} className="py-3 px-2 font-semibold text-stone-800 break-words">{pur.supplierName}</td>
-                  <td data-label={t('Vendor Bill #')} className="py-3 px-2 font-mono text-stone-600 break-all">{pur.supplierBillNo}</td>
+                  <td data-label={t('Vendor Bill #')} className="py-3 px-2 font-mono text-stone-600 break-all">{pur.supplierBillNo}{pur.billImage && <button type="button" onClick={() => setViewBill(pur.billImage || '')} className="block font-sans text-amber-800 underline mt-1">{t("View bill photo")}</button>}</td>
                   <td data-label={t('Items Qty')} className="py-3 px-2 text-center">
                     <span className="px-2 py-0.5 rounded bg-stone-100 font-bold text-stone-700">
                       {pur.items.reduce((s, it) => s + it.qty, 0)} {t("Units ")}</span>
@@ -272,6 +277,14 @@ export const PurchasesManager: React.FC = () => {
       </div>
 
       {/* Record Purchase Modal */}
+      {viewBill && (
+        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-3" onClick={() => setViewBill('')} role="dialog" aria-modal="true" aria-label="Supplier bill photo">
+          <div className="max-w-3xl w-full max-h-[92vh] overflow-auto bg-white rounded-xl p-2" onClick={(e) => e.stopPropagation()}>
+            <img src={viewBill} alt="Supplier bill" className="w-full h-auto" />
+            <button type="button" onClick={() => setViewBill('')} className="mt-2 w-full py-2 rounded-lg bg-stone-900 text-white text-xs font-bold">Close</button>
+          </div>
+        </div>
+      )}
       {showAddPurchaseModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
           <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -312,6 +325,12 @@ export const PurchasesManager: React.FC = () => {
                     onChange={(e) => setSupplierBillNo(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-800 font-mono"
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-stone-600 mb-1">{t("Photo of supplier bill (optional)")}</label>
+                  <input type="file" accept="image/*" capture="environment" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; try { setBillPhoto(await compressImage(f)); } catch (err) { alert(err instanceof Error ? err.message : 'Could not read this photo.'); } }} className="w-full text-xs" />
+                  {billPhoto && <div className="mt-2 flex items-center gap-3"><img src={billPhoto} alt="Bill preview" className="h-16 rounded border" /><button type="button" onClick={() => setBillPhoto('')} className="text-rose-700 underline">{t("Remove photo")}</button></div>}
                 </div>
 
                 <div>

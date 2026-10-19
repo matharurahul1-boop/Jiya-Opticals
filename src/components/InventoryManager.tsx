@@ -54,6 +54,8 @@ export const InventoryManager: React.FC = () => {
   const [scanMsg, setScanMsg] = useState('');
   const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
   const [scanMiss, setScanMiss] = useState('');
+  // More colour codes of the same model, each with its own barcode and opening stock.
+  const [extraColors, setExtraColors] = useState<{ code: string; qty: number }[]>([]);
   const lookupCode = (raw: string) => {
     const found = findScannedProduct(products, raw);
     if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanMiss(raw.trim()); setScanned(null); return; }
@@ -150,6 +152,7 @@ export const InventoryManager: React.FC = () => {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.modelNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.color || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.barcode.includes(searchQuery);
     const matchesLowStock = !showLowStockOnly || isLowStockRow(p);
 
@@ -188,6 +191,7 @@ export const InventoryManager: React.FC = () => {
       shopId: defaultAllocationShop()
     });
     setEditingProduct(null);
+    setExtraColors([]);
     setShowAddModal(true);
   };
 
@@ -241,6 +245,8 @@ export const InventoryManager: React.FC = () => {
         });
       } else {
         const created = addProduct(formData);
+        const more = extraColors.map((x) => ({ code: x.code.trim(), qty: Math.max(0, Math.floor(Number(x.qty) || 0)) })).filter((x) => x.code && x.code.toLowerCase() !== (formData.color || '').trim().toLowerCase());
+        if (more.length) addMultipleProducts(more.map((x, i) => ({ ...formData, color: x.code, stockQty: x.qty, barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}${i}`.slice(0, 12) })));
         // Offer the QR tag labels right away; scanning a tag adds this item to a bill.
         setSelectedProductForBarcode(created);
       }
@@ -818,6 +824,19 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
               </div>
+              {!editingProduct && (
+                <div className="rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
+                  <p className="text-stone-600">{t("Same model comes in more colours? Add each colour code with its own quantity. The colour above uses the opening stock below.")}</p>
+                  {extraColors.map((x, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input type="text" aria-label={t("Colour code")} placeholder={t("Colour code e.g. C2")} value={x.code} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, code: e.target.value } : r)))} className="flex-1 min-w-0 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="number" min={0} aria-label={t("Quantity")} placeholder={t("Qty")} value={x.qty || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, qty: Number(e.target.value) } : r)))} className="w-20 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <button type="button" aria-label={t("Remove colour")} onClick={() => setExtraColors((prev) => prev.filter((_, j) => j !== i))} className="p-2 text-stone-400 hover:text-rose-600">✕</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setExtraColors((prev) => [...prev, { code: '', qty: 0 }])} className="text-emerald-700 font-semibold inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add another colour")}</button>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

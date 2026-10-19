@@ -2,7 +2,8 @@ import { t } from '../lib/i18n';
 import { NumberInput } from './NumberInput';
 import { QuickAddPerson } from './QuickAddPerson';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
-import { applyStockMovement } from '../lib/catalog';
+import { applyStockMovement, isCustomItem } from '../lib/catalog';
+import { ManualItemModal } from './ManualItemModal';
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   Calculator, 
@@ -333,6 +334,7 @@ export const BillingPOS: React.FC = () => {
   };
 
   // Tagged pieces in the bill: before saving, ask for each whether its tag is closed (sold out) or stays enabled.
+  const [showManualItem, setShowManualItem] = useState(false);
   const [tagPrompt, setTagPrompt] = useState<{ andPrint: boolean } | null>(null);
   const [keepEnabled, setKeepEnabled] = useState<string[]>([]);
   const handleCheckout = (andPrint: boolean = true) => {
@@ -353,7 +355,7 @@ export const BillingPOS: React.FC = () => {
     const currentCustomer = customers.find((c) => c.id === selectedCustomerId);
     if (!currentCustomer) return;
     const billingShopId = selectedShopFilter !== 'all' ? selectedShopFilter : shops[0]?.id;
-    if (!billingShopId || currentCustomer.shopId !== billingShopId || cartItems.some(item => products.find(p => p.id === item.productId)?.shopId !== billingShopId)) {
+    if (!billingShopId || currentCustomer.shopId !== billingShopId || cartItems.some(item => !isCustomItem(item.productId) && products.find(p => p.id === item.productId)?.shopId !== billingShopId)) {
       alert('Choose a customer and products from the selected shop.'); return;
     }
     if (!Number.isFinite(advancePaid) || advancePaid < 0 || advancePaid > netPayable) {
@@ -435,6 +437,7 @@ export const BillingPOS: React.FC = () => {
 
   return (
     <div id="billing-pos-container" className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+      {showManualItem && <ManualItemModal onClose={() => setShowManualItem(false)} onAdd={(item) => { setCartItems((prev) => [...prev, item]); setShowManualItem(false); }} />}
       {tagPrompt && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Tags in this bill">
           <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-4 text-sm">
@@ -481,6 +484,7 @@ export const BillingPOS: React.FC = () => {
 
         {/* Barcode Quick Entry & Camera Scan Button */}
         <div className="flex items-center space-x-2">
+          <button type="button" onClick={() => setShowManualItem(true)} className="px-3 py-2 bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold whitespace-nowrap">+ Lens / manual item</button>
           <button
             type="button"
             id="btn-pos-camera-scan"

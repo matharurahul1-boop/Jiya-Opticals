@@ -384,6 +384,9 @@ export const InvoicePrintModal: React.FC = () => {
                         {item.frameModel && (
                           <div className="text-[10px] text-stone-500">{t("Model: ")}{item.frameModel}</div>
                         )}
+                        {item.lensDetails && (
+                          <div className="text-[10px] text-stone-500">{item.lensDetails}</div>
+                        )}
                       </td>
                       <td data-label={t('HSN')} className="py-1.5 px-2 text-center font-mono text-[10px] text-stone-600">
                         {item.hsnCode}
@@ -469,6 +472,7 @@ export const InvoicePrintModal: React.FC = () => {
 
                   <div className="pt-8 text-right">
                     <span className="text-[10px] text-stone-500 block">{t("For ")}{storeProfile.name}</span>
+                    {storeProfile.signatureDataUrl && <img src={storeProfile.signatureDataUrl} alt="Authorised signature" className="inline-block h-12 max-w-[160px] object-contain mt-1" />}
                     <span className="text-[10px] font-bold text-stone-800 border-t border-stone-400 pt-1 inline-block mt-4">
                       {t("Authorised Signatory ")}</span>
                   </div>

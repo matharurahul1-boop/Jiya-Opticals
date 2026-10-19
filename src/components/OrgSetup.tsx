@@ -2,18 +2,13 @@ import { useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { cloudErrorMessage } from '../lib/cloudErrors';
 import { initialStoreProfile, initialWhatsAppTemplates } from '../data/initialData';
+import { branchCode, companyCode, financialYear } from '../lib/invoiceNo';
 
 interface Answers {
   name: string; tagline: string; phone: string;
   address: string; city: string; state: string; pincode: string; gstin: string;
   shopName: string; shopSame: boolean; shopAddress: string; shopCity: string; shopPhone: string;
-  invoicePrefix: string; upiId: string; upiName: string;
-}
-
-// Indian financial year (Apr–Mar), e.g. 'INV/26-27/' for October 2026.
-function defaultPrefix(now = new Date()) {
-  const start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-  return `INV/${String(start).slice(-2)}-${String(start + 1).slice(-2)}/`;
+  invoiceCode: string; upiId: string; upiName: string;
 }
 
 const STEPS = ['Business', 'Address & tax', 'First shop', 'Billing', 'Review'] as const;
@@ -24,7 +19,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
   const [a, setA] = useState<Answers>({
     name: '', tagline: '', phone: '', address: '', city: '', state: '', pincode: '', gstin: '',
     shopName: '', shopSame: true, shopAddress: '', shopCity: '', shopPhone: '',
-    invoicePrefix: defaultPrefix(), upiId: '', upiName: '',
+    invoiceCode: '', upiId: '', upiName: '',
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -40,11 +35,13 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
     gstin: a.gstin.trim().toUpperCase(),
   }), [a]);
 
+  const sampleNo = `${companyCode(a.name, a.invoiceCode)}/${financialYear(new Date())}/${branchCode(shop.name)}/001`;
+
   const valid = [
     a.name.trim().length >= 2,
     !a.gstin.trim() || /^[0-9A-Za-z]{15}$/.test(a.gstin.trim()),
     shop.name.length >= 2,
-    a.invoicePrefix.trim().length > 0,
+    true,
     true,
   ][step];
 
@@ -55,7 +52,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
       const profile = {
         ...initialStoreProfile, name: a.name.trim(), tagline: a.tagline.trim(), phone: a.phone.trim(), email,
         addressLine1: a.address.trim(), city: a.city.trim(), state: a.state.trim(), pincode: a.pincode.trim(),
-        gstin: a.gstin.trim().toUpperCase(), invoicePrefix: a.invoicePrefix.trim(), upiId: a.upiId.trim(), upiName: a.upiName.trim() || a.name.trim(),
+        gstin: a.gstin.trim().toUpperCase(), invoiceCode: a.invoiceCode.trim().toUpperCase(), invoicePrefix: sampleNo.replace(/d+$/, ''), upiId: a.upiId.trim(), upiName: a.upiName.trim() || a.name.trim(),
       };
       const { data, error: rpcError } = await supabase!.rpc('optical_org_create', {
         org_name: a.name.trim(), profile, first_shop: shop, templates: initialWhatsAppTemplates,
@@ -123,7 +120,8 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
       </>}
       {step === 3 && <>
         <h2 className="text-2xl font-semibold">How should your bills look?</h2>
-        <label className={label}>Invoice number prefix<input required className={field} value={a.invoicePrefix} onChange={e => set('invoicePrefix', e.target.value)} /></label>
+        <label className={label}>Invoice code (letters at the start of every bill number)<input className={field + ' uppercase'} maxLength={6} value={a.invoiceCode} onChange={e => set('invoiceCode', e.target.value.replace(/[^A-Za-z0-9]/g, ''))} placeholder={companyCode(a.name)} /></label>
+        <p className="text-sm text-stone-600">Your bills will be numbered like <strong className="font-mono">{sampleNo}</strong>: code / financial year (changes every 1 April) / branch / running number.</p>
         <p className="text-sm text-stone-600">Optional — add a UPI ID to show a payment QR on bills.</p>
         <div className="grid grid-cols-2 gap-3">
           <label className={label}>UPI ID<input className={field} value={a.upiId} onChange={e => set('upiId', e.target.value)} placeholder="name@bank" /></label>
@@ -136,7 +134,7 @@ export function OrgSetup({ email, onDone }: { email: string; onDone: () => void 
           <div><dt className="text-stone-500">Organization</dt><dd className="font-medium">{a.name.trim()}{a.tagline.trim() ? ` — ${a.tagline.trim()}` : ''}</dd></div>
           <div><dt className="text-stone-500">Address</dt><dd>{[a.address, a.city, a.state, a.pincode].map(x => x.trim()).filter(Boolean).join(', ') || '—'}{a.gstin.trim() ? ` · GSTIN ${a.gstin.trim().toUpperCase()}` : ''}</dd></div>
           <div><dt className="text-stone-500">First shop</dt><dd>{shop.name}</dd></div>
-          <div><dt className="text-stone-500">Invoice prefix</dt><dd>{a.invoicePrefix.trim()}</dd></div>
+          <div><dt className="text-stone-500">Bill numbers</dt><dd className="font-mono">{sampleNo}</dd></div>
           <div><dt className="text-stone-500">Admin</dt><dd>{email}</dd></div>
         </dl>
       </>}

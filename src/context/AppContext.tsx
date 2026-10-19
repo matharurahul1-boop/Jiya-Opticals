@@ -1,7 +1,8 @@
 import { usePlatformAdmin } from '../lib/platform';
 import { supabase } from '../lib/supabase';
 import { getLanguage,setLocale } from '../lib/i18n';
-import { applyStockMovement, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
+import { invoiceNoPrefix, nextInvoiceNo } from '../lib/invoiceNo';
+import { applyStockMovement, isCustomItem, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
 import { Snapshot, useCloudSave } from '../lib/workspace';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
@@ -95,6 +96,7 @@ interface AppContextType {
   addProduct: (product: Omit<Product, 'id'>) => Product;
   addMultipleProducts: (newProductsList: Omit<Product, 'id'>[]) => number;
   updateProduct: (product: Product) => void;
+  deleteCustomer: (customerId: string) => void;
   deleteProduct: (id: string) => void;
   adjustStock: (id: string, newQty: number) => void;
   reserveTagSerials: (productId: string, count: number, from?: number) => number;
@@ -747,6 +749,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     setCustomers((prev) => prev.map((c) => (c.id === customer.id ? customer : c)));
   };
 
+  // Admin only. The client's saved bills stay in the books; their prescriptions and follow-ups go with them.
+  const deleteCustomer = (customerId: string) => {
+    assertAdmin();
+    const target = customers.find((c) => c.id === customerId);
+    if (!target) return;
+    if (target.outstandingBalance > 0) throw new Error('This client still owes ₹' + target.outstandingBalance + '. Collect or settle the balance before deleting.');
+    setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+    setFollowUps((prev) => prev.filter((f) => f.customerId !== customerId));
+  };
+
   const addPrescriptionToCustomer = (rxData: Omit<Prescription, 'id'>): Prescription => {
     const newRx: Prescription = {
       ...rxData,
@@ -793,27 +805,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     return newRx;
   };
 
-  const generateNextInvoiceNo = () => {
-    const prefix = storeProfile.invoicePrefix || 'JIYA/25-26/';
-    const currentMax = invoices.reduce((max, inv) => {
-      const match = inv.invoiceNo.match(/\d+$/);
-      if (match) {
-        const num = parseInt(match[0], 10);
-        return num > max ? num : max;
-      }
-      return max;
-    }, 1040);
-    return `${prefix}${currentMax + 1}`;
-  };
+  // JO/26-27/C1/001: company code / financial year (1 Apr - 31 Mar) / branch / running number for that branch.
+  const invoiceNoFor = (shop: ShopBranch) =>
+    nextInvoiceNo(invoiceNoPrefix({ storeName: storeProfile.name, invoiceCode: storeProfile.invoiceCode, shopName: shop.name, date: new Date() }), invoices);
+  const generateNextInvoiceNo = () => invoiceNoFor(activeShop);
 
   const createInvoice = (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled: string[] = []): Invoice => {
     const now = new Date();
     const dateStr = localDate();
     const timeStr = now.toTimeString().slice(0, 5);
-    const invoiceNo = ownerId ? `${storeProfile.invoicePrefix}${crypto.randomUUID().slice(0,8).toUpperCase()}` : generateNextInvoiceNo();
     const chosenShopId = resolveShop(invoiceData.shopId);
+    const invoiceNo = invoiceNoFor(shops.find((s) => s.id === chosenShopId) || activeShop);
     const stockAfterSale=applyStockMovement(products,chosenShopId,invoiceData.items,-1);
-    if (!customers.some(c => c.id === invoiceData.customerId && c.shopId === chosenShopId) || invoiceData.items.some(item => !products.some(p => p.id === item.productId && p.shopId === chosenShopId))) {
+    if (!customers.some(c => c.id === invoiceData.customerId && c.shopId === chosenShopId) || invoiceData.items.some(item => !isCustomItem(item.productId) && !products.some(p => p.id === item.productId && p.shopId === chosenShopId))) {
       throw new Error('Invoice customer and products must belong to the billing shop');
     }
     const shopObj = shops.find((s) => s.id === chosenShopId) || activeShop;
@@ -1094,6 +1098,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         customers:scoped(customers),
         addCustomer,
         updateCustomer,
+        deleteCustomer,
         addPrescriptionToCustomer,
         receiveCustomerPayment,
         invoices:scoped(invoices),

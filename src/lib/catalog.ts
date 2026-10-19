@@ -1,5 +1,7 @@
 import type { Product } from '../types';
 
+/** Lenses typed in at billing time are not in Inventory, so they never touch stock. */
+export const isCustomItem = (productId: string) => productId.startsWith('custom:');
 export const catalogKey = (p: Product) => p.catalogId || `catalog-${p.id}`;
 const identity = (p: Product) => p.barcode ? JSON.stringify([p.barcode,p.name,p.category,p.brand,p.modelNo,p.color,p.size || '']) : p.id;
 
@@ -48,7 +50,7 @@ export function transferCatalogStock(products:Product[], sourceId:string, target
 
 export function applyStockMovement(products:Product[], shopId:string, items:{productId:string;qty:number}[], direction:1|-1):Product[] {
   const quantities=new Map<string,number>();
-  for(const item of items){
+  for(const item of items.filter(i=>!isCustomItem(i.productId))){
     if(!Number.isInteger(item.qty)||item.qty<=0)throw Error('Quantity must be a positive whole number.');
     const product=products.find(p=>p.id===item.productId);
     if(!product||product.shopId!==shopId)throw Error('Choose material from the transaction shop.');
