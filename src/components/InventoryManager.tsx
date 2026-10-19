@@ -1,6 +1,6 @@
 import { t } from '../lib/i18n';
 import { NumberInput } from './NumberInput';
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -25,7 +25,9 @@ import { useApp } from '../context/AppContext';
 import { Product, ProductCategory } from '../types';
 import { catalogKey } from '../lib/catalog';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
-import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS } from '../lib/gst';
+import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS, defaultHsn, DEFAULT_HSN } from '../lib/gst';
+import { isPlaceholderSku, skuPrefix, suggestSku } from '../lib/sku';
+import { COATINGS, INDEXES, LENS_COMPANIES, LENS_TYPES, isLensCategory, lensVariantKey } from '../lib/lens';
 
 export const InventoryManager: React.FC = () => {
   const { 
@@ -46,7 +48,8 @@ export const InventoryManager: React.FC = () => {
     isCloud,
     invoices,
     purchases,
-    openCameraScanner
+    openCameraScanner,
+    storeProfile
   } = useApp();
 
   // Scan a piece tag (scanner, camera or typed code) to see which material it is.
@@ -55,7 +58,10 @@ export const InventoryManager: React.FC = () => {
   const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
   const [scanMiss, setScanMiss] = useState('');
   // More colour codes of the same model, each with its own barcode and opening stock.
-  const [extraColors, setExtraColors] = useState<{ code: string; qty: number }[]>([]);
+  // Frames etc.: colour codes. Contact lenses: the same product with another MRP / expiry (code unused).
+  const [extraColors, setExtraColors] = useState<{ code: string; qty: number; mrp: number; sale: number; expiry: string; index: string }[]>([]);
+  // While true the SKU is generated from category, brand, model and colour; typing in the field switches it off.
+  const [skuAuto, setSkuAuto] = useState(true);
   const lookupCode = (raw: string) => {
     const found = findScannedProduct(products, raw);
     if (!found) { setScanMsg(`No material found for code "${raw.trim()}".`); setScanMiss(raw.trim()); setScanned(null); return; }
@@ -126,6 +132,51 @@ export const InventoryManager: React.FC = () => {
   });
 
   const categories: ProductCategory[] = PRODUCT_CATEGORIES;
+
+  useEffect(() => {
+    if (!showAddModal || editingProduct || !skuAuto) return;
+    const next = suggestSku({ prefix: skuPrefix(storeProfile.name), category: formData.category, brand: formData.brand, modelNo: formData.modelNo, name: formData.name, color: isLensCategory(formData.category) ? lensVariantKey(formData.lensIndex || '', formData.coating || '') : formData.color, mrp: formData.mrp }, products.map((p) => p.barcode));
+    setFormData((f) => (f.barcode === next ? f : { ...f, barcode: next }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddModal, editingProduct, skuAuto, formData.category, formData.brand, formData.modelNo, formData.name, formData.color, formData.mrp, formData.lensIndex, formData.coating]);
+
+  // Older materials saved with a numeric placeholder (890xxxxxxxxx) can be re-coded to the common SKU style.
+  // Anything with printed tags or tagged sales keeps its code, because the stickers already carry it.
+  const placeholderCatalogs = (() => {
+    const byCatalog = new Map<string, Product[]>();
+    for (const p of products) byCatalog.set(catalogKey(p), [...(byCatalog.get(catalogKey(p)) || []), p]);
+    return Array.from(byCatalog.values()).filter((rows) => isPlaceholderSku(rows[0].barcode) && rows.every((r) => (r.nextSerial || 1) <= 1 && !(r.soldUnitCodes?.length) && !(r.disabledUnitCodes?.length)));
+  })();
+  const handleStandardiseSkus = () => {
+    if (!placeholderCatalogs.length) return;
+    if (!confirm(`Re-code ${placeholderCatalogs.length} material${placeholderCatalogs.length === 1 ? '' : 's'} to the common SKU style (for example JIYA-FRAMES-ARMANI-2232-C1)?
+
+Only items whose tags have not been printed are changed. If you already stuck old codes on stock, skip this.`)) return;
+    const taken = new Set(products.map((p) => p.barcode));
+    const prefix = skuPrefix(storeProfile.name);
+    try {
+      for (const rows of placeholderCatalogs) {
+        const p = rows[0];
+        const barcode = suggestSku({ prefix, category: p.category, brand: p.brand, modelNo: p.modelNo, name: p.name, color: p.color, mrp: p.mrp }, taken);
+        taken.add(barcode);
+        updateProduct({ ...p, barcode });
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not re-code the materials.');
+    }
+  };
+
+  const handleCategoryChange = (category: ProductCategory) => {
+    setFormData((f) => {
+      const hsnWasDefault = !f.hsnCode.trim() || f.hsnCode === DEFAULT_HSN[f.category];
+      return {
+        ...f,
+        category,
+        hsnCode: hsnWasDefault ? defaultHsn(category) : f.hsnCode,
+        ...(category === 'Contact Lens' || isLensCategory(category) ? { frameType: 'N/A', size: '', ...(isLensCategory(category) ? { color: '' } : {}) } : (f.category === 'Contact Lens' || isLensCategory(f.category)) ? { frameType: 'Full Rim', size: '52-18-140' } : {})
+      };
+    });
+  };
   const frameTypes = ['Full Rim', 'Half Rim', 'Rimless', 'N/A', ...products.map(p => p.frameType), ...addedFrameTypes, formData.frameType]
     .filter((value): value is string => Boolean(value?.trim()))
     .filter((value, index, values) => values.findIndex(other => other.toLowerCase() === value.toLowerCase()) === index)
@@ -168,8 +219,9 @@ export const InventoryManager: React.FC = () => {
     const map = new Map<string, { key: string; category: string; brand: string; modelNo: string; materials: typeof materialGroups }>();
     for (const m of materialGroups) {
       const p = m.rows[0];
-      const key = p.modelNo?.trim() ? [p.category, p.brand, p.modelNo].map((x) => (x || '').trim().toLowerCase()).join('|') : 'single:' + m.id;
-      if (!map.has(key)) { map.set(key, { key, category: p.category, brand: p.brand, modelNo: (p.modelNo || '').trim(), materials: [] }); order.push(key); }
+      const label = (p.modelNo || '').trim() || (p.category === 'Contact Lens' || isLensCategory(p.category) ? (p.name || '').trim() : '');
+      const key = label ? [p.category, p.brand, label].map((x) => (x || '').trim().toLowerCase()).join('|') : 'single:' + m.id;
+      if (!map.has(key)) { map.set(key, { key, category: p.category, brand: p.brand, modelNo: label, materials: [] }); order.push(key); }
       map.get(key)!.materials.push(m);
     }
     return order.map((k) => map.get(k)!);
@@ -183,9 +235,9 @@ export const InventoryManager: React.FC = () => {
   const handleOpenAdd = () => {
     setShowAddFrameType(false);
     setNewFrameType('');
-    const randomBarcode = `890${Math.floor(100000000 + Math.random() * 900000000)}`;
+    setSkuAuto(true);
     setFormData({
-      barcode: randomBarcode,
+      barcode: '',
       name: '',
       category: 'Frames',
       brand: '',
@@ -193,7 +245,7 @@ export const InventoryManager: React.FC = () => {
       color: 'Black',
       frameType: 'Full Rim',
       size: '52-18-140',
-      hsnCode: '90031100',
+      hsnCode: defaultHsn('Frames'),
       purchasePrice: 0,
       mrp: 0,
       salePrice: 0,
@@ -212,8 +264,11 @@ export const InventoryManager: React.FC = () => {
   const handleOpenAddColour = (p: Product) => {
     setShowAddFrameType(false);
     setNewFrameType('');
+    setSkuAuto(true);
     setFormData({
-      barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}`,
+      barcode: '',
+      baseCurve: p.baseCurve, diameter: p.diameter, packSize: p.packSize,
+      lensType: p.lensType, lensIndex: p.lensIndex, coating: p.coating, powerRange: p.powerRange,
       name: p.name,
       category: p.category,
       brand: p.brand,
@@ -221,9 +276,9 @@ export const InventoryManager: React.FC = () => {
       color: '',
       frameType: p.frameType || 'Full Rim',
       size: p.size || '',
-      hsnCode: p.hsnCode,
+      hsnCode: p.hsnCode?.trim() || defaultHsn(p.category),
       purchasePrice: p.purchasePrice,
-      mrp: p.mrp,
+      mrp: p.category === 'Contact Lens' ? 0 : p.mrp,
       salePrice: p.salePrice,
       gstRate: p.gstRate,
       stockQty: 0,
@@ -241,8 +296,11 @@ export const InventoryManager: React.FC = () => {
     setNewFrameType('');
     setEditingProduct(p);
     setExtraColors([]);
+    setSkuAuto(false);
     setFormData({
       barcode: p.barcode,
+      baseCurve: p.baseCurve, diameter: p.diameter, packSize: p.packSize, expiry: p.expiry, batchNo: p.batchNo,
+      lensType: p.lensType, lensIndex: p.lensIndex, coating: p.coating, powerRange: p.powerRange,
       name: p.name,
       category: p.category,
       brand: p.brand,
@@ -250,7 +308,7 @@ export const InventoryManager: React.FC = () => {
       color: p.color,
       frameType: p.frameType || 'Full Rim',
       size: p.size || '',
-      hsnCode: p.hsnCode,
+      hsnCode: p.hsnCode?.trim() || defaultHsn(p.category),
       purchasePrice: p.purchasePrice,
       mrp: p.mrp,
       salePrice: p.salePrice,
@@ -278,6 +336,30 @@ export const InventoryManager: React.FC = () => {
       return;
     }
 
+    const buildVariants = () => {
+      const taken = new Set(products.map((p) => p.barcode));
+      taken.add(formData.barcode);
+      const prefix = skuPrefix(storeProfile.name);
+      const lensVariants = isLensCategory(formData.category)
+        ? extraColors.filter((x) => x.index.trim() || x.code.trim()).map((x) => ({ index: x.index.trim() || formData.lensIndex || '', coating: x.code.trim() || formData.coating || '', mrp: x.mrp > 0 ? x.mrp : formData.mrp, sale: x.sale > 0 ? x.sale : formData.salePrice, qty: x.qty }))
+        : [];
+      if (isLensCategory(formData.category)) {
+        return lensVariants.map((r) => {
+          const barcode = suggestSku({ prefix, category: formData.category, brand: formData.brand, modelNo: formData.modelNo, name: formData.name, color: lensVariantKey(r.index, r.coating), mrp: r.mrp }, taken);
+          taken.add(barcode);
+          return { ...formData, lensIndex: r.index, coating: r.coating, mrp: r.mrp, salePrice: r.sale, stockQty: Math.max(0, Math.floor(Number(r.qty) || 0)), barcode, hsnCode: formData.hsnCode.trim() || defaultHsn(formData.category) };
+        });
+      }
+      const rows = formData.category === 'Contact Lens'
+        ? extraColors.filter((x) => x.mrp > 0 || x.expiry).map((x) => ({ color: formData.color, mrp: x.mrp > 0 ? x.mrp : 0, sale: x.sale > 0 ? x.sale : formData.salePrice === formData.mrp ? (x.mrp > 0 ? x.mrp : 0) : formData.salePrice, expiry: x.expiry || undefined, qty: x.qty }))
+        : extraColors.filter((x) => x.code.trim() && x.code.trim().toLowerCase() !== (formData.color || '').trim().toLowerCase()).map((x) => ({ color: x.code.trim(), mrp: formData.mrp, sale: formData.salePrice, expiry: formData.expiry, qty: x.qty }));
+      return rows.map((r) => {
+        const barcode = suggestSku({ prefix, category: formData.category, brand: formData.brand, modelNo: formData.modelNo, name: formData.name, color: r.color, mrp: r.mrp }, taken);
+        taken.add(barcode);
+        return { ...formData, color: r.color, mrp: r.mrp, salePrice: r.sale, expiry: r.expiry, stockQty: Math.max(0, Math.floor(Number(r.qty) || 0)), barcode, hsnCode: formData.hsnCode.trim() || defaultHsn(formData.category) };
+      });
+    };
+
     try {
       if (editingProduct) {
         updateProduct({
@@ -285,14 +367,14 @@ export const InventoryManager: React.FC = () => {
           ...formData,
           id: editingProduct.id
         });
-        const more = extraColors.map((x) => ({ code: x.code.trim(), qty: Math.max(0, Math.floor(Number(x.qty) || 0)) })).filter((x) => x.code && x.code.toLowerCase() !== (formData.color || '').trim().toLowerCase());
-        if (more.length) addMultipleProducts(more.map((x, i) => ({ ...formData, color: x.code, stockQty: x.qty, barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}${i}`.slice(0, 12) })));
+        const more = buildVariants();
+        if (more.length) addMultipleProducts(more);
       } else {
         const created = addProduct(formData);
-        const more = extraColors.map((x) => ({ code: x.code.trim(), qty: Math.max(0, Math.floor(Number(x.qty) || 0)) })).filter((x) => x.code && x.code.toLowerCase() !== (formData.color || '').trim().toLowerCase());
-        if (more.length) addMultipleProducts(more.map((x, i) => ({ ...formData, color: x.code, stockQty: x.qty, barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}${i}`.slice(0, 12) })));
+        const more = buildVariants();
+        if (more.length) addMultipleProducts(more);
         // Offer the QR tag labels right away; scanning a tag adds this item to a bill.
-        setSelectedProductForBarcode(created);
+        if (!isLensCategory(created.category)) setSelectedProductForBarcode(created);
       }
       setShowAddModal(false);
     } catch (err) {
@@ -532,6 +614,11 @@ export const InventoryManager: React.FC = () => {
         </div>
 
         <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+          {currentUser.role === 'Admin' && placeholderCatalogs.length > 0 && (
+            <button onClick={handleStandardiseSkus} className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg text-xs font-bold border border-amber-300 cursor-pointer shadow-xs" title={t("Make old numeric SKUs match the common style")}>
+              {t("Make SKUs consistent")} ({placeholderCatalogs.length})
+            </button>
+          )}
           <button
             onClick={() => setShowImportModal(true)}
             disabled={currentUser.role!=='Admin'}
@@ -682,11 +769,11 @@ export const InventoryManager: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-stone-200">
               {modelGroups.map((g) => <React.Fragment key={g.key}>
-              {g.modelNo && <tr className="model-heading bg-amber-50"><td colSpan={9} className="py-2.5 px-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-bold text-stone-900">{g.brand || t("No brand")} — {t("Model")} {g.modelNo}</span><span className="text-[11px] rounded-full bg-white border border-amber-200 px-2 py-0.5 text-amber-900">{g.category}</span><span className="text-[11px] text-stone-600">{g.materials.length} {g.materials.length === 1 ? t("colour") : t("colours")} · {g.materials.reduce((s, m) => s + m.rows.reduce((a, r) => a + r.stockQty, 0), 0)} {t("units")}</span>{currentUser.role === 'Admin' && <button type="button" onClick={() => handleOpenAddColour(g.materials[0].rows[0])} className="ml-auto text-xs font-bold text-emerald-700 inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add colour")}</button>}</div></td></tr>}
+              {g.modelNo && <tr className="model-heading bg-amber-50"><td colSpan={9} className="py-2.5 px-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-bold text-stone-900">{g.brand || t("No brand")} — {t("Model")} {g.modelNo}</span><span className="text-[11px] rounded-full bg-white border border-amber-200 px-2 py-0.5 text-amber-900">{g.category}</span><span className="text-[11px] text-stone-600">{g.materials.length} {isLensCategory(g.category as ProductCategory) ? (g.materials.length === 1 ? t("variant") : t("variants")) : g.category === 'Contact Lens' ? (g.materials.length === 1 ? t("MRP / batch") : t("MRPs / batches")) : (g.materials.length === 1 ? t("colour") : t("colours"))} · {g.materials.reduce((s, m) => s + m.rows.reduce((a, r) => a + r.stockQty, 0), 0)} {t("units")}</span>{currentUser.role === 'Admin' && <button type="button" onClick={() => handleOpenAddColour(g.materials[0].rows[0])} className="ml-auto text-xs font-bold text-emerald-700 inline-flex items-center gap-1"><Plus className="w-3 h-3" />{isLensCategory(g.category as ProductCategory) ? t("Add index / coating") : g.category === 'Contact Lens' ? t("Add MRP / batch") : t("Add colour")}</button>}</div></td></tr>}
               {g.materials.map(({id,rows}) => {
                 const p=rows[0],total=rows.reduce((sum,row)=>sum+row.stockQty,0);
                 return <tr key={id} className="hover:bg-stone-50/80 transition-colors">
-                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm break-words">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo}{p.color ? <> · <strong className="text-stone-800">{t("Colour")} {p.color}</strong></> : null}</div></td>
+                  <td className="py-5 px-4"><div className="font-semibold text-stone-900 text-sm break-words">{p.name}</div><div className="text-xs text-stone-500 mt-1">{p.brand} · {p.modelNo}{p.color ? <> · <strong className="text-stone-800">{t("Colour")} {p.color}</strong></> : null}</div>{isLensCategory(p.category) && <div className="text-[11px] text-stone-600 mt-1">{[p.lensType, p.lensIndex && `Index ${p.lensIndex}`, p.coating, p.powerRange].filter(Boolean).join(' · ')}</div>}{p.category === 'Contact Lens' && <div className="text-[11px] text-stone-600 mt-1">{[p.mrp > 0 && `MRP ₹${p.mrp}`, p.expiry && `Exp ${p.expiry}`, p.batchNo && `Batch ${p.batchNo}`, p.baseCurve && `BC ${p.baseCurve}`, p.diameter && `Dia ${p.diameter}`, p.packSize ? `${p.packSize}/box` : ''].filter(Boolean).join(' · ')}</div>}</td>
                   <td data-label={t('Category')} className="px-2 text-xs text-stone-500">{p.category}</td>
                   <td data-label={t('Barcode')} className="px-2 font-mono text-xs break-all">{p.barcode}</td>
                   <td data-label={t('Shop Branch')} className="px-2 py-3"><div className="space-y-2">{rows.map(row=><div key={row.id} className="flex items-center gap-2">
@@ -700,7 +787,7 @@ export const InventoryManager: React.FC = () => {
                   <td data-label={t('GST')} className="px-2 text-center">{p.gstRate}%</td>
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
-                    <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>
+                    {!isLensCategory(p.category) && <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>}
                     {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
                   </td>
                 </tr>;
@@ -759,7 +846,7 @@ export const InventoryManager: React.FC = () => {
                 <button onClick={() => { if (disabled || confirm(`Disable tag ${unit}? It will not be billable until you enable it again. Stock count is not changed — adjust it separately if the piece is lost.`)) setTagDisabled(sp.id, unit, !disabled); }} className={`w-full py-2 rounded-lg text-xs font-bold border ${disabled ? 'border-emerald-300 text-emerald-800 bg-emerald-50' : 'border-rose-300 text-rose-700 bg-rose-50'}`}>{disabled ? t("Enable this tag again") : t("Disable this tag")}</button>
               )}
               <div className="flex gap-2 pt-1">
-                <button onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
+                <button hidden={isLensCategory(sp.category)} onClick={() => { setSelectedProductForBarcode(sp); setScanned(null); }} className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold">{t("Print tags")}</button>
                 <button onClick={() => setScanned(null)} className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold">{t("Done")}</button>
               </div>
             </div>
@@ -785,7 +872,7 @@ export const InventoryManager: React.FC = () => {
                   <label className="block text-stone-600 mb-1 font-semibold">{t("Category *")}</label>
                   <select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
+                    onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
                     className="w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900"
                   >
                     {categories.map((c) => (
@@ -810,12 +897,12 @@ export const InventoryManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">{t("Barcode / SKU *")}</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{t("Barcode / SKU *")}{!editingProduct && skuAuto && <span className="ml-1 font-normal text-emerald-700">({t("auto")})</span>}</label>
                   <input
                     type="text"
                     required
                     value={formData.barcode}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    onChange={(e) => { setSkuAuto(false); setFormData({ ...formData, barcode: e.target.value }); }}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono"
                   />
                 </div>
@@ -845,7 +932,7 @@ export const InventoryManager: React.FC = () => {
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                   <datalist id="brand-suggestions">
-                    {(formData.category === 'Contact Lens' ? SUGGESTED_CONTACT_LENS_BRANDS : ['Frames','Sunglasses'].includes(formData.category) ? SUGGESTED_EYEWEAR_BRANDS : []).map((b) => (
+                    {(formData.category === 'Contact Lens' ? SUGGESTED_CONTACT_LENS_BRANDS : isLensCategory(formData.category) ? LENS_COMPANIES : ['Frames','Sunglasses'].includes(formData.category) ? SUGGESTED_EYEWEAR_BRANDS : []).map((b) => (
                       <option key={b} value={b} />
                     ))}
                   </datalist>
@@ -860,8 +947,8 @@ export const InventoryManager: React.FC = () => {
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
                 </div>
-                <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">{t("Color / Shade")}</label>
+                {!isLensCategory(formData.category) && <div>
+                  <label className="block text-stone-600 mb-1 font-semibold">{formData.category === 'Contact Lens' ? t("Colour / tint (optional)") : t("Color / Shade")}</label>
                   <input
                     type="text"
                     placeholder={t("Matte Black / Clear")}
@@ -869,9 +956,37 @@ export const InventoryManager: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                     className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900"
                   />
-                </div>
+                </div>}
               </div>
-              {(
+              {isLensCategory(formData.category) ? (
+                <div className="rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
+                  <p className="text-stone-600">{t("Same lens in another index or coating? Add each one with its own price and quantity. Each becomes a separate item on bills.")}</p>
+                  {extraColors.map((x, i) => (
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
+                      <input list="lens-index-list" aria-label={t("Index")} placeholder={t("Index e.g. 1.60")} value={x.index} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, index: e.target.value } : r)))} className="bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input list="lens-coating-list" aria-label={t("Coating")} placeholder={t("Coating")} value={x.code} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, code: e.target.value } : r)))} className="bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="number" min={0} aria-label={t("MRP")} placeholder={t("MRP ₹")} value={x.mrp || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, mrp: Number(e.target.value) } : r)))} className="bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="number" min={0} aria-label={t("Sale price")} placeholder={t("Sale ₹")} value={x.sale || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, sale: Number(e.target.value) } : r)))} className="bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <div className="flex gap-1 items-center"><input type="number" min={0} aria-label={t("Quantity")} placeholder={t("Qty")} value={x.qty || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, qty: Number(e.target.value) } : r)))} className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2" /><button type="button" aria-label={t("Remove variant")} onClick={() => setExtraColors((prev) => prev.filter((_, j) => j !== i))} className="p-2 text-stone-400 hover:text-rose-600">✕</button></div>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setExtraColors((prev) => [...prev, { code: '', qty: 0, mrp: 0, sale: 0, expiry: '', index: '' }])} className="text-emerald-700 font-semibold inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add another index / coating")}</button>
+                </div>
+              ) : formData.category === 'Contact Lens' ? (
+                <div className="rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
+                  <p className="text-stone-600">{t("Same product with a different MRP or expiry (another batch)? Add each one here with its own quantity. Each becomes a separate item, so every MRP stays correct on bills.")}</p>
+                  {extraColors.map((x, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input type="number" min={0} aria-label={t("MRP")} placeholder={t("MRP ₹")} value={x.mrp || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, mrp: Number(e.target.value) } : r)))} className="w-24 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="number" min={0} aria-label={t("Sale price")} placeholder={t("Sale ₹")} value={x.sale || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, sale: Number(e.target.value) } : r)))} className="w-24 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="month" aria-label={t("Expiry")} value={x.expiry} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, expiry: e.target.value } : r)))} className="flex-1 min-w-0 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <input type="number" min={0} aria-label={t("Quantity")} placeholder={t("Qty")} value={x.qty || ''} onChange={(e) => setExtraColors((prev) => prev.map((r, j) => (j === i ? { ...r, qty: Number(e.target.value) } : r)))} className="w-16 bg-stone-50 border border-stone-300 rounded-lg p-2" />
+                      <button type="button" aria-label={t("Remove batch")} onClick={() => setExtraColors((prev) => prev.filter((_, j) => j !== i))} className="p-2 text-stone-400 hover:text-rose-600">✕</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setExtraColors((prev) => [...prev, { code: '', qty: 0, mrp: 0, sale: 0, expiry: '', index: '' }])} className="text-emerald-700 font-semibold inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add another MRP / batch")}</button>
+                </div>
+              ) : (
                 <div className="rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
                   <p className="text-stone-600">{editingProduct ? t("Same model comes in more colours? Add each new colour code with its own quantity. They are saved as separate colours of this model.") : t("Same model comes in more colours? Add each colour code with its own quantity. The colour above uses the opening stock below.")}</p>
                   {extraColors.map((x, i) => (
@@ -881,10 +996,40 @@ export const InventoryManager: React.FC = () => {
                       <button type="button" aria-label={t("Remove colour")} onClick={() => setExtraColors((prev) => prev.filter((_, j) => j !== i))} className="p-2 text-stone-400 hover:text-rose-600">✕</button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => setExtraColors((prev) => [...prev, { code: '', qty: 0 }])} className="text-emerald-700 font-semibold inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add another colour")}</button>
+                  <button type="button" onClick={() => setExtraColors((prev) => [...prev, { code: '', qty: 0, mrp: 0, sale: 0, expiry: '', index: '' }])} className="text-emerald-700 font-semibold inline-flex items-center gap-1"><Plus className="w-3 h-3" />{t("Add another colour")}</button>
                 </div>
               )}
 
+              {isLensCategory(formData.category) ? (
+                <div className="space-y-3">
+                  <datalist id="lens-index-list">{INDEXES.map((x) => <option key={x} value={x} />)}</datalist>
+                  <datalist id="lens-coating-list">{COATINGS.map((x) => <option key={x} value={x} />)}</datalist>
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className="block text-stone-600 font-semibold">{t("Lens type")}
+                      <select value={formData.lensType || ''} onChange={(e) => setFormData({ ...formData, lensType: e.target.value })} className="mt-1 w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900 font-normal"><option value="">{t("Select")}</option>{LENS_TYPES.map((x) => <option key={x}>{x}</option>)}</select>
+                    </label>
+                    <label className="block text-stone-600 font-semibold">{t("Index")}<input list="lens-index-list" placeholder="1.56" value={formData.lensIndex || ''} onChange={(e) => setFormData({ ...formData, lensIndex: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("Coating")}<input list="lens-coating-list" placeholder={t("Blue Guard")} value={formData.coating || ''} onChange={(e) => setFormData({ ...formData, coating: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className="block text-stone-600 font-semibold col-span-2">{t("Power range (optional)")}<input placeholder="SPH -6.00 to +4.00, CYL up to -2.00" value={formData.powerRange || ''} onChange={(e) => setFormData({ ...formData, powerRange: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("HSN Code")}<input type="text" value={formData.hsnCode} onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono font-normal" /></label>
+                  </div>
+                </div>
+              ) : formData.category === 'Contact Lens' ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className="block text-stone-600 font-semibold">{t("Base curve (BC)")}<input type="text" placeholder="8.6" value={formData.baseCurve || ''} onChange={(e) => setFormData({ ...formData, baseCurve: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("Diameter (DIA)")}<input type="text" placeholder="14.2" value={formData.diameter || ''} onChange={(e) => setFormData({ ...formData, diameter: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("HSN Code")}<input type="text" value={formData.hsnCode} onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono font-normal" /></label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className="block text-stone-600 font-semibold">{t("Lenses per box")}<input type="number" min={1} placeholder="6" value={formData.packSize || ''} onChange={(e) => setFormData({ ...formData, packSize: Number(e.target.value) || undefined })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("Expiry (month)")}<input type="month" value={formData.expiry || ''} onChange={(e) => setFormData({ ...formData, expiry: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-normal" /></label>
+                    <label className="block text-stone-600 font-semibold">{t("Batch / lot no.")}<input type="text" value={formData.batchNo || ''} onChange={(e) => setFormData({ ...formData, batchNo: e.target.value })} className="mt-1 w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 font-mono font-normal" /></label>
+                  </div>
+                </div>
+              ) : (
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -938,6 +1083,7 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
               </div>
+              )}
 
               <div className="grid grid-cols-4 gap-3 bg-stone-50 p-3 rounded-lg border border-stone-200">
                 <div>
@@ -952,7 +1098,7 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-stone-600 mb-1 font-semibold">{t("MRP (₹)")}</label>
+                  <label className="block text-stone-600 mb-1 font-semibold">{formData.category === 'Contact Lens' ? t("MRP (₹) (optional)") : t("MRP (₹)")}</label>
                   <NumberInput
                     type="number"
                     min="0"

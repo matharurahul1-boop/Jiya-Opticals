@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { InvoiceItem } from '../types';
 
-const LENS_TYPES = ['Single Vision', 'Progressive', 'Bifocal', 'Zero Power / Plano', 'Other'];
-const COATINGS = ['Blue Guard', 'Duravision Blue Guard', 'HMC (Anti-Reflective)', 'Blue Cut', 'Photochromic / Transition', 'Polarized', 'Hard coat (UC)'];
-const INDEXES = ['1.50', '1.56', '1.59', '1.60', '1.61', '1.67', '1.74'];
-const COMPANIES = ['Essilor', 'Zeiss', 'Hoya', 'Nikon', 'Rodenstock', 'Kodak'];
+import { COATINGS, INDEXES, LENS_COMPANIES as COMPANIES, LENS_TYPES } from '../lib/lens';
 
 /** A lens (or any one-off item) typed in at billing time, because lenses are made to order and are not kept in stock. */
 export function ManualItemModal({ onAdd, onClose }: { onAdd: (item: InvoiceItem) => void; onClose: () => void }) {

@@ -85,6 +85,7 @@ export const BarcodePrintModal: React.FC = () => {
             <label className="flex flex-col gap-0.5">{t("Height (mm)")}<input type="number" min="20" max="150" className="border rounded px-2 py-1 w-20" value={labelHeight} onChange={e => setLabelHeight(Math.min(150, Math.max(20, Number(e.target.value) || 30)))} /></label>
           </div>
           <p className="text-stone-500">{t("Codes")}: {tags[0]}{tags.length > 1 ? ` … ${tags[tags.length - 1]}` : ''}{start < nextFree ? ` · ${t("reprint of earlier tags")}` : ''}</p>
+          {barcodeOk && tags[tags.length - 1].length > 30 && labelWidth < 70 && <p role="status" className="text-amber-800">{t("This code is long. For a reliable scan use a wider label (70 mm or more) or shorten the SKU.")}</p>}
           {!barcodeOk && <p role="alert" className="text-red-700">{t("This barcode has characters that cannot be printed as a tag. Edit the material's barcode.")}</p>}
         </div>
 

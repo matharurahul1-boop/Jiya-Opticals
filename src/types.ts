@@ -85,6 +85,20 @@ export interface Product {
   nextSerial?: number;
   /** Per-piece tag codes already sold on a bill. */
   soldUnitCodes?: string[];
+  /** Spectacle lens details (Eyewear Lens / Goggles Lens). */
+  lensType?: string;
+  lensIndex?: string;
+  coating?: string;
+  /** e.g. "SPH -6.00 to +4.00, CYL up to -2.00" */
+  powerRange?: string;
+  /** Contact lens details. */
+  baseCurve?: string;
+  diameter?: string;
+  /** Lenses in one box. */
+  packSize?: number;
+  /** Expiry month, YYYY-MM. */
+  expiry?: string;
+  batchNo?: string;
   /** Per-piece tag codes switched off by hand (lost, damaged, returned); they cannot be billed until enabled again. */
   disabledUnitCodes?: string[];
 }

@@ -173,6 +173,10 @@ function draw(
       text(`Model: ${it.frameModel}`, x + 10, y, '400 11px system-ui, sans-serif', MUTED);
       y += 16;
     }
+    if (it.unitCodes?.length) {
+      text(`Tag: ${it.unitCodes.join(', ')}`, x + 10, y, '400 11px system-ui, sans-serif', MUTED);
+      y += 16;
+    }
     if (it.lensDetails) {
       text(it.lensDetails, x + 10, y, '400 11px system-ui, sans-serif', MUTED);
       y += 16;

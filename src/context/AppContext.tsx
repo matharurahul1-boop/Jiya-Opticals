@@ -2,6 +2,7 @@ import { usePlatformAdmin } from '../lib/platform';
 import { supabase } from '../lib/supabase';
 import { getLanguage,setLocale } from '../lib/i18n';
 import { invoiceNoPrefix, nextInvoiceNo } from '../lib/invoiceNo';
+import { defaultHsn } from '../lib/gst';
 import { applyExpensePayment } from '../lib/expenses';
 import { applyStockMovement, isCustomItem, catalogKey, expandCatalog, transferCatalogStock, updateCatalogProduct } from '../lib/catalog';
 import { Snapshot, useCloudSave } from '../lib/workspace';
@@ -354,7 +355,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   });
   useEffect(() => {
     if(currentUser.role!=='Admin')return;
-    const expanded=expandCatalog(products,shops.map(s=>s.id));
+    // Materials saved earlier with a blank HSN get their category's default.
+    const expanded=expandCatalog(products,shops.map(s=>s.id)).map(p=>p.hsnCode?.trim()?p:{...p,hsnCode:defaultHsn(p.category)});
     if(JSON.stringify(expanded)!==JSON.stringify(products))setProducts(expanded);
   },[products,shops,currentUser.role]);
   useEffect(() => { if (!ownerId) localStorage.setItem(LOCAL_STORAGE_KEY+'_payments',JSON.stringify(payments)); },[payments]);
@@ -659,6 +661,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     if(products.some(p=>p.barcode===productData.barcode)) throw new Error('This barcode already exists in the shared catalogue. Select the shop to receive or adjust its stock.');
     const newProduct: Product = {
       ...productData,
+      hsnCode: productData.hsnCode?.trim() || defaultHsn(productData.category),
       id: `prod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       shopId: resolveShop(productData.shopId)
     };

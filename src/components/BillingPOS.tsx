@@ -4,6 +4,7 @@ import { QuickAddPerson } from './QuickAddPerson';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
 import { applyStockMovement, isCustomItem } from '../lib/catalog';
 import { ManualItemModal } from './ManualItemModal';
+import { defaultHsn } from '../lib/gst';
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   Calculator, 
@@ -197,9 +198,9 @@ export const BillingPOS: React.FC = () => {
       const newItem: InvoiceItem = {
         productId: product.id,
         barcode: product.barcode,
-        name: `${product.brand} ${product.modelNo} - ${product.name}`,
+        name: `${product.brand} ${product.modelNo} - ${product.name}${product.category === 'Contact Lens' && product.mrp > 0 ? ` (MRP ₹${product.mrp})` : ''}`,
         category: product.category,
-        hsnCode: product.hsnCode,
+        hsnCode: product.hsnCode?.trim() || defaultHsn(product.category),
         qty: 1,
         unitPrice: product.salePrice,
         discountPercent: 0,
@@ -210,6 +211,7 @@ export const BillingPOS: React.FC = () => {
         igstAmount: 0,
         totalAmount: product.salePrice,
         frameModel: product.modelNo,
+        lensDetails: (product.category === 'Eyewear Lens' || product.category === 'Goggles Lens') ? [product.lensType, product.lensIndex && `Index ${product.lensIndex}`, product.coating, product.powerRange].filter(Boolean).join(' · ') || undefined : product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.diameter && `Dia ${product.diameter}`, product.packSize ? `${product.packSize} lenses/box` : '', product.expiry && `Exp ${product.expiry}`, product.batchNo && `Batch ${product.batchNo}`].filter(Boolean).join(' · ') || undefined : undefined,
         unitCodes: unit ? [unit] : undefined
       };
       setCartItems([...cartItems, newItem]);
@@ -631,7 +633,7 @@ export const BillingPOS: React.FC = () => {
                         <td className="py-2.5 px-2">
                           <div className="font-semibold text-stone-900 break-words">{item.name}</div>
                           <div className="text-[10px] text-stone-400 font-mono break-all">
-                            {t("HSN: ")}{item.hsnCode} {t("• Barcode: ")}{item.barcode}
+                            {t("HSN: ")}{item.hsnCode} {item.unitCodes?.length ? <>{t("• Tag: ")}<strong className="text-stone-700">{item.unitCodes.join(', ')}</strong></> : <>{t("• Barcode: ")}{item.barcode}</>}
                           </div>
                         </td>
                         <td data-label={t('Qty')} className="py-2.5 px-2 text-center">
@@ -916,7 +918,7 @@ export const BillingPOS: React.FC = () => {
                   <div>
                     <div className="font-semibold text-xs text-stone-800">{p.name}</div>
                     <div className="text-[10px] text-stone-500">
-                      {p.brand} {t("• Stock: ")}<span className={p.stockQty <= p.minStockAlert ? 'text-amber-600 font-bold' : 'text-emerald-600'}>{p.stockQty}</span>
+                      {p.brand}{p.category === 'Contact Lens' && p.mrp > 0 ? ` · MRP ₹${p.mrp}` : ''}{p.category === 'Contact Lens' && p.expiry ? ` · Exp ${p.expiry}` : ''} {t("• Stock: ")}<span className={p.stockQty <= p.minStockAlert ? 'text-amber-600 font-bold' : 'text-emerald-600'}>{p.stockQty}</span>
                     </div>
                   </div>
                   <div className="text-right">

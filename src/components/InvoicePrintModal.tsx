@@ -384,6 +384,9 @@ export const InvoicePrintModal: React.FC = () => {
                         {item.frameModel && (
                           <div className="text-[10px] text-stone-500">{t("Model: ")}{item.frameModel}</div>
                         )}
+                        {item.unitCodes?.length ? (
+                          <div className="text-[10px] text-stone-500 font-mono">{t("Tag: ")}{item.unitCodes.join(', ')}</div>
+                        ) : null}
                         {item.lensDetails && (
                           <div className="text-[10px] text-stone-500">{item.lensDetails}</div>
                         )}

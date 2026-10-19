@@ -34,3 +34,18 @@ export function categoryGst(
   const rate = profile.categoryGstRates?.[category];
   return typeof rate === 'number' && Number.isFinite(rate) && rate >= 0 ? rate : fallback;
 }
+
+/** HSN used when a material is saved without one, so bills never carry a blank HSN. */
+export const DEFAULT_HSN: Record<ProductCategory, string> = {
+  'Frames': '90031100',
+  'Sunglasses': '90041000',
+  'Eyewear Lens': '90015000',
+  'Contact Lens': '90013000',
+  'Goggles Lens': '90015000',
+  'MPS': '33079000',
+  'Repair': '998729',
+  'Optical Accessory': '90049090',
+  'Reading Glasses': '90049090',
+  'Equipment / Battery': '90049090'
+};
+export const defaultHsn = (category: ProductCategory): string => DEFAULT_HSN[category] || '9001';
