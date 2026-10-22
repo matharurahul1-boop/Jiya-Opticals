@@ -54,7 +54,11 @@ export const BillingPOS: React.FC = () => {
     setSelectedShopFilter,
     promptShopSelect,
     currentUser,
-    shops
+    shops,
+    invoiceBeingEdited,
+    cancelEditInvoice,
+    replaceInvoice,
+    setActiveTab
   } = useApp();
 
   // Customer State
@@ -345,6 +349,42 @@ export const BillingPOS: React.FC = () => {
   const [showManualItem, setShowManualItem] = useState(false);
   const [tagPrompt, setTagPrompt] = useState<{ andPrint: boolean } | null>(null);
   const [keepEnabled, setKeepEnabled] = useState<string[]>([]);
+  // Editing a saved bill: fill the whole form from it once, then Save replaces the bill.
+  const [editStatus, setEditStatus] = useState<OrderStatus>('Order Booked');
+  useEffect(() => {
+    const inv = invoiceBeingEdited;
+    if (!inv) return;
+    setSelectedCustomerId(inv.customerId);
+    setCartItems(inv.items.map((it) => ({ ...it, unitCodes: it.unitCodes ? [...it.unitCodes] : undefined })));
+    setCharges(inv.charges?.length ? inv.charges.map((x) => ({ ...x })) : inv.fittingTotal > 0 ? [{ label: 'Fitting & Glazing Lab Charges', amount: inv.fittingTotal }] : []);
+    const itemDiscount = inv.items.reduce((sum, it) => sum + (it.unitPrice * it.qty * it.discountPercent) / 100, 0);
+    setFlatDiscount(Math.max(0, Number((inv.totalDiscount - itemDiscount).toFixed(2))));
+    if (Math.abs(inv.roundOff || 0) < 0.5) setRoundMode('exact');
+    else { setRoundMode('custom'); setCustomFinal(inv.netPayable); }
+    setOrderType(inv.orderStatus === 'Direct Sale' ? 'Direct' : 'Order');
+    setEditStatus(inv.orderStatus === 'Direct Sale' ? 'Order Booked' : inv.orderStatus);
+    if (inv.deliveryDate) setDeliveryDate(inv.deliveryDate);
+    setAdvancePaid(inv.advancePaid);
+    setPaymentMode(inv.paymentMode);
+    setPaymentRef(inv.paymentRef || '');
+    setOrderNotes(inv.notes || '');
+    setSelectedDoctor(inv.doctorName || '');
+    if (inv.prescription) {
+      setAttachPrescription(true);
+      setRightEye(inv.prescription.rightEye);
+      setLeftEye(inv.prescription.leftEye);
+      setPdMm(inv.prescription.pdMm);
+      setLensNotes(inv.prescription.notes || '');
+    }
+  }, [invoiceBeingEdited]);
+
+  const leaveEditing = () => {
+    cancelEditInvoice();
+    setCartItems([]); setFlatDiscount(0); setCharges([]); setRoundMode('exact'); setCustomFinal(0);
+    setOrderNotes(''); setPaymentRef(''); setAttachPrescription(false); setSelectedCustomerId(''); setAdvancePaid(0);
+    setActiveTab('dashboard');
+  };
+
   const handleCheckout = (andPrint: boolean = true) => {
     if (!selectedCustomerId) {
       alert('Please select or create a Customer before checking out.');
@@ -390,11 +430,15 @@ export const BillingPOS: React.FC = () => {
       };
     }
 
-    const status: OrderStatus = orderType === 'Direct' ? 'Direct Sale' : 'Order Booked';
-    try { applyStockMovement(products,billingShopId,cartItems,-1); }
-    catch(error) {alert(error instanceof Error?error.message:'Check shop stock before billing.');return;}
+    const status: OrderStatus = orderType === 'Direct' ? 'Direct Sale' : invoiceBeingEdited ? editStatus : 'Order Booked';
+    if (invoiceBeingEdited) {
+      if (netPayable < invoiceBeingEdited.advancePaid) { alert('The bill total cannot go below the ₹' + invoiceBeingEdited.advancePaid + ' already received. Refund the difference first, or keep the total at or above it.'); return; }
+    } else {
+      try { applyStockMovement(products,billingShopId,cartItems,-1); }
+      catch(error) {alert(error instanceof Error?error.message:'Check shop stock before billing.');return;}
+    }
 
-    const invoice = createInvoice({
+    const payload: Parameters<typeof createInvoice>[0] = {
       shopId: billingShopId,
       customerId: currentCustomer.id,
       customerName: currentCustomer.name,
@@ -423,13 +467,17 @@ export const BillingPOS: React.FC = () => {
       deliveryDate: orderType === 'Order' ? deliveryDate : undefined,
       prescription: attachedRx,
       notes: orderNotes
-    }, keepTagsEnabled);
+    };
+    let invoice: ReturnType<typeof createInvoice>;
+    try { invoice = invoiceBeingEdited ? replaceInvoice(invoiceBeingEdited.id, payload, keepTagsEnabled) : createInvoice(payload, keepTagsEnabled); }
+    catch (error) { alert(error instanceof Error ? error.message : 'Could not save this bill.'); return; }
 
     if (andPrint) {
       setSelectedInvoiceForPrint(invoice);
     } else {
-      alert(`Invoice ${invoice.invoiceNo} successfully generated!`);
+      alert(invoiceBeingEdited ? `Invoice ${invoice.invoiceNo} updated.` : `Invoice ${invoice.invoiceNo} successfully generated!`);
     }
+    if (invoiceBeingEdited) setActiveTab('dashboard');
 
     // Reset POS form
     setCartItems([]);
@@ -448,6 +496,22 @@ export const BillingPOS: React.FC = () => {
 
   return (
     <div id="billing-pos-container" className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+      {invoiceBeingEdited && (
+        <div role="status" className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex-1 min-w-48">
+            <strong className="text-amber-900">{t("Editing bill")} <span className="font-mono">{invoiceBeingEdited.invoiceNo}</span></strong>
+            <p className="text-stone-600">{t("Saving replaces this bill. Stock, tags and the client's balance are adjusted. The client and the money already received (")}₹{invoiceBeingEdited.advancePaid}{t(") stay as they are.")}</p>
+          </div>
+          {orderType === 'Order' && (
+            <label className="text-stone-600">{t("Status")}
+              <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as OrderStatus)} className="ml-1.5 bg-white border border-stone-300 rounded-lg px-2 py-1 text-stone-900">
+                {(['Order Booked', 'In Progress', 'Fitting Done', 'Ready for Delivery', 'Delivered'] as OrderStatus[]).map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </label>
+          )}
+          <button type="button" onClick={leaveEditing} className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white font-bold text-stone-700">{t("Cancel editing")}</button>
+        </div>
+      )}
       {showManualItem && <ManualItemModal onClose={() => setShowManualItem(false)} onAdd={(item) => { setCartItems((prev) => [...prev, item]); setShowManualItem(false); }} />}
       {tagPrompt && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Tags in this bill">
@@ -550,6 +614,7 @@ export const BillingPOS: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <select
                 value={selectedCustomerId}
+                disabled={!!invoiceBeingEdited}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
                 className="bg-stone-50 border border-stone-200 text-xs text-stone-800 rounded-lg p-2.5 outline-none focus:border-amber-500 font-medium"
               >

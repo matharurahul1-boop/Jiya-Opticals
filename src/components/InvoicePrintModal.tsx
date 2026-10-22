@@ -9,7 +9,7 @@ import { invoiceToPngBlob, copyBlobToClipboard, downloadBlob } from '../lib/invo
 import { resolveUpiQr } from '../lib/upiQr';
 
 export const InvoicePrintModal: React.FC = () => {
-  const { selectedInvoiceForPrint, setSelectedInvoiceForPrint, storeProfile, openEmailModal, customers } = useApp();
+  const { selectedInvoiceForPrint, setSelectedInvoiceForPrint, storeProfile, openEmailModal, customers, currentUser, startEditInvoice } = useApp();
   const [printFormat, setPrintFormat] = useState<'A4' | 'Thermal'>('A4');
   const [busyImg, setBusyImg] = useState(false);
   const [toast, setToast] = useState<{ tone: 'ok' | 'info' | 'err'; msg: string } | null>(null);
@@ -199,6 +199,16 @@ export const InvoicePrintModal: React.FC = () => {
           </div>
 
           <div className="invoice-actions flex items-center space-x-1.5 sm:space-x-2">
+            {(currentUser.role === 'Admin' || currentUser.role === 'Shop Manager') && selectedInvoiceForPrint && selectedInvoiceForPrint.orderStatus !== 'Cancelled' && (
+              <button
+                id="btn-edit-invoice"
+                onClick={() => { try { startEditInvoice(selectedInvoiceForPrint); setSelectedInvoiceForPrint(null); } catch (e) { alert(e instanceof Error ? e.message : 'Could not open this bill for editing.'); } }}
+                className="px-2.5 sm:px-3 py-1.5 bg-white border border-amber-400 hover:bg-amber-50 text-amber-900 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                title={t("Change items, rate, discount or charges on this bill")}
+              >
+                <span>{t("Edit bill")}</span>
+              </button>
+            )}
             <button
               id="btn-whatsapp-invoice"
               onClick={handleWhatsApp}

@@ -114,7 +114,10 @@ interface AppContextType {
   invoices: Invoice[];
   createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled?: string[]) => Invoice;
   updateOrderStatus: (invoiceId: string, newStatus: OrderStatus) => void;
-  updateOrder: (invoiceId: string, patch: { deliveryDate?: string; notes?: string; orderStatus?: OrderStatus }) => void;
+  invoiceBeingEdited: Invoice | null;
+  startEditInvoice: (invoice: Invoice) => void;
+  cancelEditInvoice: () => void;
+  replaceInvoice: (invoiceId: string, invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled?: string[]) => Invoice;
   deleteInvoice: (invoiceId: string) => void;
   collectInvoiceBalance: (invoiceId: string, amount: number, paymentMode: string) => void;
 
@@ -879,11 +882,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     );
   };
 
-  // Edit what can safely change on a saved bill without touching stock or money: delivery date, status, note.
-  const updateOrder = (invoiceId: string, patch: { deliveryDate?: string; notes?: string; orderStatus?: OrderStatus }) => {
-    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can edit an order.');
-    if (patch.orderStatus === 'Cancelled') throw new Error('Delete the order instead of cancelling it.');
-    setInvoices((prev) => prev.map((inv) => (inv.id === invoiceId ? { ...inv, ...patch } : inv)));
+  // Editing a saved bill: Billing opens filled with it, and saving replaces the old bill (same number and date).
+  const [invoiceBeingEdited, setInvoiceBeingEdited] = useState<Invoice | null>(null);
+  const startEditInvoice = (invoice: Invoice) => {
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can edit a bill.');
+    if (invoice.shopId && invoice.shopId !== selectedShopFilter) setSelectedShopFilter(invoice.shopId);
+    setInvoiceBeingEdited(invoice);
+    setActiveTab('billing');
+  };
+  const cancelEditInvoice = () => setInvoiceBeingEdited(null);
+
+  // Swaps the saved bill for the edited one in one step: the old bill's stock and tags are put back first, so the
+  // new items are checked against the true stock. The client stays the same; money already received is kept.
+  const replaceInvoice = (invoiceId: string, invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled: string[] = []): Invoice => {
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can edit a bill.');
+    const old = invoices.find((i) => i.id === invoiceId);
+    if (!old) throw new Error('This bill no longer exists.');
+    if (invoiceData.customerId !== old.customerId) throw new Error('The client of a saved bill cannot be changed. Delete the bill and create a new one.');
+    if (invoiceData.advancePaid < old.advancePaid) throw new Error('₹' + old.advancePaid + ' was already received on this bill. It cannot be reduced here.');
+    const shopId = old.shopId || resolveShop(invoiceData.shopId);
+    const back = new Map<string, number>();
+    for (const it of old.items) if (!isCustomItem(it.productId)) back.set(it.productId, (back.get(it.productId) || 0) + it.qty);
+    const oldCodes = new Set(old.items.flatMap((it) => it.unitCodes || []));
+    const restored = products.map((p) => ({ ...p, stockQty: p.stockQty + (back.get(p.id) || 0), soldUnitCodes: (p.soldUnitCodes || []).filter((code) => !oldCodes.has(code)) }));
+    if (invoiceData.items.some((item) => !isCustomItem(item.productId) && !restored.some((p) => p.id === item.productId && p.shopId === shopId))) throw new Error('Bill products must belong to the billing shop');
+    const stockAfter = applyStockMovement(restored, shopId, invoiceData.items, -1);
+    const updated: Invoice = { ...invoiceData, id: old.id, shopId, shopName: old.shopName, invoiceNo: old.invoiceNo, date: old.date, time: old.time };
+    setProducts(stockAfter.map((p) => {
+      const sold = invoiceData.items.filter((it) => it.productId === p.id).flatMap((it) => it.unitCodes || []).filter((code) => !keepTagsEnabled.includes(code));
+      return sold.length ? { ...p, soldUnitCodes: [...(p.soldUnitCodes || []), ...sold] } : p;
+    }));
+    setCustomers((prev) => prev.map((cu) => (cu.id === old.customerId ? {
+      ...cu,
+      totalSpent: Math.max(0, cu.totalSpent - old.netPayable + updated.netPayable),
+      outstandingBalance: Math.max(0, cu.outstandingBalance - old.balanceDue + updated.balanceDue),
+    } : cu)));
+    const extra = updated.advancePaid - old.advancePaid;
+    if (extra > 0) setPayments((prev) => [...prev, { id: crypto.randomUUID(), shopId, customerId: old.customerId, invoiceId: old.id, date: localDate(), amount: extra, paymentMode: updated.paymentMode }]);
+    setInvoices((prev) => prev.map((i) => (i.id === invoiceId ? updated : i)));
+    setInvoiceBeingEdited(null);
+    return updated;
   };
 
   // Removes a saved bill and reverses what it did: stock goes back, sold tags are released, the client's
@@ -1157,7 +1195,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         invoices:scoped(invoices),
         createInvoice,
         updateOrderStatus,
-        updateOrder,
+        invoiceBeingEdited,
+        startEditInvoice,
+        cancelEditInvoice,
+        replaceInvoice,
         deleteInvoice,
         collectInvoiceBalance,
         suppliers,
