@@ -1,6 +1,6 @@
 import { paidOnDate } from '../lib/expenses';
 import { t } from '../lib/i18n';
-import React from 'react';
+import React, { useState } from 'react';
 import { MonthlyRevenueChart } from './MonthlyRevenueChart';
 import { 
   ArrowRight, 
@@ -21,7 +21,9 @@ import {
   Bell,
   Sparkles,
   Smartphone,
-  ChevronRight
+  ChevronRight,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Invoice, OrderStatus } from '../types';
@@ -38,6 +40,8 @@ export const Dashboard: React.FC = () => {
     customers,
     expenses,
     updateOrderStatus,
+    updateOrder,
+    deleteInvoice,
     setSelectedInvoiceForPrint,
     setSelectedPrescriptionForPrint,
     setSelectedProductForBarcode,
@@ -109,6 +113,25 @@ export const Dashboard: React.FC = () => {
 
   const recentInvoices = filteredInvoices.slice(0, 6);
 
+  // Edit / delete an active order (Admin and Shop Manager).
+  const canManageOrders = currentUser.role === 'Admin' || currentUser.role === 'Shop Manager';
+  const [editingOrder, setEditingOrder] = useState<Invoice | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editStatus, setEditStatus] = useState<OrderStatus>('Order Booked');
+  const [editNotes, setEditNotes] = useState('');
+  const openEditOrder = (inv: Invoice) => {
+    setEditingOrder(inv);
+    setEditDate(inv.deliveryDate || '');
+    setEditStatus(inv.orderStatus);
+    setEditNotes(inv.notes || '');
+  };
+  const handleDeleteOrder = (inv: Invoice) => {
+    const received = inv.advancePaid;
+    if (!confirm(`Delete order ${inv.invoiceNo} for ${inv.customerName}?\n\nStock goes back, its tags are released and the client's totals are corrected.${received > 0 ? ` The ₹${received} received on this bill is removed from the books, so refund the client if needed.` : ''}\nThis cannot be undone.`)) return;
+    try { deleteInvoice(inv.id); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Could not delete this order.'); }
+  };
+
   const handleQuickStatusChange = (inv: Invoice, nextStatus: OrderStatus) => {
     updateOrderStatus(inv.id, nextStatus);
   };
@@ -119,8 +142,47 @@ export const Dashboard: React.FC = () => {
     window.open(url, '_blank');
   };
 
+  const orderEditor = editingOrder && (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Edit order">
+      <form
+        className="bg-white border border-stone-200 rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-3 text-xs"
+        onSubmit={(e) => {
+          e.preventDefault();
+          try { updateOrder(editingOrder.id, { deliveryDate: editDate || undefined, orderStatus: editStatus, notes: editNotes }); setEditingOrder(null); }
+          catch (err) { alert(err instanceof Error ? err.message : 'Could not save this order.'); }
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-stone-900 text-base">{t("Edit order")}</h3>
+            <p className="text-stone-500 font-mono mt-0.5">{editingOrder.invoiceNo} · {editingOrder.customerName}</p>
+          </div>
+          <button type="button" onClick={() => setEditingOrder(null)} aria-label="Close" className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 rounded-lg shrink-0">✕</button>
+        </div>
+        <p className="bg-stone-50 border border-stone-200 rounded-lg p-2 text-stone-600 break-words">{editingOrder.items.map((i) => i.name).join(' + ')} · ₹{editingOrder.netPayable} · {t("Due")} ₹{editingOrder.balanceDue}</p>
+        <label className="block text-stone-600">{t("Target delivery date")}
+          <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="mt-1 w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900" />
+        </label>
+        <label className="block text-stone-600">{t("Order status")}
+          <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as OrderStatus)} className="mt-1 w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900">
+            {(['Order Booked', 'In Progress', 'Fitting Done', 'Ready for Delivery', 'Delivered'] as OrderStatus[]).map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </label>
+        <label className="block text-stone-600">{t("Note")}
+          <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} className="mt-1 w-full bg-white border border-stone-300 rounded-lg p-2 text-stone-900" />
+        </label>
+        <p className="text-stone-500">{t("To change the items or amount, delete this order and create a new bill.")}</p>
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={() => setEditingOrder(null)} className="flex-1 py-2.5 rounded-lg border font-bold">{t("Cancel")}</button>
+          <button className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold">{t("Save changes")}</button>
+        </div>
+      </form>
+    </div>
+  );
+
   return (
     <div id="dashboard-main-container" className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {orderEditor}
       {/* Top Shop Selector & Role Header */}
       <div className="optical-dashboard-hero border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:items-start justify-between gap-5">
         <div className="flex items-center space-x-3">
@@ -411,6 +473,26 @@ export const Dashboard: React.FC = () => {
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                       </button>
+                      {canManageOrders && (
+                        <>
+                          <button
+                            onClick={() => openEditOrder(inv)}
+                            className="p-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-700 rounded-md cursor-pointer"
+                            title={t("Edit order")}
+                            aria-label={t("Edit order")}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOrder(inv)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 rounded-md cursor-pointer"
+                            title={t("Delete order")}
+                            aria-label={t("Delete order")}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

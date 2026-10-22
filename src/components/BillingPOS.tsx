@@ -5,6 +5,7 @@ import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
 import { applyStockMovement, isCustomItem } from '../lib/catalog';
 import { ManualItemModal } from './ManualItemModal';
 import { defaultHsn } from '../lib/gst';
+import { finalAmount, RoundMode } from '../lib/roundFigure';
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   Calculator, 
@@ -275,7 +276,10 @@ export const BillingPOS: React.FC = () => {
   const totalTax = totalCgst + totalSgst;
 
   const rawGrandTotal = itemsSubtotal - itemsDiscountTotal - flatDiscount + fittingCharge;
-  const netPayable = Math.max(0, Math.round(rawGrandTotal));
+  // Round figure: the customer often pays a little less than the exact bill, so the final amount can be rounded down.
+  const [roundMode, setRoundMode] = useState<RoundMode>('exact');
+  const [customFinal, setCustomFinal] = useState(0);
+  const netPayable = finalAmount(rawGrandTotal, roundMode, customFinal);
   const roundOff = Number((netPayable - rawGrandTotal).toFixed(2));
 
   // Sync advance payment
@@ -431,6 +435,8 @@ export const BillingPOS: React.FC = () => {
     setCartItems([]);
     setFlatDiscount(0);
     setCharges([]);
+    setRoundMode('exact');
+    setCustomFinal(0);
     setOrderNotes('');
     setPaymentRef('');
     setAttachPrescription(false);
@@ -1073,6 +1079,25 @@ export const BillingPOS: React.FC = () => {
                   <span>-₹{(itemsDiscountTotal + flatDiscount).toFixed(2)}</span>
                 </div>
               )}
+              {roundOff !== 0 && (
+                <div className="flex justify-between">
+                  <span>{t("Round off:")}</span>
+                  <span>{roundOff < 0 ? '-' : '+'}₹{Math.abs(roundOff).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="pt-1 space-y-1.5">
+                <span className="block text-[11px] text-stone-500">{t("Round figure")}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {([['exact', 'Exact'], [10, '₹10'], [50, '₹50'], [100, '₹100'], ['custom', 'Custom']] as [RoundMode, string][]).map(([mode, label]) => (
+                    <button key={String(mode)} type="button" aria-pressed={roundMode === mode} onClick={() => { setRoundMode(mode); if (mode === 'custom' && !customFinal) setCustomFinal(Math.round(rawGrandTotal)); }} className={'px-2.5 py-1 rounded-lg border text-[11px] font-bold ' + (roundMode === mode ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-stone-700')}>{label}</button>
+                  ))}
+                </div>
+                {roundMode === 'custom' && (
+                  <label className="flex items-center gap-2 text-[11px] text-stone-600">{t("Final amount (₹)")}
+                    <NumberInput type="number" min="0" max={String(Math.max(0, Math.round(rawGrandTotal)))} value={customFinal || ''} onChange={(e) => setCustomFinal(Number(e.target.value))} className="w-28 bg-white border border-stone-300 rounded px-2 py-1 font-bold text-amber-800 text-xs" />
+                  </label>
+                )}
+              </div>
               <div className="flex justify-between text-base font-bold text-stone-900 border-t border-stone-200 pt-2">
                 <span>{t("Net Payable:")}</span>
                 <span className="text-amber-800">₹{netPayable}</span>

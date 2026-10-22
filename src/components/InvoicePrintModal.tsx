@@ -461,6 +461,12 @@ export const InvoicePrintModal: React.FC = () => {
                       <span>-₹{inv.totalDiscount.toFixed(2)}</span>
                     </div>
                   )}
+                  {Math.abs(inv.roundOff || 0) >= 0.01 && (
+                    <div className="flex justify-between">
+                      <span>{t("Round off:")}</span>
+                      <span>{inv.roundOff < 0 ? '-' : '+'}₹{Math.abs(inv.roundOff).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-sm text-stone-900 border-t border-stone-300 pt-1.5">
                     <span>{t("Grand Total:")}</span>
                     <span>₹{inv.netPayable.toFixed(2)}</span>
@@ -513,7 +519,7 @@ export const InvoicePrintModal: React.FC = () => {
               <div className="space-y-1 text-[11px] border-b border-dashed border-stone-400 pb-2">
                 {inv.items.map((item, i) => (
                   <div key={i} className="flex justify-between">
-                    <span className="min-w-0 flex-1 break-words pr-2">{item.name} {t("x")}{item.qty}</span>
+                    <span className="min-w-0 flex-1 break-words pr-2">{i + 1}. {item.name} {t("x")}{item.qty}</span>
                     <span className="font-bold">₹{item.totalAmount}</span>
                   </div>
                 ))}
@@ -532,6 +538,12 @@ export const InvoicePrintModal: React.FC = () => {
 
               {/* Totals */}
               <div className="space-y-1 text-xs">
+                {Math.abs(inv.roundOff || 0) >= 0.01 && (
+                  <div className="flex justify-between">
+                    <span>{t("ROUND OFF:")}</span>
+                    <span>{inv.roundOff < 0 ? '-' : '+'}₹{Math.abs(inv.roundOff).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-sm">
                   <span>{t("NET TOTAL:")}</span>
                   <span>₹{inv.netPayable}</span>

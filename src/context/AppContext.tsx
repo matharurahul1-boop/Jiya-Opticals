@@ -114,6 +114,8 @@ interface AppContextType {
   invoices: Invoice[];
   createInvoice: (invoiceData: Omit<Invoice, 'id' | 'invoiceNo' | 'date' | 'time'>, keepTagsEnabled?: string[]) => Invoice;
   updateOrderStatus: (invoiceId: string, newStatus: OrderStatus) => void;
+  updateOrder: (invoiceId: string, patch: { deliveryDate?: string; notes?: string; orderStatus?: OrderStatus }) => void;
+  deleteInvoice: (invoiceId: string) => void;
   collectInvoiceBalance: (invoiceId: string, amount: number, paymentMode: string) => void;
 
   suppliers: Supplier[];
@@ -618,13 +620,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
 
   const deleteShop = (id: string) => {
     assertAdmin();
-    if ([...products,...customers,...invoices,...expenses,...purchases,...followUps,...payments].some(record=>record.shopId===id)) {
+    // A shared material gets an empty (zero stock) row in every shop. Such a row with no bill or purchase
+    // behind it is not a business record: it is removed together with the shop.
+    const used = new Set([...invoices, ...purchases].flatMap((doc) => doc.items.map((i) => i.productId)));
+    const emptyRow = (p: Product) => p.shopId === id && p.stockQty === 0 && !used.has(p.id);
+    if ([...products.filter((p) => p.shopId === id && !emptyRow(p)),...customers,...invoices,...expenses,...purchases,...followUps,...payments].some(record=>record.shopId===id)) {
       alert('This shop has business records and cannot be deleted.'); return;
     }
     if (shops.length <= 1) {
       alert('You must have at least one shop branch.');
       return;
     }
+    setProducts((prev) => prev.filter((p) => !emptyRow(p)));
     setShops((prev) => prev.filter((s) => s.id !== id));
     if (selectedShopFilter === id) {
       setSelectedShopFilterState('all');
@@ -849,7 +856,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         if (c.id === invoiceData.customerId) {
           return {
             ...c,
-            totalSpent: c.totalSpent + invoiceData.grandTotal,
+            totalSpent: c.totalSpent + invoiceData.netPayable,
             outstandingBalance: c.outstandingBalance + invoiceData.balanceDue,
             lastVisit: dateStr
           };
@@ -870,6 +877,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     setInvoices((prev) =>
       prev.map((inv) => (inv.id === invoiceId ? { ...inv, orderStatus: newStatus } : inv))
     );
+  };
+
+  // Edit what can safely change on a saved bill without touching stock or money: delivery date, status, note.
+  const updateOrder = (invoiceId: string, patch: { deliveryDate?: string; notes?: string; orderStatus?: OrderStatus }) => {
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can edit an order.');
+    if (patch.orderStatus === 'Cancelled') throw new Error('Delete the order instead of cancelling it.');
+    setInvoices((prev) => prev.map((inv) => (inv.id === invoiceId ? { ...inv, ...patch } : inv)));
+  };
+
+  // Removes a saved bill and reverses what it did: stock goes back, sold tags are released, the client's
+  // total and balance are corrected, and the receipts recorded against it and its follow-ups are removed.
+  const deleteInvoice = (invoiceId: string) => {
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can delete an order.');
+    const target = invoices.find((i) => i.id === invoiceId);
+    if (!target) throw new Error('This order no longer exists.');
+    const back = new Map<string, number>();
+    for (const it of target.items) if (!isCustomItem(it.productId)) back.set(it.productId, (back.get(it.productId) || 0) + it.qty);
+    const codes = new Set(target.items.flatMap((it) => it.unitCodes || []));
+    setProducts((prev) => prev.map((p) => {
+      const qty = back.get(p.id) || 0;
+      const sold = (p.soldUnitCodes || []).filter((c) => !codes.has(c));
+      if (!qty && sold.length === (p.soldUnitCodes || []).length) return p;
+      return { ...p, stockQty: p.stockQty + qty, soldUnitCodes: sold };
+    }));
+    setCustomers((prev) => prev.map((c) => (c.id === target.customerId ? { ...c, totalSpent: Math.max(0, c.totalSpent - target.netPayable), outstandingBalance: Math.max(0, c.outstandingBalance - target.balanceDue) } : c)));
+    setPayments((prev) => prev.filter((p) => p.invoiceId !== invoiceId));
+    setFollowUps((prev) => prev.filter((f) => f.invoiceId !== invoiceId));
+    setInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
   };
 
   const collectInvoiceBalance = (invoiceId: string, amount: number, paymentMode: string) => {
@@ -1122,6 +1157,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
         invoices:scoped(invoices),
         createInvoice,
         updateOrderStatus,
+        updateOrder,
+        deleteInvoice,
         collectInvoiceBalance,
         suppliers,
         addSupplier,

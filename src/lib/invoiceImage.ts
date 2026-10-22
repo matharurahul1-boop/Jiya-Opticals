@@ -149,7 +149,8 @@ function draw(
   const cQty = right - 320;
   const cRate = right - 180;
   const cAmt = right;
-  text('ITEM', x, y, '700 11px system-ui, sans-serif', MUTED);
+  text('#', x, y, '700 11px system-ui, sans-serif', MUTED);
+  text('ITEM', x + 24, y, '700 11px system-ui, sans-serif', MUTED);
   text('QTY', cQty, y, '700 11px system-ui, sans-serif', MUTED, 'right');
   text('RATE', cRate, y, '700 11px system-ui, sans-serif', MUTED, 'right');
   text('AMOUNT', cAmt, y, '700 11px system-ui, sans-serif', MUTED, 'right');
@@ -157,14 +158,17 @@ function draw(
   rule(y);
   y += 20;
 
+  let serial = 0;
   for (const it of inv.items) {
+    serial += 1;
     let nm = it.name || '';
     if (!measure) {
       ctx.font = '500 13px system-ui, sans-serif';
-      while (ctx.measureText(nm).width > cQty - x - 16 && nm.length > 4) nm = nm.slice(0, -2);
+      while (ctx.measureText(nm).width > cQty - x - 40 && nm.length > 4) nm = nm.slice(0, -2);
       if (nm !== it.name) nm += '…';
     }
-    text(nm, x, y, '500 13px system-ui, sans-serif', INK);
+    text(`${serial}.`, x, y, '600 12px system-ui, sans-serif', MUTED);
+    text(nm, x + 24, y, '500 13px system-ui, sans-serif', INK);
     text(String(it.qty), cQty, y, '500 13px system-ui, sans-serif', INK, 'right');
     text(rupee(it.unitPrice), cRate, y, '400 12px system-ui, sans-serif', MUTED, 'right');
     text(rupee(it.totalAmount), cAmt, y, '700 13px system-ui, sans-serif', INK, 'right');
@@ -202,6 +206,7 @@ function draw(
   };
   trow('Subtotal', rupee(inv.subtotal));
   if (inv.totalDiscount > 0) trow('Discount', '- ' + rupee(inv.totalDiscount), false, ACCENT);
+  if (Math.abs(inv.roundOff || 0) >= 0.01) trow('Round off', `${inv.roundOff < 0 ? '- ' : '+ '}${rupee(Math.abs(inv.roundOff))}`);
   y += 2;
   rule(y - 12, LINE);
   if (!measure) {
@@ -232,21 +237,31 @@ function draw(
     y += 18;
   }
 
-  if (sigImg) {
-    y += 8;
-    const h = 46;
-    const w = Math.min(160, (sigImg.width / sigImg.height) * h);
-    if (!measure) {
-      try {
-        ctx.drawImage(sigImg, right - w, y, w, h);
-      } catch {
-        /* ignore a broken image */
-      }
+  // Signature block: always shown, with the uploaded signature when there is one and a blank space to sign otherwise.
+  y += 10;
+  text(`For ${store.name || 'us'}`, right, y, '500 11px system-ui, sans-serif', MUTED, 'right');
+  y += 6;
+  const sigH = 46;
+  if (sigImg && !measure) {
+    const w = Math.min(160, (sigImg.width / sigImg.height) * sigH);
+    try {
+      ctx.drawImage(sigImg, right - w, y, w, sigH);
+    } catch {
+      /* ignore a broken image */
     }
-    y += h + 4;
-    text('Authorised Signatory', right, y, '600 11px system-ui, sans-serif', MUTED, 'right');
-    y += 14;
   }
+  y += sigH + 4;
+  if (!measure) {
+    ctx.strokeStyle = LINE;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(right - 170, y - 2);
+    ctx.lineTo(right, y - 2);
+    ctx.stroke();
+  }
+  y += 10;
+  text('Authorised Signatory', right, y, '600 11px system-ui, sans-serif', MUTED, 'right');
+  y += 14;
 
   if (qrImg) {
     y += 10;
