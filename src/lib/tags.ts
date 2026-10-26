@@ -37,9 +37,9 @@ export function resolveTagBase(product: Product, products: Product[]): { base: s
 }
 
 export type TagLayout = 'strip' | 'standard';
-export interface TagSettings { layout: TagLayout; width: number; height: number; leftMargin: number }
+export interface TagSettings { layout: TagLayout; width: number; height: number; leftMargin: number; /** Gap between labels on the roll, mm (used when printing straight to a TSC printer). */ gap: number }
 export const TAG_PRESETS: { id: string; label: string; settings: TagSettings }[] = [
-  { id: 'strip', label: 'Frame strip tag (100 × 15 mm)', settings: { layout: 'strip', width: 100, height: 15, leftMargin: 10 } },
-  { id: 'strip-long', label: 'Frame strip tag (110 × 17 mm)', settings: { layout: 'strip', width: 110, height: 17, leftMargin: 12 } },
-  { id: 'standard', label: 'Standard label (50 × 30 mm)', settings: { layout: 'standard', width: 50, height: 30, leftMargin: 0 } },
+  { id: 'strip', label: 'Frame strip tag (100 × 15 mm)', settings: { layout: 'strip', width: 100, height: 15, leftMargin: 10, gap: 3 } },
+  { id: 'strip-long', label: 'Frame strip tag (110 × 17 mm)', settings: { layout: 'strip', width: 110, height: 17, leftMargin: 12, gap: 3 } },
+  { id: 'standard', label: 'Standard label (50 × 30 mm)', settings: { layout: 'standard', width: 50, height: 30, leftMargin: 0, gap: 3 } },
 ];

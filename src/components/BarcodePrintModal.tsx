@@ -6,6 +6,7 @@ import { catalogKey } from '../lib/catalog';
 import { unitCode } from '../lib/barcodes';
 import { code128Svg } from '../lib/code128';
 import { resolveTagBase, TAG_PRESETS, TagSettings } from '../lib/tags';
+import { buildTspl } from '../lib/tspl';
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const SETTINGS_KEY = 'JIYA_TAG_SETTINGS';
@@ -13,7 +14,7 @@ const SETTINGS_KEY = 'JIYA_TAG_SETTINGS';
 const loadSettings = (): TagSettings => {
   try {
     const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-    if (raw && (raw.layout === 'strip' || raw.layout === 'standard') && raw.width >= 20 && raw.height >= 8) return raw as TagSettings;
+    if (raw && (raw.layout === 'strip' || raw.layout === 'standard') && raw.width >= 20 && raw.height >= 8) return { gap: 3, ...raw } as TagSettings;
   } catch { /* storage may be unavailable */ }
   return TAG_PRESETS[0].settings;
 };
@@ -54,15 +55,32 @@ export const BarcodePrintModal: React.FC = () => {
   const model = (product.modelNo || (product.brand ? product.name : '') || '').trim();
   const detail = [product.color, product.size].map((x) => (x || '').trim()).filter(Boolean).join('   ')
     || (product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.expiry && `EXP ${product.expiry}`].filter(Boolean).join('  ') : '');
-  const { layout, width, height, leftMargin } = settings;
+  const { layout, width, height, leftMargin, gap } = settings;
   let barcodeOk = true;
   try { code128Svg(tags[0]); } catch { barcodeOk = false; }
 
+  // The codes are now in use: give the material its short code and move the serial counter on (not for a reprint).
+  const commitTags = () => {
+    if (assign) ensureTagCode(product.id, assign);
+    if (start + count > nextFree) reserveTagSerials(product.id, count, start);
+  };
+
+  // A file in the printer's own language (TSPL) for TSC printers: sent straight to the printer, it needs no driver paper size.
+  const handleDownloadTsc = () => {
+    if (!barcodeOk) return;
+    commitTags();
+    const text = buildTspl({ layout, width, height, gap, leftMargin, labels: tags.map((code) => ({ brand: product.brand || product.name, model, detail, shop: storeProfile.name, mrp: price, code })) });
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/octet-stream' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tags-${base.replace(/[^A-Za-z0-9_-]+/g, '-')}.prn`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
   const handlePrint = () => {
     if (!barcodeOk) return;
-    if (assign) ensureTagCode(product.id, assign);
-    // Only advance the counter when printing new serials (not for a reprint of old ones).
-    if (start + count > nextFree) reserveTagSerials(product.id, count, start);
+    commitTags();
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
     frame.title = 'Tag print';
@@ -98,6 +116,9 @@ export const BarcodePrintModal: React.FC = () => {
             {t("Item Tags (one barcode per piece)")}
           </span>
           <div className="flex items-center gap-2">
+            <button onClick={handleDownloadTsc} disabled={!barcodeOk} className="px-3 py-1.5 bg-white border border-amber-500 hover:bg-amber-50 disabled:opacity-50 text-amber-900 rounded-lg text-xs font-bold shadow-xs" title={t("For TSC label printers (TTP-244 Pro and others): a file you send straight to the printer")}>
+              {t("TSC file (.prn)")}
+            </button>
             <button onClick={handlePrint} disabled={!barcodeOk} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs">
               <Printer className="w-3.5 h-3.5" />
               {t("Print Tags")}
@@ -125,6 +146,18 @@ export const BarcodePrintModal: React.FC = () => {
           </div>
           <p className="text-stone-500">{t("Codes")}: {tags[0]}{tags.length > 1 ? ` … ${tags[tags.length - 1]}` : ''}{start < nextFree ? ` · ${t("reprint of earlier tags")}` : ''}</p>
           <p className="text-stone-600">{t("In the print window choose your label printer and set its paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. Print one tag first to check it.")}</p>
+          <details className="text-stone-600">
+            <summary className="cursor-pointer font-semibold text-amber-900">{t("TSC printer (TTP-244 Pro): print straight to the printer")}</summary>
+            <div className="mt-1.5 space-y-1.5">
+              <label className="flex items-center gap-2">{t("Gap between labels (mm)")}<input type="number" min="0" max="10" step="0.5" className="border rounded px-2 py-1 w-16" value={gap} onChange={e => update({ gap: Math.min(10, Math.max(0, Number(e.target.value) || 0)) })} /></label>
+              <ol className="list-decimal pl-4 space-y-0.5">
+                <li>{t('Click "TSC file (.prn)". A file such as tags-FR00001.prn is saved.')}</li>
+                <li>{t('Open TSC Diagnostic Tool (free from tscprinters.com), pick your printer, go to "Command Tool", choose "Load File", select the .prn file and press Send.')}</li>
+                <li>{t('Or, if the printer is shared as TSC, run this in Command Prompt:')} <code className="bg-white border rounded px-1">copy /b tags-FR00001.prn \\localhost\TSC</code></li>
+              </ol>
+              <p>{t("The label size, gap and barcode are set by the file, so the Windows paper size does not matter. If labels drift, run the printer's gap calibration once.")}</p>
+            </div>
+          </details>
           {longCode && <p role="status" className="text-amber-800">{t("This code is long for a small tag. Use a wider label (70 mm or more) for a reliable scan.")}</p>}
           {!barcodeOk && <p role="alert" className="text-red-700">{t("This barcode has characters that cannot be printed as a tag. Edit the material's barcode.")}</p>}
         </div>
