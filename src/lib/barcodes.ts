@@ -10,7 +10,7 @@ export function splitUnitCode(raw: string): { base: string; serial: number } | u
 }
 
 function matchBase(products: Product[], code: string): Product | undefined {
-  const matches = products.filter(p => p.barcode === code || p.qrCode === code);
+  const matches = products.filter(p => p.barcode === code || p.qrCode === code || p.tagCode === code);
   // One material has a stock row per shop, all with the same barcode: that is still one match.
   const materials = new Set(matches.map(catalogKey));
   return materials.size === 1 ? matches[0] : undefined;

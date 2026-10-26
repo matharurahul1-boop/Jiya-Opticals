@@ -213,7 +213,7 @@ begin
       if jsonb_typeof(incoming) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
       if k='products' and exists(
         select 1 from jsonb_array_elements(incoming) a left join jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b on a->>'id'=b->>'id'
-        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes'])
+        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode'])
       ) then raise exception 'Only admin may edit shared material details' using errcode='42501'; end if;
       if exists(select 1 from jsonb_array_elements(incoming) e where not coalesce(e->>'shopId'=any(allowed),false) or coalesce(e->>'id','')='') then
         raise exception 'Record outside assigned shops' using errcode='42501';

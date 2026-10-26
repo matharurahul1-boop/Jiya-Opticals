@@ -83,6 +83,8 @@ export interface Product {
   location?: string; // Shelf / Rack
   /** Next per-piece tag serial to print (barcode-001, -002 ...). */
   nextSerial?: number;
+  /** Short code printed on tags when the SKU is too long for a small tag (e.g. FR00001). */
+  tagCode?: string;
   /** Per-piece tag codes already sold on a bill. */
   soldUnitCodes?: string[];
   /** Spectacle lens details (Eyewear Lens / Goggles Lens). */

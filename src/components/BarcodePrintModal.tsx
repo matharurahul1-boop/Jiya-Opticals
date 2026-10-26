@@ -5,16 +5,31 @@ import { useApp } from '../context/AppContext';
 import { catalogKey } from '../lib/catalog';
 import { unitCode } from '../lib/barcodes';
 import { code128Svg } from '../lib/code128';
+import { resolveTagBase, TAG_PRESETS, TagSettings } from '../lib/tags';
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+const SETTINGS_KEY = 'JIYA_TAG_SETTINGS';
 
-/** Shop-floor tag sheet: one label per physical piece, each with its own scannable Code 128 code. */
+const loadSettings = (): TagSettings => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (raw && (raw.layout === 'strip' || raw.layout === 'standard') && raw.width >= 20 && raw.height >= 8) return raw as TagSettings;
+  } catch { /* storage may be unavailable */ }
+  return TAG_PRESETS[0].settings;
+};
+
+/** Shop-floor tags: one label per physical piece, each with its own scannable Code 128 code. */
 export const BarcodePrintModal: React.FC = () => {
-  const { selectedProductForBarcode: product, setSelectedProductForBarcode, storeProfile, allProducts, reserveTagSerials } = useApp();
+  const { selectedProductForBarcode: product, setSelectedProductForBarcode, storeProfile, allProducts, reserveTagSerials, ensureTagCode } = useApp();
   const [count, setCount] = useState(1);
   const [start, setStart] = useState(1);
-  const [labelWidth, setLabelWidth] = useState(50);
-  const [labelHeight, setLabelHeight] = useState(30);
+  const [settings, setSettings] = useState<TagSettings>(loadSettings);
+
+  const update = (patch: Partial<TagSettings>) => setSettings((prev) => {
+    const next = { ...prev, ...patch };
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    return next;
+  });
 
   const nextFree = useMemo(() => {
     if (!product) return 1;
@@ -32,14 +47,20 @@ export const BarcodePrintModal: React.FC = () => {
 
   if (!product) return null;
 
-  const tags = Array.from({ length: count }, (_, i) => unitCode(product.barcode, start + i));
+  const { base, assign } = resolveTagBase(product, allProducts);
+  const tags = Array.from({ length: count }, (_, i) => unitCode(base, start + i));
   const price = product.mrp || product.salePrice;
-  const title = [`${product.brand} ${product.modelNo}`.trim() || product.name, product.color && product.color.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · ');
+  const brand = (product.brand || product.name || '').toUpperCase();
+  const model = (product.modelNo || (product.brand ? product.name : '') || '').trim();
+  const detail = [product.color, product.size].map((x) => (x || '').trim()).filter(Boolean).join('   ')
+    || (product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.expiry && `EXP ${product.expiry}`].filter(Boolean).join('  ') : '');
+  const { layout, width, height, leftMargin } = settings;
   let barcodeOk = true;
   try { code128Svg(tags[0]); } catch { barcodeOk = false; }
 
   const handlePrint = () => {
     if (!barcodeOk) return;
+    if (assign) ensureTagCode(product.id, assign);
     // Only advance the counter when printing new serials (not for a reprint of old ones).
     if (start + count > nextFree) reserveTagSerials(product.id, count, start);
     const frame = document.createElement('iframe');
@@ -52,10 +73,21 @@ export const BarcodePrintModal: React.FC = () => {
       win.focus(); win.print();
       window.setTimeout(() => frame.remove(), 120000);
     };
-    const labels = tags.map(code => `<div class="label"><p class="shop">${escapeHtml(storeProfile.name)}</p><p class="name">${escapeHtml(title)}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p><p class="mrp">MRP &#8377;${price}</p></div>`).join('');
-    frame.srcdoc = `<!doctype html><html><head><title>Tags</title><style>@page{size:${labelWidth}mm ${labelHeight}mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.label{width:${labelWidth}mm;height:${labelHeight}mm;padding:1.5mm 2mm;text-align:center;break-after:page;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}.label:last-child{break-after:auto}p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shop{font-size:6pt;font-weight:bold;text-transform:uppercase}.name{font-size:7pt}.bars{flex:1;min-height:0;margin:.5mm 0}.bars svg{display:block;width:100%;height:100%}.code{font:7pt monospace;letter-spacing:.3px}.mrp{font-size:8pt;font-weight:bold}</style></head><body>${labels}</body></html>`;
+    // A page a hair shorter than the label stops the printer from pushing a blank label out after every tag.
+    const pageH = Math.max(5, height - 0.4);
+    const labels = layout === 'strip'
+      ? tags.map(code => `<div class="label"><div class="left"><p class="brand">${escapeHtml(brand)}</p><p class="model">${escapeHtml(model)}</p><p class="detail">${escapeHtml(detail)}</p></div><div class="right"><p class="mrp">MRP. ${price}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p></div></div>`).join('')
+      : tags.map(code => `<div class="label std"><p class="shop">${escapeHtml(storeProfile.name)}</p><p class="name">${escapeHtml([`${product.brand} ${product.modelNo}`.trim() || product.name, product.color?.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · '))}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p><p class="mrp">MRP &#8377;${price}</p></div>`).join('');
+    const css = `@page{size:${width}mm ${height}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#000}p{margin:0;white-space:nowrap;overflow:hidden}.label{width:${width}mm;height:${pageH}mm;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid}.label:last-child{break-after:auto;page-break-after:auto}.bars svg{display:block;width:100%;height:100%}`
+      + (layout === 'strip'
+        ? `.label{display:flex;align-items:stretch;padding:0.8mm 2mm 0.8mm ${leftMargin}mm;gap:2.5mm}.left{flex:0 0 46%;display:flex;flex-direction:column;justify-content:center;gap:.6mm}.right{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}.brand{font-size:8.5pt;font-weight:bold;letter-spacing:.2px}.model{font-size:8.5pt}.detail{font-size:8pt;font-family:'Courier New',monospace;white-space:pre}.mrp{font-size:8.5pt;font-weight:bold;font-family:'Courier New',monospace}.right .bars{flex:1;min-height:0;margin:.4mm 0}.code{font:7pt 'Courier New',monospace}`
+        : `.std{padding:1.5mm 2mm;text-align:center;display:flex;flex-direction:column;justify-content:space-between}.shop{font-size:6pt;font-weight:bold;text-transform:uppercase}.name{font-size:7pt}.std .bars{flex:1;min-height:0;margin:.5mm 0}.code{font:7pt monospace;letter-spacing:.3px}.mrp{font-size:8pt;font-weight:bold}`);
+    frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>Tags</title><style>${css}</style></head><body>${labels}</body></html>`;
     document.body.appendChild(frame);
   };
+
+  const num = (value: string, min: number, max: number, fallback: number) => Math.min(max, Math.max(min, Number(value) || fallback));
+  const longCode = barcodeOk && tags[tags.length - 1].length > 16 && width < 70;
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 z-50 overflow-y-auto">
@@ -81,27 +113,54 @@ export const BarcodePrintModal: React.FC = () => {
           <div className="flex flex-wrap gap-3 items-end">
             <label className="flex flex-col gap-0.5">{t("Pieces / tags")}<input type="number" min="1" max="200" className="border rounded px-2 py-1 w-20" value={count} onChange={e => setCount(Math.min(200, Math.max(1, Math.floor(Number(e.target.value) || 1))))} /></label>
             <label className="flex flex-col gap-0.5">{t("Start serial")}<input type="number" min="1" className="border rounded px-2 py-1 w-20" value={start} onChange={e => setStart(Math.max(1, Math.floor(Number(e.target.value) || 1)))} /></label>
-            <label className="flex flex-col gap-0.5">{t("Width (mm)")}<input type="number" min="25" max="110" className="border rounded px-2 py-1 w-20" value={labelWidth} onChange={e => setLabelWidth(Math.min(110, Math.max(25, Number(e.target.value) || 50)))} /></label>
-            <label className="flex flex-col gap-0.5">{t("Height (mm)")}<input type="number" min="20" max="150" className="border rounded px-2 py-1 w-20" value={labelHeight} onChange={e => setLabelHeight(Math.min(150, Math.max(20, Number(e.target.value) || 30)))} /></label>
+            <label className="flex flex-col gap-0.5">{t("Tag type")}
+              <select className="border rounded px-2 py-1 bg-white" value={TAG_PRESETS.find(p => p.settings.layout === layout && p.settings.width === width && p.settings.height === height)?.id || 'custom'} onChange={e => { const p = TAG_PRESETS.find(x => x.id === e.target.value); if (p) update(p.settings); }}>
+                {TAG_PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                <option value="custom">{t("Custom size")}</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-0.5">{t("Width (mm)")}<input type="number" min="20" max="150" className="border rounded px-2 py-1 w-20" value={width} onChange={e => update({ width: num(e.target.value, 20, 150, 100) })} /></label>
+            <label className="flex flex-col gap-0.5">{t("Height (mm)")}<input type="number" min="8" max="150" className="border rounded px-2 py-1 w-20" value={height} onChange={e => update({ height: num(e.target.value, 8, 150, 15) })} /></label>
+            {layout === 'strip' && <label className="flex flex-col gap-0.5">{t("Left gap for tail (mm)")}<input type="number" min="0" max="40" className="border rounded px-2 py-1 w-20" value={leftMargin} onChange={e => update({ leftMargin: num(e.target.value, 0, 40, 10) })} /></label>}
           </div>
           <p className="text-stone-500">{t("Codes")}: {tags[0]}{tags.length > 1 ? ` … ${tags[tags.length - 1]}` : ''}{start < nextFree ? ` · ${t("reprint of earlier tags")}` : ''}</p>
-          {barcodeOk && tags[tags.length - 1].length > 30 && labelWidth < 70 && <p role="status" className="text-amber-800">{t("This code is long. For a reliable scan use a wider label (70 mm or more) or shorten the SKU.")}</p>}
+          <p className="text-stone-600">{t("In the print window choose your label printer and set its paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. Print one tag first to check it.")}</p>
+          {longCode && <p role="status" className="text-amber-800">{t("This code is long for a small tag. Use a wider label (70 mm or more) for a reliable scan.")}</p>}
           {!barcodeOk && <p role="alert" className="text-red-700">{t("This barcode has characters that cannot be printed as a tag. Edit the material's barcode.")}</p>}
         </div>
 
         <div className="p-4 overflow-y-auto flex-1 bg-stone-100 text-stone-900 printable-area">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {barcodeOk && tags.slice(0, 60).map(code => (
-              <div key={code} className="bg-white border-2 border-stone-300 rounded-md p-2 text-center shadow-xs flex flex-col gap-1">
-                <span className="text-[9px] font-bold uppercase text-stone-600 truncate">{storeProfile.name}</span>
-                <span className="text-[11px] text-stone-800 truncate">{title}</span>
-                <div className="h-14 w-full" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%" ') }} />
-                <span className="font-mono text-[10px] tracking-wide">{code}</span>
-                <span className="text-xs font-bold">MRP ₹{price}</span>
-              </div>
-            ))}
-          </div>
-          {tags.length > 60 && <p className="text-center text-xs text-stone-500 mt-3">{t("Preview shows the first 60 tags; all will print.")}</p>}
+          {layout === 'strip' ? (
+            <div className="space-y-2 overflow-x-auto">
+              {barcodeOk && tags.slice(0, 30).map(code => (
+                <div key={code} className="bg-white border border-stone-300 rounded-sm shadow-xs flex items-stretch gap-[2.5mm] overflow-hidden" style={{ width: `${width}mm`, height: `${height}mm`, padding: `0.8mm 2mm 0.8mm ${leftMargin}mm`, boxSizing: 'border-box' }}>
+                  <div className="flex flex-col justify-center" style={{ flex: '0 0 46%' }}>
+                    <span className="font-bold leading-tight" style={{ fontSize: '8.5pt' }}>{brand}</span>
+                    <span className="leading-tight" style={{ fontSize: '8.5pt' }}>{model}</span>
+                    <span className="leading-tight font-mono whitespace-pre" style={{ fontSize: '8pt' }}>{detail}</span>
+                  </div>
+                  <div className="flex flex-col justify-center min-w-0 flex-1">
+                    <span className="font-bold font-mono leading-tight" style={{ fontSize: '8.5pt' }}>MRP. {price}</span>
+                    <div className="flex-1 min-h-0" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%;display:block" ') }} />
+                    <span className="font-mono leading-tight" style={{ fontSize: '7pt' }}>{code}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {barcodeOk && tags.slice(0, 60).map(code => (
+                <div key={code} className="bg-white border-2 border-stone-300 rounded-md p-2 text-center shadow-xs flex flex-col gap-1">
+                  <span className="text-[9px] font-bold uppercase text-stone-600 truncate">{storeProfile.name}</span>
+                  <span className="text-[11px] text-stone-800 truncate">{[`${product.brand} ${product.modelNo}`.trim() || product.name, product.color?.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · ')}</span>
+                  <div className="h-14 w-full" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%" ') }} />
+                  <span className="font-mono text-[10px] tracking-wide">{code}</span>
+                  <span className="text-xs font-bold">MRP ₹{price}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {tags.length > (layout === 'strip' ? 30 : 60) && <p className="text-center text-xs text-stone-500 mt-3">{t("Preview shows the first tags; all will print.")}</p>}
         </div>
       </div>
     </div>
