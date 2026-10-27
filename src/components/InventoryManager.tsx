@@ -27,6 +27,7 @@ import { catalogKey } from '../lib/catalog';
 import { findScannedProduct, scannedUnitCode } from '../lib/barcodes';
 import { PRODUCT_CATEGORIES, SUGGESTED_CONTACT_LENS_BRANDS, SUGGESTED_EYEWEAR_BRANDS, defaultHsn, DEFAULT_HSN } from '../lib/gst';
 import { isPlaceholderSku, skuPrefix, suggestSku } from '../lib/sku';
+import { Row, useAsk } from './ConfirmDialog';
 import { COATINGS, INDEXES, LENS_COMPANIES, LENS_TYPES, isLensCategory, lensVariantKey } from '../lib/lens';
 
 export const InventoryManager: React.FC = () => {
@@ -57,6 +58,7 @@ export const InventoryManager: React.FC = () => {
   const [scanMsg, setScanMsg] = useState('');
   const [scanned, setScanned] = useState<{ product: Product; unit?: string } | null>(null);
   const [scanMiss, setScanMiss] = useState('');
+  const [ask, askDialog] = useAsk();
   // More colour codes of the same model, each with its own barcode and opening stock.
   // Frames etc.: colour codes. Contact lenses: the same product with another MRP / expiry (code unused).
   const [extraColors, setExtraColors] = useState<{ code: string; qty: number; mrp: number; sale: number; expiry: string; index: string }[]>([]);
@@ -147,11 +149,70 @@ export const InventoryManager: React.FC = () => {
     for (const p of products) byCatalog.set(catalogKey(p), [...(byCatalog.get(catalogKey(p)) || []), p]);
     return Array.from(byCatalog.values()).filter((rows) => isPlaceholderSku(rows[0].barcode) && rows.every((r) => (r.nextSerial || 1) <= 1 && !(r.soldUnitCodes?.length) && !(r.disabledUnitCodes?.length)));
   })();
-  const handleStandardiseSkus = () => {
-    if (!placeholderCatalogs.length) return;
-    if (!confirm(`Re-code ${placeholderCatalogs.length} material${placeholderCatalogs.length === 1 ? '' : 's'} to the common SKU style (for example JIYA-FRAMES-ARMANI-2232-C1)?
+  // Deleting a material: say clearly what will happen, instead of a bare browser popup.
+  const handleDeleteMaterial = async (p: Product) => {
+    const rows = products.filter((r) => catalogKey(r) === catalogKey(p));
+    const ids = new Set(rows.map((r) => r.id));
+    const onBills = [...invoices, ...purchases].some((doc) => doc.items.some((i) => ids.has(i.productId)));
+    const stock = rows.filter((r) => r.stockQty > 0).map((r) => ({ shop: (shops.find((s) => s.id === r.shopId)?.name || 'Shop').split(' - ')[0], qty: r.stockQty }));
+    const total = stock.reduce((sum, x) => sum + x.qty, 0);
+    const summary = (
+      <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 space-y-1.5">
+        <Row label="Item" value={p.name} strong />
+        {(p.brand || p.modelNo) && <Row label="Brand / model" value={[p.brand, p.modelNo].filter(Boolean).join(' · ')} />}
+        <Row label="Barcode" value={<span className="font-mono text-xs">{p.barcode}</span>} />
+      </div>
+    );
+    if (onBills) {
+      await ask({
+        title: 'This item cannot be deleted',
+        notice: true,
+        body: (
+          <>
+            {summary}
+            <p>It is on saved bills or purchases, and those records point to it. To stop using it, set its stock to <strong>0</strong> (tap the quantity in the shop box). It will stay in the list for your records.</p>
+          </>
+        ),
+      });
+      return;
+    }
+    const ok = await ask({
+      title: total > 0 ? 'Delete this item with its stock?' : 'Delete this item?',
+      danger: true,
+      confirmLabel: total > 0 ? 'Delete with stock' : 'Delete item',
+      body: (
+        <>
+          {summary}
+          {total > 0 ? (
+            <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-800 p-3 space-y-1">
+              <p className="font-semibold">This item still has {total} unit{total === 1 ? '' : 's'} in stock. They will be removed too:</p>
+              {stock.map((x) => <p key={x.shop} className="flex justify-between"><span>{x.shop}</span><strong>{x.qty}</strong></p>)}
+            </div>
+          ) : (
+            <p>It will be removed from every shop.</p>
+          )}
+          <p className="text-stone-500">This cannot be undone.</p>
+        </>
+      ),
+    });
+    if (!ok) return;
+    try { deleteProduct(p.id, { withStock: total > 0 }); }
+    catch (e) { await ask({ title: 'Could not delete this item', notice: true, body: <p>{e instanceof Error ? e.message : 'Please try again.'}</p> }); }
+  };
 
-Only items whose tags have not been printed are changed. If you already stuck old codes on stock, skip this.`)) return;
+  const handleStandardiseSkus = async () => {
+    if (!placeholderCatalogs.length) return;
+    const go = await ask({
+      title: 'Make SKU codes consistent?',
+      confirmLabel: 'Re-code',
+      body: (
+        <>
+          <p>{placeholderCatalogs.length} material{placeholderCatalogs.length === 1 ? '' : 's'} will get a code in the common style, for example <span className="font-mono text-xs">JIYA-FRAMES-ARMANI-2232-C1</span>.</p>
+          <p>Only items whose tags have not been printed are changed. If you already stuck old codes on stock, skip this.</p>
+        </>
+      ),
+    });
+    if (!go) return;
     const taken = new Set(products.map((p) => p.barcode));
     const prefix = skuPrefix(storeProfile.name);
     try {
@@ -788,7 +849,7 @@ Only items whose tags have not been printed are changed. If you already stuck ol
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
                     {!isLensCategory(p.category) && <button onClick={()=>setSelectedProductForBarcode(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Print material code")}><Tag className="w-4 h-4"/></button>}
-                    {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{if(confirm('Delete '+p.name+' from the shared catalogue?'))deleteProduct(p.id);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
+                    {currentUser.role==='Admin' && <><button onClick={()=>handleOpenEdit(p)} className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg" title={t("Edit shared material")}><Edit className="w-4 h-4"/></button><button onClick={()=>{void handleDeleteMaterial(p);}} className="p-2 text-stone-400 hover:text-rose-600 rounded-lg" title={t("Delete material")}><Trash2 className="w-4 h-4"/></button></>}
                   </td>
                 </tr>;
               })}
@@ -798,6 +859,8 @@ Only items whose tags have not been printed are changed. If you already stuck ol
           </table>
         </div>
       </div>
+
+      {askDialog}
 
       {/* Scanned tag details */}
       {scanned && (() => {

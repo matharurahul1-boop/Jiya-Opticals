@@ -21,6 +21,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Row, useAsk } from './ConfirmDialog';
 import { Customer, Invoice } from '../types';
 import { invoiceToPngBlob, copyBlobToClipboard, downloadBlob } from '../lib/invoiceImage';
 import { resolveUpiQr } from '../lib/upiQr';
@@ -49,11 +50,35 @@ export const CustomerCRM: React.FC = () => {
   const [copyingInvoice, setCopyingInvoice] = useState<string | null>(null);
   const [invoiceFeedback, setInvoiceFeedback] = useState('');
 
-  const handleDelete = (c: Customer) => {
+  const [ask, askDialog] = useAsk();
+  const handleDelete = async (c: Customer) => {
     const bills = invoices.filter((i) => i.customerId === c.id).length;
-    if (!confirm(`Delete client ${c.name} (${c.mobile})?\n\n${bills ? `${bills === 1 ? 'Their 1 saved bill stays' : `Their ${bills} saved bills stay`} in your records. ` : ''}Their eye-test records and follow-ups will be removed. This cannot be undone.`)) return;
+    if (c.outstandingBalance > 0) {
+      await ask({ title: 'This client still owes money', notice: true, body: <p>{c.name} has <strong>₹{c.outstandingBalance}</strong> pending. Collect or settle the balance first, then delete the client.</p> });
+      return;
+    }
+    const ok = await ask({
+      title: 'Delete this client?',
+      danger: true,
+      confirmLabel: 'Delete client',
+      body: (
+        <>
+          <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 space-y-1.5">
+            <Row label="Client" value={c.name} strong />
+            <Row label="Mobile" value={c.mobile} />
+            <Row label="Saved bills" value={bills} />
+          </div>
+          <ul className="list-disc pl-5 space-y-0.5">
+            {bills > 0 && <li>Their {bills === 1 ? 'saved bill stays' : bills + ' saved bills stay'} in your records</li>}
+            <li>Eye-test records and follow-ups are removed</li>
+          </ul>
+          <p className="text-stone-500">This cannot be undone.</p>
+        </>
+      ),
+    });
+    if (!ok) return;
     try { deleteCustomer(c.id); setSelectedCustomer((cur) => (cur?.id === c.id ? null : cur)); }
-    catch (e) { alert(e instanceof Error ? e.message : 'Could not delete this client.'); }
+    catch (e) { await ask({ title: 'Could not delete this client', notice: true, body: <p>{e instanceof Error ? e.message : 'Please try again.'}</p> }); }
   };
 
   const copyInvoice = async (invoice: Invoice) => {
@@ -307,6 +332,7 @@ export const CustomerCRM: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {askDialog}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">

@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAsk } from './ConfirmDialog';
 import { Doctor, ShopBranch, StoreProfile, UserAccount } from '../types';
 import { fileToQrDataUrl } from '../lib/upiQr';
 import { invoiceNoPrefix } from '../lib/invoiceNo';
@@ -244,8 +245,11 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
     setShopIsMain(shop.isMain);
   };
 
+  const [ask, askDialog] = useAsk();
+
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {askDialog}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">
@@ -795,10 +799,9 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       </button>
                       {shops.length > 1 && (
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete shop branch "${s.name}"?`)) {
-                              deleteShop(s.id);
-                            }
+                          onClick={async () => {
+                            const ok = await ask({ title: 'Delete this shop?', danger: true, confirmLabel: 'Delete shop', body: <><p><strong>{s.name}</strong> will be removed.</p><p>A shop that has stock, clients, bills or team members cannot be deleted. Empty stock rows of this shop are removed with it.</p></> });
+                            if (ok) deleteShop(s.id);
                           }}
                           className="p-1.5 bg-white hover:bg-rose-50 border border-stone-200 rounded text-stone-400 hover:text-rose-600 cursor-pointer"
                           title={t("Delete Shop Branch")}
@@ -933,10 +936,9 @@ export const MastersConfig: React.FC<{ startTab?: 'StoreProfile' | 'Shops' }> = 
                       <Edit className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Remove doctor ${doc.name}?`)) {
-                          deleteDoctor(doc.id);
-                        }
+                      onClick={async () => {
+                        const ok = await ask({ title: 'Remove this doctor?', danger: true, confirmLabel: 'Remove doctor', body: <p><strong>{doc.name}</strong> will be removed from the list. Past bills and eye tests keep the name.</p> });
+                        if (ok) deleteDoctor(doc.id);
                       }}
                       className="p-1 bg-white hover:bg-rose-50 border border-stone-200 rounded text-stone-400 hover:text-rose-600 cursor-pointer"
                       title={t("Delete Doctor")}

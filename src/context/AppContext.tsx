@@ -99,7 +99,7 @@ interface AppContextType {
   addMultipleProducts: (newProductsList: Omit<Product, 'id'>[]) => number;
   updateProduct: (product: Product) => void;
   deleteCustomer: (customerId: string) => void;
-  deleteProduct: (id: string) => void;
+  deleteProduct: (id: string, options?: { withStock?: boolean }) => void;
   adjustStock: (id: string, newQty: number) => void;
   reserveTagSerials: (productId: string, count: number, from?: number) => number;
   setTagDisabled: (productId: string, unit: string, disabled: boolean) => void;
@@ -703,13 +703,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     setProducts(updated);
   };
 
-  const deleteProduct = (id: string) => {
+  // A material on a saved bill or purchase cannot be deleted (those records point to it). One that only has stock can be,
+  // when the caller says so (the stock is removed with it).
+  const deleteProduct = (id: string, options: { withStock?: boolean } = {}) => {
     assertAdmin();
     const material=products.find(p=>p.id===id); if(!material)return;
     const ids=products.filter(p=>catalogKey(p)===catalogKey(material)).map(p=>p.id);
-    if(products.some(p=>ids.includes(p.id)&&p.stockQty!==0)||[...invoices,...purchases].some(doc=>doc.items.some(i=>ids.includes(i.productId)))){
-      alert('Material with stock or transaction history cannot be deleted.');return;
-    }
+    if([...invoices,...purchases].some(doc=>doc.items.some(i=>ids.includes(i.productId)))) throw new Error('This item is on saved bills or purchases, so it cannot be deleted.');
+    if(!options.withStock && products.some(p=>ids.includes(p.id)&&p.stockQty!==0)) throw new Error('This item still has stock. Set the stock to 0 first, or delete it together with its stock.');
     setProducts(prev=>prev.filter(p=>!ids.includes(p.id)));
   };
 

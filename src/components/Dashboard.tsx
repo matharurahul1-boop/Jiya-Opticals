@@ -26,6 +26,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Row, useAsk } from './ConfirmDialog';
 import { Invoice, OrderStatus } from '../types';
 
 export const Dashboard: React.FC = () => {
@@ -115,11 +116,38 @@ export const Dashboard: React.FC = () => {
 
   // Edit / delete an active order (Admin and Shop Manager).
   const canManageOrders = currentUser.role === 'Admin' || currentUser.role === 'Shop Manager';
-  const handleDeleteOrder = (inv: Invoice) => {
-    const received = inv.advancePaid;
-    if (!confirm(`Delete order ${inv.invoiceNo} for ${inv.customerName}?\n\nStock goes back, its tags are released and the client's totals are corrected.${received > 0 ? ` The ₹${received} received on this bill is removed from the books, so refund the client if needed.` : ''}\nThis cannot be undone.`)) return;
+  const [ask, askDialog] = useAsk();
+  const handleDeleteOrder = async (inv: Invoice) => {
+    const ok = await ask({
+      title: 'Delete this order?',
+      danger: true,
+      confirmLabel: 'Delete order',
+      body: (
+        <>
+          <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 space-y-1.5">
+            <Row label="Bill" value={<span className="font-mono text-xs">{inv.invoiceNo}</span>} />
+            <Row label="Client" value={inv.customerName} />
+            <Row label="Items" value={inv.items.map((i) => i.name).join(', ')} />
+            <Row label="Bill amount" value={'₹' + inv.netPayable} strong />
+            {inv.balanceDue > 0 && <Row label="Due" value={'₹' + inv.balanceDue} />}
+          </div>
+          <ul className="list-disc pl-5 space-y-0.5">
+            <li>Stock goes back to the shop</li>
+            <li>Its tags become free again</li>
+            <li>The client's total and due are corrected</li>
+          </ul>
+          {inv.advancePaid > 0 && (
+            <p className="rounded-xl bg-rose-50 border border-rose-200 text-rose-800 p-3">
+              <strong>₹{inv.advancePaid}</strong> received on this bill will be removed from your books. Refund the client if needed.
+            </p>
+          )}
+          <p className="text-stone-500">This cannot be undone.</p>
+        </>
+      ),
+    });
+    if (!ok) return;
     try { deleteInvoice(inv.id); }
-    catch (e) { alert(e instanceof Error ? e.message : 'Could not delete this order.'); }
+    catch (e) { await ask({ title: 'Could not delete this order', notice: true, body: <p>{e instanceof Error ? e.message : 'Please try again.'}</p> }); }
   };
 
   const handleQuickStatusChange = (inv: Invoice, nextStatus: OrderStatus) => {
@@ -134,6 +162,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div id="dashboard-main-container" className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {askDialog}
       {/* Top Shop Selector & Role Header */}
       <div className="optical-dashboard-hero border border-stone-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:items-start justify-between gap-5">
         <div className="flex items-center space-x-3">
