@@ -667,8 +667,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     if(!ownerId)setUsers(prev=>prev.map(u=>u.id===updated.id?updated:u));
   };
 
+  // Creating a material is open to a Shop Manager as well; editing or deleting a shared material stays with Admins.
+  const assertCanCreateMaterial = () => { if (ownerId && currentUser.role !== 'Admin' && currentUser.role !== 'Shop Manager') throw new Error('Only an Admin or Shop Manager can create materials.'); };
   const addProduct = (productData: Omit<Product, 'id'>): Product => {
-    assertAdmin();
+    assertCanCreateMaterial();
     if(products.some(p=>p.barcode===productData.barcode)) throw new Error('This barcode already exists in the shared catalogue. Select the shop to receive or adjust its stock.');
     const newProduct: Product = {
       ...productData,
@@ -682,7 +684,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
   };
 
   const addMultipleProducts = (newProductsList: Omit<Product, 'id'>[]): number => {
-    assertAdmin();
+    assertCanCreateMaterial();
     const seen = new Set(products.map(p=>p.barcode));
     for(const p of newProductsList) { if(seen.has(p.barcode)) throw new Error(`Barcode ${p.barcode} already exists. Import only new materials.`); seen.add(p.barcode); }
     const formatted: Product[] = newProductsList.map((p, idx) => ({

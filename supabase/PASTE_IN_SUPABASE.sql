@@ -185,7 +185,7 @@ revoke all on function optical_private.expand_catalog(jsonb) from public,anon,au
 
 create or replace function optical_private.team_save(team_owner uuid, expected_version integer, payload jsonb) returns integer
 language plpgsql security definer set search_path = '' as $$
-declare w public.optical_workspaces; allowed text[]; d jsonb; k text; incoming jsonb; preserved jsonb; all_shops text[]; is_admin boolean;
+declare w public.optical_workspaces; allowed text[]; d jsonb; k text; incoming jsonb; preserved jsonb; all_shops text[]; is_admin boolean; can_create boolean := false; added_material boolean := false;
 begin
   if auth.uid() is null then raise exception 'Sign in required' using errcode='42501'; end if;
   if jsonb_typeof(payload) is distinct from 'object' then raise exception 'Invalid store data'; end if;
@@ -196,6 +196,8 @@ begin
   if team_owner<>auth.uid() and not is_admin then
     select m.shop_ids into allowed from public.optical_team_members m where m.owner_id=team_owner and m.email=optical_private.session_email();
     if not found then raise exception 'Store access removed' using errcode='42501'; end if;
+    -- A Shop Manager (also the default role of a member) may create new materials; every other role may not.
+    can_create := coalesce((select r.role from public.optical_member_role r where r.owner_id=team_owner and r.email=optical_private.session_email()),'Shop Manager') = 'Shop Manager';
   end if;
   -- errcode PT409 (not 40001): PostgREST auto-retries serialization_failure (40001) until upstream timeout, so a version conflict must use a non-retryable SQLSTATE.
   if w.version<>expected_version then raise exception 'Store changed in another session. Download unsaved data, then reload.' using errcode='PT409'; end if;
@@ -213,8 +215,9 @@ begin
       if jsonb_typeof(incoming) is distinct from 'array' then raise exception 'Invalid data array: %',k; end if;
       if k='products' and exists(
         select 1 from jsonb_array_elements(incoming) a left join jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b on a->>'id'=b->>'id'
-        where b is null or (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode'])
+        where (b is null and (not can_create or coalesce(a->>'catalogId','')='' or exists(select 1 from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) e where e->>'catalogId'=a->>'catalogId'))) or (b is not null and (a - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode']) is distinct from (b - array['stockQty','purchasePrice','location','minStockAlert','supplierId','nextSerial','soldUnitCodes','disabledUnitCodes','tagCode']))
       ) then raise exception 'Only admin may edit shared material details' using errcode='42501'; end if;
+      if k='products' and can_create and exists(select 1 from jsonb_array_elements(incoming) a where not exists(select 1 from jsonb_array_elements(coalesce(w.data->'JIYA_OPTICALS_ERP_V2_products','[]')) b where a->>'id'=b->>'id')) then added_material := true; end if;
       if exists(select 1 from jsonb_array_elements(incoming) e where not coalesce(e->>'shopId'=any(allowed),false) or coalesce(e->>'id','')='') then
         raise exception 'Record outside assigned shops' using errcode='42501';
       end if;
@@ -250,7 +253,7 @@ begin
   end loop;
   -- Keep historical data attached: a shop with records or assignments cannot be removed.
   if exists(select 1 from public.optical_team_members m, unnest(m.shop_ids) sid where m.owner_id=team_owner and not(sid=any(all_shops))) then raise exception 'Remove team assignments before deleting a shop'; end if;
-  if team_owner=auth.uid() or is_admin then d:=optical_private.expand_catalog(d); end if;
+  if team_owner=auth.uid() or is_admin or added_material then d:=optical_private.expand_catalog(d); end if;
   update public.optical_workspaces set data=d, version=version+1 where owner_id=team_owner;
   return w.version+1;
 end $$;
