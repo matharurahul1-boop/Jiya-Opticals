@@ -25,6 +25,8 @@ export const BarcodePrintModal: React.FC = () => {
   const [count, setCount] = useState(1);
   const [start, setStart] = useState(1);
   const [settings, setSettings] = useState<TagSettings>(loadSettings);
+  // One print job at a time: a second click while the first is open would queue the same tags twice.
+  const [printing, setPrinting] = useState(false);
 
   const update = (patch: Partial<TagSettings>) => setSettings((prev) => {
     const next = { ...prev, ...patch };
@@ -79,15 +81,18 @@ export const BarcodePrintModal: React.FC = () => {
   };
 
   const handlePrint = () => {
-    if (!barcodeOk) return;
+    if (!barcodeOk || printing) return;
     commitTags();
+    document.querySelectorAll('iframe[title="Tag print"]').forEach((old) => old.remove());
+    setPrinting(true);
+    window.setTimeout(() => setPrinting(false), 8000);
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
     frame.title = 'Tag print';
     frame.onload = () => {
       const win = frame.contentWindow;
       if (!win) { frame.remove(); return; }
-      win.onafterprint = () => frame.remove();
+      win.onafterprint = () => { frame.remove(); setPrinting(false); };
       win.focus(); win.print();
       window.setTimeout(() => frame.remove(), 120000);
     };
@@ -119,9 +124,9 @@ export const BarcodePrintModal: React.FC = () => {
             <button onClick={handleDownloadTsc} disabled={!barcodeOk} className="px-3 py-1.5 bg-white border border-amber-500 hover:bg-amber-50 disabled:opacity-50 text-amber-900 rounded-lg text-xs font-bold shadow-xs" title={t("For TSC label printers (TTP-244 Pro and others): a file you send straight to the printer")}>
               {t("TSC file (.prn)")}
             </button>
-            <button onClick={handlePrint} disabled={!barcodeOk} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs">
+            <button onClick={handlePrint} disabled={!barcodeOk || printing} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs">
               <Printer className="w-3.5 h-3.5" />
-              {t("Print Tags")}
+              {t("Print")} {count} {count === 1 ? t("tag") : t("tags")}
             </button>
             <button onClick={() => setSelectedProductForBarcode(null)} aria-label={t("Close")} className="p-1.5 text-stone-400 hover:text-stone-700 bg-stone-100 rounded-lg">
               <X className="w-4 h-4" />
@@ -145,7 +150,7 @@ export const BarcodePrintModal: React.FC = () => {
             {layout === 'strip' && <label className="flex flex-col gap-0.5">{t("Left gap for tail (mm)")}<input type="number" min="0" max="40" className="border rounded px-2 py-1 w-20" value={leftMargin} onChange={e => update({ leftMargin: num(e.target.value, 0, 40, 10) })} /></label>}
           </div>
           <p className="text-stone-500">{t("Codes")}: {tags[0]}{tags.length > 1 ? ` … ${tags[tags.length - 1]}` : ''}{start < nextFree ? ` · ${t("reprint of earlier tags")}` : ''}</p>
-          <p className="text-stone-600">{t("In the print window choose your label printer and set its paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. Print one tag first to check it.")}</p>
+          <p className="text-stone-600">{t("In the print window choose your label printer and set its paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. Print one tag first to check it.")} {t("If extra blank labels come out after each tag, the printer's paper size is longer than the label (for example 4 × 6): set it to the size above in the printer's Preferences.")}</p>
           <details className="text-stone-600">
             <summary className="cursor-pointer font-semibold text-amber-900">{t("TSC printer (TTP-244 Pro): print straight to the printer")}</summary>
             <div className="mt-1.5 space-y-1.5">
