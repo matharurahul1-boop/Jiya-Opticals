@@ -33,3 +33,15 @@ test('the standard layout also produces a complete job', () => {
   assert.ok(out.includes('"MRP 9890"'));
   assert.equal(out.match(/^PRINT 1,1$/gm)?.length, 1);
 });
+
+test('with a 33 mm tail gap the text and the barcode still fit side by side with firm 2-dot bars', () => {
+  const out = buildTspl({ ...opts, leftMargin: 33, labels: [label] });
+  const text = out.match(/TEXT (\d+),\d+,"3",0,1,1,"RAY-BAN"/);
+  const bar = out.match(/BARCODE (\d+),\d+,"128",\d+,1,0,(\d),\d,"FR00001-001"/);
+  assert.ok(text && bar);
+  assert.equal(Number(text![1]), 33 * 8);
+  assert.equal(bar![2], '2');
+  assert.ok(Number(bar![1]) - Number(text![1]) >= 22 * 8, 'at least 22 mm for the left text');
+  const barWidth = ((11 + 2) * 11 + 13) * 2;
+  assert.ok(Number(bar![1]) + barWidth <= 100 * 8, 'barcode stays inside the label');
+});

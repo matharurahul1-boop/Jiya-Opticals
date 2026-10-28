@@ -9,7 +9,7 @@ import { resolveTagBase, TAG_PRESETS, TagSettings } from '../lib/tags';
 import { buildTspl } from '../lib/tspl';
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
-const SETTINGS_KEY = 'JIYA_TAG_SETTINGS';
+const SETTINGS_KEY = 'JIYA_TAG_SETTINGS_V2';
 
 const loadSettings = (): TagSettings => {
   try {
