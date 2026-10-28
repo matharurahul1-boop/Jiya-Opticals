@@ -92,8 +92,8 @@ html {
  .materials-table thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
  .materials-table tbody tr {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:14px;}
  .materials-table td {padding:0;text-align:left;min-width:0;}
- .materials-table td:nth-child(1),.materials-table td:nth-child(4),.materials-table td:nth-child(9) {grid-column:1/-1;}
- .materials-table td:nth-child(9) {display:flex;gap:4px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:10px;}
+ .materials-table td:nth-child(1),.materials-table td:nth-child(4),.materials-table td:nth-child(10) {grid-column:1/-1;}
+ .materials-table td:nth-child(10) {display:flex;gap:4px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:10px;}
  .materials-table td[data-label]::before {content:attr(data-label);display:block;font-size:10px;font-weight:400;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;}
 }
 

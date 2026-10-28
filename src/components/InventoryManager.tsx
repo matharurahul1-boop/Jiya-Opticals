@@ -290,7 +290,8 @@ export const InventoryManager: React.FC = () => {
 
   const totalStockCount = filteredProducts.reduce((sum, p) => sum + p.stockQty, 0);
   const totalStockValuation = filteredProducts.reduce((sum, p) => sum + p.purchasePrice * p.stockQty, 0);
-  const totalRetailValuation = filteredProducts.reduce((sum, p) => sum + p.salePrice * p.stockQty, 0);
+  // The selling price is the sale price when set, otherwise the MRP.
+  const totalRetailValuation = filteredProducts.reduce((sum, p) => sum + (p.salePrice || p.mrp) * p.stockQty, 0);
   const lowStockCount = filteredProducts.filter(isLowStockRow).length;
 
   const handleOpenAdd = () => {
@@ -822,6 +823,7 @@ export const InventoryManager: React.FC = () => {
                 <th className="py-2.5 px-2">{t("Barcode")}</th>
                 <th className="py-2.5 px-2">{t("Shop Branch")}</th>
                 <th className="py-2.5 px-2 text-right">{t("Cost (₹)")}</th>
+                <th className="py-2.5 px-2 text-right">{t("MRP (₹)")}</th>
                 <th className="py-2.5 px-2 text-right">{t("Sale (₹)")}</th>
                 <th className="py-2.5 px-2 text-center">{t("GST")}</th>
                 <th className="py-2.5 px-2 text-center">{t("Stock")}</th>
@@ -830,7 +832,7 @@ export const InventoryManager: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-stone-200">
               {modelGroups.map((g) => <React.Fragment key={g.key}>
-              {g.modelNo && <tr className="model-heading bg-amber-50"><td colSpan={9} className="py-2.5 px-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-bold text-stone-900">{g.brand || t("No brand")} — {t("Model")} {g.modelNo}</span><span className="text-[11px] rounded-full bg-white border border-amber-200 px-2 py-0.5 text-amber-900">{g.category}</span><span className="text-[11px] text-stone-600">{g.materials.length} {isLensCategory(g.category as ProductCategory) ? (g.materials.length === 1 ? t("variant") : t("variants")) : g.category === 'Contact Lens' ? (g.materials.length === 1 ? t("MRP / batch") : t("MRPs / batches")) : (g.materials.length === 1 ? t("colour") : t("colours"))} · {g.materials.reduce((s, m) => s + m.rows.reduce((a, r) => a + r.stockQty, 0), 0)} {t("units")}</span>{(currentUser.role === 'Admin' || currentUser.role === 'Shop Manager') && <button type="button" onClick={() => handleOpenAddColour(g.materials[0].rows[0])} className="ml-auto text-xs font-bold text-emerald-700 inline-flex items-center gap-1"><Plus className="w-3 h-3" />{isLensCategory(g.category as ProductCategory) ? t("Add index / coating") : g.category === 'Contact Lens' ? t("Add MRP / batch") : t("Add colour")}</button>}</div></td></tr>}
+              {g.modelNo && <tr className="model-heading bg-amber-50"><td colSpan={10} className="py-2.5 px-4"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-bold text-stone-900">{g.brand || t("No brand")} — {t("Model")} {g.modelNo}</span><span className="text-[11px] rounded-full bg-white border border-amber-200 px-2 py-0.5 text-amber-900">{g.category}</span><span className="text-[11px] text-stone-600">{g.materials.length} {isLensCategory(g.category as ProductCategory) ? (g.materials.length === 1 ? t("variant") : t("variants")) : g.category === 'Contact Lens' ? (g.materials.length === 1 ? t("MRP / batch") : t("MRPs / batches")) : (g.materials.length === 1 ? t("colour") : t("colours"))} · {g.materials.reduce((s, m) => s + m.rows.reduce((a, r) => a + r.stockQty, 0), 0)} {t("units")}</span>{(currentUser.role === 'Admin' || currentUser.role === 'Shop Manager') && <button type="button" onClick={() => handleOpenAddColour(g.materials[0].rows[0])} className="ml-auto text-xs font-bold text-emerald-700 inline-flex items-center gap-1"><Plus className="w-3 h-3" />{isLensCategory(g.category as ProductCategory) ? t("Add index / coating") : g.category === 'Contact Lens' ? t("Add MRP / batch") : t("Add colour")}</button>}</div></td></tr>}
               {g.materials.map(({id,rows}) => {
                 const p=rows[0],total=rows.reduce((sum,row)=>sum+row.stockQty,0);
                 return <tr key={id} className="hover:bg-stone-50/80 transition-colors">
@@ -844,7 +846,8 @@ export const InventoryManager: React.FC = () => {
                     <button disabled={shops.length<2} onClick={()=>handleOpenTransfer(row)} className="p-2 text-stone-500 hover:text-amber-700 disabled:opacity-30 shrink-0" title={t("Transfer from this shop")}><ArrowLeftRight className="w-4 h-4"/></button>
                   </div>)}</div></td>
                   <td data-label={t('Cost (₹)')} className="px-2 text-right text-stone-500">{rows.every(r=>r.purchasePrice===p.purchasePrice)?'₹'+p.purchasePrice:t("Shop-wise")}</td>
-                  <td data-label={t('Sale (₹)')} className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?'₹'+p.salePrice:t("Varies")}</td>
+                  <td data-label={t('MRP (₹)')} className="px-2 text-right font-semibold text-stone-800">{rows.every(r=>r.mrp===p.mrp)?(p.mrp>0?'₹'+p.mrp:'—'):t("Varies")}</td>
+                  <td data-label={t('Sale (₹)')} className="px-2 text-right font-semibold">{rows.every(r=>r.salePrice===p.salePrice)?(p.salePrice>0?'₹'+p.salePrice:(p.mrp>0?<span className="text-stone-400 font-normal text-[11px]">{t("uses MRP")}</span>:'₹0')):t("Varies")}</td>
                   <td data-label={t('GST')} className="px-2 text-center">{p.gstRate}%</td>
                   <td className="px-2 text-center"><span className="text-base font-bold text-stone-900">{total}</span><span className="block text-[10px] text-stone-400">{t("TOTAL UNITS")}</span></td>
                   <td className="px-3 text-right whitespace-nowrap">
@@ -854,7 +857,7 @@ export const InventoryManager: React.FC = () => {
                 </tr>;
               })}
               </React.Fragment>)}
-              {materialGroups.length===0 && <tr><td colSpan={9} className="p-12 text-center text-stone-500">{t("No materials yet. Create a material once to make it available in every shop.")}</td></tr>}
+              {materialGroups.length===0 && <tr><td colSpan={10} className="p-12 text-center text-stone-500">{t("No materials yet. Create a material once to make it available in every shop.")}</td></tr>}
             </tbody>
           </table>
         </div>

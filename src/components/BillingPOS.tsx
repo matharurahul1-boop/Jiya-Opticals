@@ -196,9 +196,11 @@ export const BillingPOS: React.FC = () => {
       setCartItems(updated);
     } else {
       const gstRate = 0; // Composition scheme: no customer GST collection.
+      // Sale price when set, otherwise the MRP (the rate can still be changed in the cart).
+      const price = product.salePrice || product.mrp;
       const gstFraction = gstRate / (100 + gstRate);
-      const taxable = product.salePrice - product.salePrice * gstFraction;
-      const taxTotal = product.salePrice - taxable;
+      const taxable = price - price * gstFraction;
+      const taxTotal = price - taxable;
 
       const newItem: InvoiceItem = {
         productId: product.id,
@@ -207,14 +209,14 @@ export const BillingPOS: React.FC = () => {
         category: product.category,
         hsnCode: product.hsnCode?.trim() || defaultHsn(product.category),
         qty: 1,
-        unitPrice: product.salePrice,
+        unitPrice: price,
         discountPercent: 0,
         taxableAmount: Number(taxable.toFixed(2)),
         gstRate,
         cgstAmount: Number((taxTotal / 2).toFixed(2)),
         sgstAmount: Number((taxTotal / 2).toFixed(2)),
         igstAmount: 0,
-        totalAmount: product.salePrice,
+        totalAmount: price,
         frameModel: product.modelNo,
         lensDetails: (product.category === 'Eyewear Lens' || product.category === 'Goggles Lens') ? [product.lensType, product.lensIndex && `Index ${product.lensIndex}`, product.coating, product.powerRange].filter(Boolean).join(' · ') || undefined : product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.diameter && `Dia ${product.diameter}`, product.packSize ? `${product.packSize} lenses/box` : '', product.expiry && `Exp ${product.expiry}`, product.batchNo && `Batch ${product.batchNo}`].filter(Boolean).join(' · ') || undefined : undefined,
         unitCodes: unit ? [unit] : undefined
@@ -993,7 +995,7 @@ export const BillingPOS: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-xs text-stone-900">₹{p.salePrice}</span>
+                    <span className="font-bold text-xs text-stone-900">₹{p.salePrice || p.mrp}</span>
                     <span className="text-[10px] text-amber-700 block font-medium">{t("+ Add")}</span>
                   </div>
                 </div>
