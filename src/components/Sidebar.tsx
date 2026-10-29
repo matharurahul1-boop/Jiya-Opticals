@@ -22,6 +22,7 @@ import {
 import { NavTab, useApp } from '../context/AppContext';
 import { GlobalSearch } from './GlobalSearch';
 import { ProfileMenu } from './ProfileMenu';
+import { ReferButton } from './ReferButton';
 
 interface NavItem {
   id: NavTab;
@@ -106,7 +107,8 @@ export const Sidebar: React.FC = () => {
     selectedShopFilter,
     sidebarCollapsed,
     toggleSidebar,
-    storeProfile
+    storeProfile,
+    currentUser
   } = useApp();
 
   const filteredProducts = products.filter(
@@ -283,6 +285,11 @@ export const Sidebar: React.FC = () => {
             );
           })}
         </nav>
+
+        {/* Refer & earn */}
+        <div className="px-2.5 pb-2.5">
+          <ReferButton email={currentUser.email} name={currentUser.name} expanded={!sidebarCollapsed} />
+        </div>
 
         {/* Profile footer */}
         {!sidebarCollapsed && (

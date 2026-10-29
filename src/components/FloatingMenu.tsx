@@ -18,6 +18,7 @@ import {
   ScanBarcode
 } from 'lucide-react';
 import { NavTab, useApp } from '../context/AppContext';
+import { ReferButton } from './ReferButton';
 
 interface MenuItem {
   id: NavTab;
@@ -44,7 +45,8 @@ export const FloatingMenu: React.FC = () => {
     customers,
     followUps,
     selectedShopFilter,
-    dueFollowUpsCount
+    dueFollowUpsCount,
+    currentUser
   } = useApp();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -152,6 +154,7 @@ export const FloatingMenu: React.FC = () => {
                   </button>
                 )}
               </div>
+              <ReferButton email={currentUser.email} name={currentUser.name} className="mt-3" />
             </div>
           </div>
         </div>

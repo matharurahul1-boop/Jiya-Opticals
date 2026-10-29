@@ -265,3 +265,31 @@ body {
     }
   }
 }
+
+
+/* "Refer & earn" button: the gift wiggles and sparkles twinkle around it on hover. */
+/* The button uses the theme's accent (the amber ramp is the brand green), same as the other buttons. */
+.refer-button:active { transform: scale(0.97); }
+.refer-button .refer-sparkle {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--sparkle-size); height: var(--sparkle-size);
+  margin: calc(var(--sparkle-size) / -2) 0 0 calc(var(--sparkle-size) / -2);
+  background: #fff; opacity: 0;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  transform: translate(var(--sparkle-x), var(--sparkle-y)) scale(0);
+}
+.refer-button:hover .refer-sparkle { animation: refer-twinkle 750ms ease-out var(--sparkle-delay) infinite; }
+.refer-button:hover .refer-gift { animation: refer-wiggle 600ms ease-in-out; }
+@keyframes refer-twinkle {
+  0% { opacity: 0; transform: translate(var(--sparkle-x), var(--sparkle-y)) scale(0) rotate(0deg); }
+  40% { opacity: 1; transform: translate(var(--sparkle-x), var(--sparkle-y)) scale(1) rotate(45deg); }
+  100% { opacity: 0; transform: translate(var(--sparkle-x), var(--sparkle-y)) scale(0.2) rotate(90deg); }
+}
+@keyframes refer-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  60% { transform: rotate(10deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refer-button:hover .refer-sparkle, .refer-button:hover .refer-gift { animation: none; }
+}
