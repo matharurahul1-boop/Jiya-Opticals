@@ -32,6 +32,7 @@ export const CustomerCRM: React.FC = () => {
     addCustomer, 
     updateCustomer, 
     deleteCustomer,
+    deleteInvoice,
     currentUser,
     receiveCustomerPayment, 
     invoices, 
@@ -50,17 +51,19 @@ export const CustomerCRM: React.FC = () => {
   const [copyingInvoice, setCopyingInvoice] = useState<string | null>(null);
   const [invoiceFeedback, setInvoiceFeedback] = useState('');
 
-  const [ask, askDialog] = useAsk();
+  const [ask, askDialog, choose] = useAsk();
   const handleDelete = async (c: Customer) => {
-    const bills = invoices.filter((i) => i.customerId === c.id).length;
+    const theirBills = invoices.filter((i) => i.customerId === c.id);
+    const bills = theirBills.length;
     if (c.outstandingBalance > 0) {
       await ask({ title: 'This client still owes money', notice: true, body: <p>{c.name} has <strong>₹{c.outstandingBalance}</strong> pending. Collect or settle the balance first, then delete the client.</p> });
       return;
     }
-    const ok = await ask({
+    const answer = await choose({
       title: 'Delete this client?',
       danger: true,
-      confirmLabel: 'Delete client',
+      confirmLabel: bills > 0 ? 'Delete client, keep bills' : 'Delete client',
+      altLabel: bills > 0 ? `Delete client and ${bills === 1 ? 'the bill' : bills + ' bills'}` : undefined,
       body: (
         <>
           <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 space-y-1.5">
@@ -68,16 +71,23 @@ export const CustomerCRM: React.FC = () => {
             <Row label="Mobile" value={c.mobile} />
             <Row label="Saved bills" value={bills} />
           </div>
-          <ul className="list-disc pl-5 space-y-0.5">
-            {bills > 0 && <li>Their {bills === 1 ? 'saved bill stays' : bills + ' saved bills stay'} in your records</li>}
-            <li>Eye-test records and follow-ups are removed</li>
-          </ul>
+          {bills > 0 && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 p-3 space-y-1">
+              <p><strong>Keep bills:</strong> the {bills === 1 ? 'bill stays' : bills + ' bills stay'} in Day Book and sales totals, but no longer under a client.</p>
+              <p><strong>Delete bills too:</strong> stock goes back, tags are freed, and the sales totals drop. Use this for test or wrong entries.</p>
+            </div>
+          )}
+          <p>Eye-test records and follow-ups of this client are removed.</p>
           <p className="text-stone-500">This cannot be undone.</p>
         </>
       ),
     });
-    if (!ok) return;
-    try { deleteCustomer(c.id); setSelectedCustomer((cur) => (cur?.id === c.id ? null : cur)); }
+    if (answer === 'cancel') return;
+    try {
+      if (answer === 'alt') for (const inv of theirBills) deleteInvoice(inv.id);
+      deleteCustomer(c.id);
+      setSelectedCustomer((cur) => (cur?.id === c.id ? null : cur));
+    }
     catch (e) { await ask({ title: 'Could not delete this client', notice: true, body: <p>{e instanceof Error ? e.message : 'Please try again.'}</p> }); }
   };
 

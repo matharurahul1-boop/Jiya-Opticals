@@ -11,20 +11,24 @@ export interface AskOptions {
   danger?: boolean;
   /** A notice with a single OK button (nothing to decide). */
   notice?: boolean;
+  /** A second way to go ahead (used with choose()). */
+  altLabel?: string;
 }
 
-function Dialog({ options, onResult }: { options: AskOptions; onResult: (ok: boolean) => void }) {
+export type Choice = 'confirm' | 'alt' | 'cancel';
+
+function Dialog({ options, onResult }: { options: AskOptions; onResult: (choice: Choice) => void }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const okRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     (options.notice ? okRef : cancelRef).current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onResult(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onResult('cancel'); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [options.notice, onResult]);
   const Icon = options.danger ? AlertTriangle : Info;
   return (
-    <div className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4" onClick={() => onResult(false)}>
+    <div className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4" onClick={() => onResult('cancel')}>
       <div
         role="alertdialog"
         aria-modal="true"
@@ -37,11 +41,14 @@ function Dialog({ options, onResult }: { options: AskOptions; onResult: (ok: boo
           <h3 className="text-base font-bold text-stone-900 leading-snug pt-1.5">{options.title}</h3>
         </div>
         {options.body && <div className="text-sm text-stone-600 space-y-3">{options.body}</div>}
-        <div className={'grid gap-2 pt-1 ' + (options.notice ? 'grid-cols-1' : 'grid-cols-2')}>
+        <div className={'grid gap-2 pt-1 ' + (options.notice || options.altLabel ? 'grid-cols-1' : 'grid-cols-2')}>
           {!options.notice && (
-            <button ref={cancelRef} type="button" onClick={() => onResult(false)} className="py-3 rounded-xl border border-stone-300 bg-white text-stone-800 font-bold text-sm">{options.cancelLabel || 'Cancel'}</button>
+            <button ref={cancelRef} type="button" onClick={() => onResult('cancel')} className={'py-3 rounded-xl border border-stone-300 bg-white text-stone-800 font-bold text-sm' + (options.altLabel ? ' order-last' : '')}>{options.cancelLabel || 'Cancel'}</button>
           )}
-          <button ref={okRef} type="button" onClick={() => onResult(true)} className={'py-3 rounded-xl text-white font-bold text-sm ' + (options.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700')}>{options.confirmLabel || (options.notice ? 'OK' : 'Confirm')}</button>
+          {options.altLabel && (
+            <button type="button" onClick={() => onResult('alt')} className={'py-3 rounded-xl text-white font-bold text-sm ' + (options.danger ? 'bg-rose-700 hover:bg-rose-800' : 'bg-stone-800 hover:bg-stone-900')}>{options.altLabel}</button>
+          )}
+          <button ref={okRef} type="button" onClick={() => onResult('confirm')} className={'py-3 rounded-xl text-white font-bold text-sm ' + (options.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700')}>{options.confirmLabel || (options.notice ? 'OK' : 'Confirm')}</button>
         </div>
       </div>
     </div>
@@ -52,12 +59,13 @@ function Dialog({ options, onResult }: { options: AskOptions; onResult: (ok: boo
  * A friendlier replacement for the browser's confirm() and alert(): a bottom sheet on phones, a card on desktop.
  * `const [ask, dialog] = useAsk();` then render {dialog} once and `if (await ask({...})) ...`.
  */
-export function useAsk(): [(options: AskOptions) => Promise<boolean>, React.ReactNode] {
+export function useAsk(): [(options: AskOptions) => Promise<boolean>, React.ReactNode, (options: AskOptions) => Promise<Choice>] {
   const [options, setOptions] = useState<AskOptions | null>(null);
-  const resolver = useRef<((ok: boolean) => void) | null>(null);
-  const ask = useCallback((next: AskOptions) => new Promise<boolean>((resolve) => { resolver.current = resolve; setOptions(next); }), []);
-  const finish = useCallback((ok: boolean) => { const resolve = resolver.current; resolver.current = null; setOptions(null); resolve?.(ok); }, []);
-  return [ask, options ? <Dialog options={options} onResult={finish} /> : null];
+  const resolver = useRef<((choice: Choice) => void) | null>(null);
+  const choose = useCallback((next: AskOptions) => new Promise<Choice>((resolve) => { resolver.current = resolve; setOptions(next); }), []);
+  const ask = useCallback(async (next: AskOptions) => (await choose(next)) === 'confirm', [choose]);
+  const finish = useCallback((choice: Choice) => { const resolve = resolver.current; resolver.current = null; setOptions(null); resolve?.(choice); }, []);
+  return [ask, options ? <Dialog options={options} onResult={finish} /> : null, choose];
 }
 
 /** A small label/value row for the summary inside a dialog. */

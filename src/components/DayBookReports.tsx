@@ -19,6 +19,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Expense } from '../types';
 import { expensePaid, expensePending, paidOnDate } from '../lib/expenses';
+import { Row, useAsk } from './ConfirmDialog';
 
 export const DayBookReports: React.FC = () => {
   const { 
@@ -27,8 +28,48 @@ export const DayBookReports: React.FC = () => {
     addExpense, 
     deleteExpense, 
     payExpense,
-    storeProfile 
+    storeProfile,
+    customers,
+    deleteInvoice,
+    setSelectedInvoiceForPrint,
+    currentUser
   } = useApp();
+  const [showOrphans, setShowOrphans] = useState(false);
+  const [ask, askDialog] = useAsk();
+
+  // Bills whose client has since been deleted: still counted in sales, but no longer under anyone.
+  const orphanBills = invoices.filter((i) => !customers.some((cu) => cu.id === i.customerId));
+  const canClean = currentUser.role === 'Admin' || currentUser.role === 'Shop Manager';
+  const cleanOrphans = async () => {
+    const total = orphanBills.reduce((s, i) => s + i.netPayable, 0);
+    const received = orphanBills.reduce((s, i) => s + i.advancePaid, 0);
+    const ok = await ask({
+      title: `Delete ${orphanBills.length} bill${orphanBills.length === 1 ? '' : 's'} of deleted clients?`,
+      danger: true,
+      confirmLabel: `Delete ${orphanBills.length} bill${orphanBills.length === 1 ? '' : 's'}`,
+      body: (
+        <>
+          <div className="rounded-xl bg-stone-50 border border-stone-200 p-3 space-y-1.5">
+            <Row label="Bills" value={orphanBills.length} />
+            <Row label="Bill amount" value={'₹' + total} strong />
+            <Row label="Received on them" value={'₹' + received} />
+          </div>
+          <ul className="max-h-40 overflow-y-auto divide-y border rounded-xl text-xs">
+            {orphanBills.slice(0, 40).map((i) => <li key={i.id} className="flex justify-between gap-3 px-3 py-1.5"><span className="truncate">{i.invoiceNo} · {i.customerName}</span><span className="shrink-0">₹{i.netPayable}</span></li>)}
+          </ul>
+          <ul className="list-disc pl-5 space-y-0.5">
+            <li>Stock goes back to each shop</li>
+            <li>Tags of these bills become free again</li>
+            <li>Sales totals and the money received on them are removed from your books</li>
+          </ul>
+          <p className="text-stone-500">Only do this for test or wrong entries. This cannot be undone.</p>
+        </>
+      ),
+    });
+    if (!ok) return;
+    try { for (const inv of orphanBills) deleteInvoice(inv.id); }
+    catch (e) { await ask({ title: 'Could not delete these bills', notice: true, body: <p>{e instanceof Error ? e.message : 'Please try again.'}</p> }); }
+  };
 
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -142,6 +183,31 @@ export const DayBookReports: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {askDialog}
+      {orphanBills.length > 0 && (
+        <div role="status" className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex-1 min-w-52">
+            <strong className="text-amber-900">{orphanBills.length} bill{orphanBills.length === 1 ? '' : 's'} (₹{orphanBills.reduce((s, i) => s + i.netPayable, 0)}) of clients who were deleted</strong>
+            <p className="text-stone-600 mt-0.5">These bills are saved and still count in your sales and Day Book. They just do not show under a client any more. Open one to view, print or share it.</p>
+          </div>
+          <button type="button" onClick={() => setShowOrphans((v) => !v)} aria-expanded={showOrphans} className="px-3.5 py-2 rounded-lg border border-amber-400 bg-white text-amber-900 font-bold">{showOrphans ? 'Hide bills' : 'Show bills'}</button>
+          {canClean && <button type="button" onClick={() => void cleanOrphans()} className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold">Delete these bills</button>}
+          {showOrphans && (
+            <ul className="basis-full divide-y border border-amber-200 rounded-xl bg-white overflow-hidden">
+              {[...orphanBills].sort((a, b) => b.date.localeCompare(a.date)).map((i) => (
+                <li key={i.id}>
+                  <button type="button" onClick={() => setSelectedInvoiceForPrint(i)} className="w-full flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5 px-3 py-2 text-left hover:bg-amber-50">
+                    <span className="font-mono text-[11px] text-stone-800">{i.invoiceNo}</span>
+                    <span className="text-stone-600 flex-1 min-w-24 truncate">{i.customerName} · {i.date}</span>
+                    <span className="font-bold text-stone-900">₹{i.netPayable}</span>
+                    {i.balanceDue > 0 && <span className="text-rose-600">due ₹{i.balanceDue}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-amber-200/80 p-4 rounded-xl shadow-xs">
         <div className="flex items-center space-x-3">
