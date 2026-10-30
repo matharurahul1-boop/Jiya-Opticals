@@ -27,6 +27,7 @@ import { ManualEmailModal } from './components/ManualEmailModal';
 // Drishti sync disabled for now (in-app QR tags are used instead):
 // import { DrishtiSyncPanel } from './components/DrishtiSyncPanel';
 import { FloatingMenu } from './components/FloatingMenu';
+import { GuideModal } from './components/GuideModal';
 
 const MainLayout: React.FC = () => {
   const { activeTab, canAccessTab, shops, currentUser, selectedShopFilter, setSelectedShopFilter, ownerId, saveStatus } = useApp();
@@ -82,6 +83,7 @@ const MainLayout: React.FC = () => {
       <ShopSelectModal />
       <QuickClientModal />
       <ManualEmailModal />
+      <GuideModal />
     </div>
   );
 };

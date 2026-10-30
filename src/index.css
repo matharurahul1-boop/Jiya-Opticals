@@ -293,3 +293,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .refer-button:hover .refer-sparkle, .refer-button:hover .refer-gift { animation: none; }
 }
+
+/* First-time guide: cards slide in */
+@keyframes guide-in { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+.guide-card-hero, .guide-card-body { animation: guide-in 260ms ease-out both; }
+.guide-card-body { animation-delay: 60ms; }
+@media (prefers-reduced-motion: reduce) { .guide-card-hero, .guide-card-body { animation: none; } }

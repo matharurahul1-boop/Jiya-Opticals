@@ -1,6 +1,7 @@
 import { t } from '../lib/i18n';
 import React, {useEffect,useRef,useState} from 'react';
-import {ChevronDown,Languages,LogOut,User} from 'lucide-react';
+import {BookOpen,ChevronDown,Languages,LogOut,User} from 'lucide-react';
+import {openGuide} from './GuideModal';
 import {useApp} from '../context/AppContext';
 export function ProfileMenu({variant='bar'}:{variant?:'bar'|'block'}) {
   const {currentUser,language,setLanguage,setActiveTab,signOut}=useApp();
@@ -10,6 +11,7 @@ export function ProfileMenu({variant='bar'}:{variant?:'bar'|'block'}) {
     {open&&<div className={`absolute z-50 w-64 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl ${variant==='block'?'bottom-full mb-2 left-0':'top-full mt-2 right-0'}`}>
       <label className="flex items-center gap-3 px-3 py-3 text-sm"><Languages className="w-4 h-4"/><span>{t("Language")}</span><select aria-label={t("Language")} value={language} onChange={e=>setLanguage(e.target.value as 'EN'|'HI')} className="ml-auto rounded-lg border border-stone-200 bg-white p-1.5"><option value="EN">{t("English")}</option><option value="HI">हिन्दी</option></select></label>
       <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-stone-50" onClick={()=>{setOpen(false);setActiveTab('profile');}}><User className="w-4 h-4"/>{t("Profile")}</button>
+      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-stone-50" onClick={()=>{setOpen(false);openGuide();}}><BookOpen className="w-4 h-4"/>{language==='HI'?'ऐप गाइड':'App guide'}</button>
       <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-rose-600 hover:bg-rose-50" onClick={()=>{setOpen(false);void signOut();}}><LogOut className="w-4 h-4"/>{t("Sign out")}</button>
       <p className="app-credit text-center px-3 pt-2 pb-1">Made with ❤️ by Handysolver © 2026</p>
     </div>}
