@@ -17,12 +17,14 @@ import {
   ShieldCheck,
   ChevronDown,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  BookOpen
 } from 'lucide-react';
 import { NavTab, useApp } from '../context/AppContext';
 import { GlobalSearch } from './GlobalSearch';
 import { ProfileMenu } from './ProfileMenu';
 import { ReferButton } from './ReferButton';
+import { openGuide } from './GuideModal';
 
 interface NavItem {
   id: NavTab;
@@ -286,8 +288,17 @@ export const Sidebar: React.FC = () => {
           })}
         </nav>
 
-        {/* Refer & earn */}
-        <div className="px-2.5 pb-2.5">
+        {/* App guide + Refer & earn */}
+        <div className="px-2.5 pb-2.5 space-y-2">
+          <button
+            onClick={openGuide}
+            title={sidebarCollapsed ? (language === 'EN' ? 'App guide' : 'ऐप गाइड') : undefined}
+            aria-label={language === 'EN' ? 'App guide' : 'ऐप गाइड'}
+            className={`w-full h-11 flex items-center rounded-xl border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 text-[13.5px] font-semibold cursor-pointer ${sidebarCollapsed ? 'justify-center' : 'gap-2.5 px-3'}`}
+          >
+            <BookOpen className="w-5 h-5 text-amber-700 shrink-0" />
+            {!sidebarCollapsed && <span className="truncate">{language === 'EN' ? 'App guide' : 'ऐप गाइड'}</span>}
+          </button>
           <ReferButton email={currentUser.email} name={currentUser.name} expanded={!sidebarCollapsed} />
         </div>
 

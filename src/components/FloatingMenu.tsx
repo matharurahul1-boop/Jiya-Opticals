@@ -15,10 +15,12 @@ import {
   ShieldCheck,
   Building,
   Settings,
-  ScanBarcode
+  ScanBarcode,
+  BookOpen
 } from 'lucide-react';
 import { NavTab, useApp } from '../context/AppContext';
 import { ReferButton } from './ReferButton';
+import { openGuide } from './GuideModal';
 
 interface MenuItem {
   id: NavTab;
@@ -153,6 +155,18 @@ export const FloatingMenu: React.FC = () => {
                     </span>
                   </button>
                 )}
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    openGuide();
+                  }}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl py-3.5 px-1 text-center bg-stone-50 text-stone-700 hover:bg-stone-100 active:bg-stone-200 cursor-pointer"
+                >
+                  <BookOpen className="w-6 h-6 text-amber-700" />
+                  <span className="text-[11px] font-semibold leading-tight">
+                    {language === 'EN' ? 'App guide' : 'ऐप गाइड'}
+                  </span>
+                </button>
               </div>
               <ReferButton email={currentUser.email} name={currentUser.name} className="mt-3" />
             </div>
