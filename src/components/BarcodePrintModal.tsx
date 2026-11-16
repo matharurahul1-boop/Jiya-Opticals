@@ -63,6 +63,7 @@ export const BarcodePrintModal: React.FC = () => {
   const detail = [product.color, product.size].map((x) => (x || '').trim()).filter(Boolean).join('   ')
     || (product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.expiry && `EXP ${product.expiry}`].filter(Boolean).join('  ') : '');
   const { layout, width, height, leftMargin, gap } = settings;
+  const density = settings.density ?? 8;
   let barcodeOk = true;
   try { code128Svg(tags[0]); } catch { barcodeOk = false; }
 
@@ -82,7 +83,7 @@ export const BarcodePrintModal: React.FC = () => {
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
-  const tsplJob = () => buildTspl({ layout, width, height, gap, leftMargin, labels: tags.map((code) => ({ brand: product.brand || product.name, model, detail, shop: storeProfile.name, mrp: price, code })) });
+  const tsplJob = () => buildTspl({ layout, width, height, gap, leftMargin, density, labels: tags.map((code) => ({ brand: product.brand || product.name, model, detail, shop: storeProfile.name, mrp: price, code })) });
   const handleDownloadTsc = () => { if (barcodeOk) downloadJob(tsplJob(), 'prn'); };
   // Double-click the downloaded file and the tags go straight to the printer.
   const handleDownloadBat = () => { if (barcodeOk) downloadJob(buildTscBat(tsplJob(), printer), 'bat'); };
@@ -164,8 +165,10 @@ export const BarcodePrintModal: React.FC = () => {
               <div className="flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-0.5">{t("Printer name in Windows")}<input className="border rounded px-2 py-1 w-52" value={printer} onChange={e => changePrinter(e.target.value)} /></label>
                 <label className="flex flex-col gap-0.5">{t("Gap between labels (mm)")}<input type="number" min="0" max="10" step="0.5" className="border rounded px-2 py-1 w-16" value={gap} onChange={e => update({ gap: Math.min(10, Math.max(0, Number(e.target.value) || 0)) })} /></label>
+                <label className="flex flex-col gap-0.5">{t("Darkness (1-15)")}<input type="number" min="1" max="15" className="border rounded px-2 py-1 w-16" value={density} onChange={e => update({ density: Math.min(15, Math.max(1, Math.round(Number(e.target.value) || 8))) })} /></label>
                 <button onClick={handleDownloadBat} disabled={!barcodeOk} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs">{t("Download one-click print file (.bat)")}</button>
               </div>
+              <p>{t("Bars look thick or smudged: lower the darkness (try 6). Bars look pale or broken: raise it (try 10).")}</p>
               <p>{t('Double-click the downloaded .bat file. If Chrome says the file may be harmful, choose "Keep". The tags print at once. The printer name must match Settings > Printers exactly.')}</p>
               <p className="font-semibold text-amber-900">{t("Other ways:")}</p>
               <ol className="list-decimal pl-4 space-y-0.5">

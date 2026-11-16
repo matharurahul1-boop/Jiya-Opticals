@@ -1,5 +1,15 @@
 import { t } from '../lib/i18n';
-import type { IScannerControls } from '@zxing/browser';
+
+// Formats the shop uses: our tags are Code 128; QR and the usual retail codes are kept for supplier labels.
+const NATIVE_FORMATS = ['code_128', 'qr_code', 'ean_13', 'ean_8', 'upc_a', 'code_39'];
+interface NativeDetector { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> }
+interface NativeDetectorCtor { new (options: { formats: string[] }): NativeDetector; getSupportedFormats: () => Promise<string[]> }
+// A high-resolution picture with continuous focus: a 15 mm tag has a small barcode, so every pixel counts.
+const VIDEO = { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } };
+const keepFocusing = (stream: MediaStream) => {
+  const track = stream.getVideoTracks()[0];
+  track?.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] }).catch(() => { /* this camera has fixed focus */ });
+};
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, X, Check, Scan, AlertCircle, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -14,7 +24,7 @@ export const CameraBarcodeScannerModal: React.FC = () => {
   } = useApp();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
   const completedRef = useRef(false);
   const [manualCode, setManualCode] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -60,15 +70,44 @@ export const CameraBarcodeScannerModal: React.FC = () => {
     const start = async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('Use HTTPS or localhost for camera scanning. A USB scanner can also type into the code field.');
+        // Chrome on Android (and some desktops) has a fast built-in barcode reader: use it when it knows Code 128.
+        const Native = (window as unknown as { BarcodeDetector?: NativeDetectorCtor }).BarcodeDetector;
+        let formats: string[] = [];
+        if (Native) { try { const known = await Native.getSupportedFormats(); formats = NATIVE_FORMATS.filter((f) => known.includes(f)); } catch { formats = []; } }
+        if (Native && formats.includes('code_128')) {
+          const video = videoRef.current;
+          const stream = await navigator.mediaDevices.getUserMedia({ video: VIDEO, audio: false });
+          if (!mounted || !video) { stream.getTracks().forEach((track) => track.stop()); return; }
+          video.srcObject = stream;
+          await video.play().catch(() => { /* autoplay is already on */ });
+          keepFocusing(stream);
+          const detector = new Native({ formats });
+          let busy = false;
+          const timer = window.setInterval(async () => {
+            if (busy || completedRef.current || video.readyState < 2) return;
+            busy = true;
+            try { const found = await detector.detect(video); if (found[0]?.rawValue) handleScanComplete(found[0].rawValue); } catch { /* no code in this frame */ }
+            busy = false;
+          }, 100);
+          controlsRef.current = { stop: () => { window.clearInterval(timer); stream.getTracks().forEach((track) => track.stop()); video.srcObject = null; } };
+          setIsCameraActive(true);
+          return;
+        }
+        // Everywhere else: ZXing, told to look for our formats and to try harder on each frame.
         const { BrowserMultiFormatReader } = await import('@zxing/browser');
+        const { BarcodeFormat, DecodeHintType } = await import('@zxing/library');
         if (!mounted || !videoRef.current) return;
-        const reader = new BrowserMultiFormatReader(undefined, { delayBetweenScanAttempts: 150 });
-        const controls = await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' }, width: {ideal:1280}, height:{ideal:720} }, audio: false }, videoRef.current, (result, _error, scanControls) => {
+        const hints = new Map<number, unknown>([
+          [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.CODE_128, BarcodeFormat.QR_CODE, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.CODE_39]],
+          [DecodeHintType.TRY_HARDER, true],
+        ]);
+        const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 100 });
+        const controls = await reader.decodeFromConstraints({ video: VIDEO, audio: false }, videoRef.current, (result, _error, scanControls) => {
           if (!mounted || completedRef.current || !result) return;
           scanControls.stop(); handleScanComplete(result.getText());
         });
         if (!mounted || completedRef.current) controls.stop();
-        else { controlsRef.current=controls; setIsCameraActive(true); }
+        else { controlsRef.current = controls; setIsCameraActive(true); const stream = videoRef.current?.srcObject; if (stream instanceof MediaStream) keepFocusing(stream); }
       } catch (error) { if (mounted) setCameraError(error instanceof Error ? error.message : 'Camera could not start. Use manual entry or a USB scanner.'); }
     };
     void start();
@@ -129,7 +168,7 @@ export const CameraBarcodeScannerModal: React.FC = () => {
 
           {/* Optical Reticle Overlays */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
-            <div className="w-64 h-36 border-2 border-amber-400/80 rounded-xl relative flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <div className="w-full max-w-sm h-24 border-2 border-amber-400/80 rounded-xl relative flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
               {/* Corner markers */}
               <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400 rounded-tl-sm"></div>
               <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400 rounded-tr-sm"></div>
@@ -141,6 +180,10 @@ export const CameraBarcodeScannerModal: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <p className="px-4 py-2 bg-stone-800 text-[11px] leading-snug text-stone-400 border-t border-stone-700">
+          {t("Hold the tag flat, about 10 to 15 cm from the camera, with the whole barcode inside the box. If it looks blurry, move back a little until it sharpens. Good light helps.")}
+        </p>
 
         {/* Manual Code Input & Quick Simulators */}
         <div className="p-4 bg-stone-800 space-y-4">

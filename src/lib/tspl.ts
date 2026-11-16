@@ -5,7 +5,7 @@ const DOTS_PER_MM = 8;
 const mm = (v: number) => Math.round(v * DOTS_PER_MM);
 
 export interface TsplLabel { brand: string; model: string; detail: string; shop: string; mrp: number; code: string }
-export interface TsplOptions { layout: TagLayout; width: number; height: number; gap: number; leftMargin: number; labels: TsplLabel[] }
+export interface TsplOptions { layout: TagLayout; width: number; height: number; gap: number; leftMargin: number; /** Print darkness 1-15 (the printer's default scale). */ density?: number; labels: TsplLabel[] }
 
 // TSPL text must be plain ASCII and cannot hold a double quote.
 const clean = (s: string, max: number) => s.normalize('NFKD').replace(/[^\x20-\x7e]/g, '').replace(/"/g, "'").trim().slice(0, max);
@@ -25,8 +25,9 @@ export function buildTspl(o: TsplOptions): string {
     `GAP ${o.gap} mm,0 mm`,
     'DIRECTION 1',
     'REFERENCE 0,0',
-    'SPEED 4',
-    'DENSITY 8',
+    // Slow printing keeps thin bars crisp; darkness can be tuned to the label stock.
+    'SPEED 2',
+    `DENSITY ${Math.min(15, Math.max(1, Math.round(o.density ?? 8)))}`,
   ];
   for (const l of o.labels) {
     out.push('CLS');
