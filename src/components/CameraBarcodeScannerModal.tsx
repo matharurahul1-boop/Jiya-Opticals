@@ -13,6 +13,7 @@ const keepFocusing = (stream: MediaStream) => {
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, X, Check, Scan, AlertCircle, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { isStaleChunkError, reloadForNewVersion } from '../lib/staleReload';
 
 export const CameraBarcodeScannerModal: React.FC = () => {
   const { 
@@ -102,13 +103,22 @@ export const CameraBarcodeScannerModal: React.FC = () => {
           [DecodeHintType.TRY_HARDER, true],
         ]);
         const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 100 });
-        const controls = await reader.decodeFromConstraints({ video: VIDEO, audio: false }, videoRef.current, (result, _error, scanControls) => {
+        // The JavaScript reader works on every frame: 720p keeps it quick on a phone, and the bigger barcode no longer needs more.
+        const controls = await reader.decodeFromConstraints({ video: { ...VIDEO, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }, videoRef.current, (result, _error, scanControls) => {
           if (!mounted || completedRef.current || !result) return;
           scanControls.stop(); handleScanComplete(result.getText());
         });
         if (!mounted || completedRef.current) controls.stop();
         else { controlsRef.current = controls; setIsCameraActive(true); const stream = videoRef.current?.srcObject; if (stream instanceof MediaStream) keepFocusing(stream); }
-      } catch (error) { if (mounted) setCameraError(error instanceof Error ? error.message : 'Camera could not start. Use manual entry or a USB scanner.'); }
+      } catch (error) {
+        // The app was updated while this tab was open: load the new version, then the camera works.
+        if (isStaleChunkError(error)) {
+          if (reloadForNewVersion()) return;
+          if (mounted) setCameraError('The app was updated. Reload this page once, then open the camera again.');
+          return;
+        }
+        if (mounted) setCameraError(error instanceof Error ? error.message : 'Camera could not start. Use manual entry or a USB scanner.');
+      }
     };
     void start();
     return () => { mounted=false; controlsRef.current?.stop(); controlsRef.current=null; };

@@ -33,23 +33,26 @@ export function buildTspl(o: TsplOptions): string {
     out.push('CLS');
     if (o.layout === 'strip') {
       const xLeft = mm(o.leftMargin);
-      // Give the barcode the thicker bars (2 dots) when the left text still keeps at least 22 mm; otherwise thin bars.
-      // 5 mm stay empty at the right edge (a scanner needs a clear margin after the last bar) and 3 mm between the text and the barcode.
-      const wideFit = W - mm(5) - modules(l.code) * 2;
-      const thick = wideFit - xLeft >= mm(22);
-      const xRight = thick ? wideFit : mm(o.leftMargin + 0.46 * (o.width - o.leftMargin - 2) + 2.5);
-      const room = W - mm(5) - xRight;
-      const textRoom = xRight - xLeft - mm(3);
-      const leftChars = Math.max(6, Math.floor(textRoom / 16));
-      const top = Math.max(4, Math.round((H - 84) / 2));
-      out.push(`TEXT ${xLeft},${top},"3",0,1,1,"${clean(l.brand.toUpperCase(), leftChars)}"`);
-      out.push(`TEXT ${xLeft},${top + 32},"2",0,1,1,"${clean(l.model, Math.floor(textRoom / 12))}"`);
-      if (l.detail) out.push(`TEXT ${xLeft},${top + 60},"2",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), Math.floor(textRoom / 12))}"`);
-      const mrpY = Math.max(2, Math.round((H - 100) / 2));
-      const narrow = modules(l.code) * 2 <= room ? 2 : 1;
-      const barH = Math.max(24, H - (mrpY + 30) - 30);
-      out.push(`TEXT ${xRight},${mrpY},"3",0,1,1,"MRP. ${Math.round(l.mrp)}"`);
-      out.push(`BARCODE ${xRight},${mrpY + 30},"128",${barH},1,0,${narrow},${narrow},"${clean(l.code, 40)}"`);
+      // Row 1: brand, model and MRP. Row 2: the barcode, as wide as the tag allows (3-dot bars scan far more easily than 2-dot).
+      // Row 3: the code's own text and the colour/size. 5 mm stay empty at the right edge, and the empty tail is the barcode's left clear zone.
+      const xBar = xLeft >= mm(4) ? xLeft : xLeft + mm(3);
+      const avail = W - mm(5) - xBar;
+      const narrow = [3, 2].find((n) => modules(l.code) * n <= avail) ?? 1;
+      const top = Math.max(2, Math.round(H * 0.05));
+      const mrpText = `MRP. ${Math.round(l.mrp)}`;
+      const mrpX = W - mm(5) - mrpText.length * 16;
+      const brandText = clean(l.brand.toUpperCase(), 12);
+      const modelX = xLeft + (brandText.length + 1) * 16;
+      const modelChars = Math.floor((mrpX - modelX - mm(2)) / 12);
+      const barY = top + 32;
+      const barH = Math.max(24, H - barY - 34);
+      out.push(`TEXT ${xLeft},${top},"3",0,1,1,"${brandText}"`);
+      if (modelChars >= 4) out.push(`TEXT ${modelX},${top + 4},"2",0,1,1,"${clean(l.model, modelChars)}"`);
+      out.push(`TEXT ${mrpX},${top},"3",0,1,1,"${mrpText}"`);
+      out.push(`BARCODE ${xBar},${barY},"128",${barH},1,0,${narrow},${narrow},"${clean(l.code, 40)}"`);
+      const detailX = xBar + l.code.length * 16 + mm(3);
+      const detailChars = Math.floor((W - mm(5) - detailX) / 12);
+      if (l.detail && detailChars >= 4) out.push(`TEXT ${detailX},${barY + barH + 6},"2",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), detailChars)}"`);
     } else {
       const narrow = modules(l.code) * 2 <= W - mm(4) ? 2 : 1;
       const barW = modules(l.code) * narrow;

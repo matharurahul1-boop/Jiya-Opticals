@@ -107,11 +107,11 @@ export const BarcodePrintModal: React.FC = () => {
     // A page a hair shorter than the label stops the printer from pushing a blank label out after every tag.
     const pageH = Math.max(5, height - 0.4);
     const labels = layout === 'strip'
-      ? tags.map(code => `<div class="label"><div class="left"><p class="brand">${escapeHtml(brand)}</p><p class="model">${escapeHtml(model)}</p><p class="detail">${escapeHtml(detail)}</p></div><div class="right"><p class="mrp">MRP. ${price}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p></div></div>`).join('')
+      ? tags.map(code => `<div class="label"><div class="top"><p class="brand">${escapeHtml(brand)}</p><p class="model">${escapeHtml(model)}</p><p class="mrp">MRP. ${price}</p></div><div class="bars">${code128Svg(code, 40)}</div><div class="foot"><p class="code">${escapeHtml(code)}</p><p class="detail">${escapeHtml(detail)}</p></div></div>`).join('')
       : tags.map(code => `<div class="label std"><p class="shop">${escapeHtml(storeProfile.name)}</p><p class="name">${escapeHtml([`${product.brand} ${product.modelNo}`.trim() || product.name, product.color?.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · '))}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p><p class="mrp">MRP &#8377;${price}</p></div>`).join('');
     const css = `@page{size:${width}mm ${height}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#000}p{margin:0;white-space:nowrap;overflow:hidden}.label{width:${width}mm;height:${pageH}mm;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid}.label:last-child{break-after:auto;page-break-after:auto}.bars svg{display:block;width:100%;height:100%}`
       + (layout === 'strip'
-        ? `.label{display:flex;align-items:stretch;padding:0.8mm 2mm 0.8mm ${leftMargin}mm;gap:2.5mm}.left{flex:0 0 46%;display:flex;flex-direction:column;justify-content:center;gap:.6mm}.right{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}.brand{font-size:8.5pt;font-weight:bold;letter-spacing:.2px}.model{font-size:8.5pt}.detail{font-size:8pt;font-family:'Courier New',monospace;white-space:pre}.mrp{font-size:8.5pt;font-weight:bold;font-family:'Courier New',monospace}.right .bars{flex:1;min-height:0;margin:.4mm 0}.code{font:7pt 'Courier New',monospace}`
+        ? `.label{display:flex;flex-direction:column;padding:0.6mm 5mm 0.4mm ${leftMargin}mm;gap:.4mm}.top{display:flex;align-items:baseline;gap:2mm}.brand{font-size:8.5pt;font-weight:bold;letter-spacing:.2px}.model{font-size:8pt;flex:1;min-width:0}.mrp{font-size:8.5pt;font-weight:bold;font-family:'Courier New',monospace}.bars{flex:1;min-height:0}.foot{display:flex;justify-content:space-between;gap:2mm}.code,.detail{font:7pt 'Courier New',monospace}.detail{white-space:pre}`
         : `.std{padding:1.5mm 2mm;text-align:center;display:flex;flex-direction:column;justify-content:space-between}.shop{font-size:6pt;font-weight:bold;text-transform:uppercase}.name{font-size:7pt}.std .bars{flex:1;min-height:0;margin:.5mm 0}.code{font:7pt monospace;letter-spacing:.3px}.mrp{font-size:8pt;font-weight:bold}`);
     frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>Tags</title><style>${css}</style></head><body>${labels}</body></html>`;
     document.body.appendChild(frame);
@@ -188,16 +188,16 @@ export const BarcodePrintModal: React.FC = () => {
           {layout === 'strip' ? (
             <div className="space-y-2 overflow-x-auto">
               {barcodeOk && tags.slice(0, 30).map(code => (
-                <div key={code} className="bg-white border border-stone-300 rounded-sm shadow-xs flex items-stretch gap-[2.5mm] overflow-hidden" style={{ width: `${width}mm`, height: `${height}mm`, padding: `0.8mm 2mm 0.8mm ${leftMargin}mm`, boxSizing: 'border-box' }}>
-                  <div className="flex flex-col justify-center" style={{ flex: '0 0 46%' }}>
+                <div key={code} className="bg-white border border-stone-300 rounded-sm shadow-xs flex flex-col overflow-hidden" style={{ width: `${width}mm`, height: `${height}mm`, padding: `0.6mm 5mm 0.4mm ${leftMargin}mm`, boxSizing: 'border-box', gap: '0.4mm' }}>
+                  <div className="flex items-baseline" style={{ gap: '2mm' }}>
                     <span className="font-bold leading-tight" style={{ fontSize: '8.5pt' }}>{brand}</span>
-                    <span className="leading-tight" style={{ fontSize: '8.5pt' }}>{model}</span>
-                    <span className="leading-tight font-mono whitespace-pre" style={{ fontSize: '8pt' }}>{detail}</span>
-                  </div>
-                  <div className="flex flex-col justify-center min-w-0 flex-1">
+                    <span className="leading-tight flex-1 min-w-0 truncate" style={{ fontSize: '8pt' }}>{model}</span>
                     <span className="font-bold font-mono leading-tight" style={{ fontSize: '8.5pt' }}>MRP. {price}</span>
-                    <div className="flex-1 min-h-0" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%;display:block" ') }} />
-                    <span className="font-mono leading-tight" style={{ fontSize: '7pt' }}>{code}</span>
+                  </div>
+                  <div className="flex-1 min-h-0" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%;display:block" ') }} />
+                  <div className="flex justify-between font-mono leading-tight" style={{ fontSize: '7pt', gap: '2mm' }}>
+                    <span>{code}</span>
+                    <span className="whitespace-pre">{detail}</span>
                   </div>
                 </div>
               ))}

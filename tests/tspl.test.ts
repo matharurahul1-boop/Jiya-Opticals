@@ -16,8 +16,8 @@ test('strip tags become one TSPL job per label with the right size, gap and barc
   assert.ok(out.includes('"RB 3759I"'));
   assert.ok(out.includes('"BLU 57-18"'));
   assert.ok(out.includes('"MRP. 9890"'));
-  assert.match(out, /BARCODE \d+,\d+,"128",\d+,1,0,2,2,"FR00001-001"/);
-  assert.match(out, /BARCODE \d+,\d+,"128",\d+,1,0,2,2,"FR00001-002"/);
+  assert.match(out, /BARCODE \d+,\d+,"128",\d+,1,0,3,3,"FR00001-001"/);
+  assert.match(out, /BARCODE \d+,\d+,"128",\d+,1,0,3,3,"FR00001-002"/);
 });
 
 test('text is plain ASCII, quotes are removed, and a very long code uses thinner bars', () => {
@@ -34,25 +34,26 @@ test('the standard layout also produces a complete job', () => {
   assert.equal(out.match(/^PRINT 1,1$/gm)?.length, 1);
 });
 
-test('with a 33 mm tail gap the text and the barcode still fit side by side with firm 2-dot bars', () => {
-  const out = buildTspl({ ...opts, leftMargin: 33, labels: [label] });
-  const text = out.match(/TEXT (\d+),\d+,"3",0,1,1,"RAY-BAN"/);
-  const bar = out.match(/BARCODE (\d+),\d+,"128",\d+,1,0,(\d),\d,"FR00001-001"/);
-  assert.ok(text && bar);
-  assert.equal(Number(text![1]), 33 * 8);
-  assert.equal(bar![2], '2');
-  assert.ok(Number(bar![1]) - Number(text![1]) >= 22 * 8, 'at least 22 mm for the left text');
-  const barWidth = ((11 + 2) * 11 + 13) * 2;
-  assert.ok(Number(bar![1]) + barWidth <= 100 * 8, 'barcode stays inside the label');
+test('with a 33 mm tail gap the barcode gets thick 3-dot bars below the text, inside the label with a clear margin', () => {
+  const long = { ...label, model: 'Armani Sunglasses', code: 'SG00001-005' };
+  const out = buildTspl({ ...opts, leftMargin: 33, labels: [long] });
+  const brand = out.match(/TEXT (\d+),(\d+),"3",0,1,1,"RAY-BAN"/)!;
+  const bar = out.match(/BARCODE (\d+),(\d+),"128",(\d+),1,0,(\d),\d,"SG00001-005"/)!;
+  const mrp = out.match(/TEXT (\d+),(\d+),"3",0,1,1,"MRP\. 9890"/)!;
+  assert.equal(Number(brand[1]), 33 * 8);
+  assert.equal(bar[4], '3');
+  assert.ok(Number(bar[1]) >= 33 * 8, 'the tail stays empty');
+  const barWidth = ((11 + 2) * 11 + 13) * 3;
+  assert.ok(Number(bar[1]) + barWidth <= 100 * 8 - 5 * 8, 'barcode keeps 5 mm free at the right edge');
+  assert.ok(Number(brand[2]) + 24 <= Number(bar[2]), 'text sits above the barcode, not beside it');
+  assert.ok(Number(bar[2]) + Number(bar[3]) <= 15 * 8, 'barcode fits in the 15 mm height');
+  assert.ok(Number(mrp[1]) + 9 * 16 <= 100 * 8 - 5 * 8, 'MRP ends 5 mm before the right edge');
 });
 
-test('the model text stops at least 3 mm before the barcode and the barcode keeps 5 mm free at the right edge', () => {
-  const long = { ...label, model: 'Armani Sunglasses Extra Long Name', code: 'SG00001-003' };
+test('the model and the MRP never overlap on the top row, and the model is cut to fit', () => {
+  const long = { ...label, model: 'Armani Sunglasses Extra Long Name', code: 'SG00001-005' };
   const out = buildTspl({ ...opts, leftMargin: 33, labels: [long] });
-  const bar = out.match(/BARCODE (\d+),\d+,"128",\d+,1,0,(\d),\d,"SG00001-003"/)!;
   const model = out.match(/TEXT (\d+),\d+,"2",0,1,1,"(Armani[^"]*)"/)!;
-  const barX = Number(bar[1]);
-  assert.ok(Number(model[1]) + model[2].length * 12 <= barX - 3 * 8, 'text ends 3 mm before the bars');
-  const barWidth = ((11 + 2) * 11 + 13) * Number(bar[2]);
-  assert.ok(barX + barWidth <= 100 * 8 - 5 * 8, 'barcode stays 5 mm from the right edge');
+  const mrp = out.match(/TEXT (\d+),\d+,"3",0,1,1,"MRP\./)!;
+  assert.ok(Number(model[1]) + model[2].length * 12 <= Number(mrp[1]) - 2 * 8, 'model ends 2 mm before the MRP');
 });
