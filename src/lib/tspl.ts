@@ -33,15 +33,17 @@ export function buildTspl(o: TsplOptions): string {
     if (o.layout === 'strip') {
       const xLeft = mm(o.leftMargin);
       // Give the barcode the thicker bars (2 dots) when the left text still keeps at least 22 mm; otherwise thin bars.
-      const wideFit = W - mm(2) - modules(l.code) * 2;
+      // 5 mm stay empty at the right edge (a scanner needs a clear margin after the last bar) and 3 mm between the text and the barcode.
+      const wideFit = W - mm(5) - modules(l.code) * 2;
       const thick = wideFit - xLeft >= mm(22);
       const xRight = thick ? wideFit : mm(o.leftMargin + 0.46 * (o.width - o.leftMargin - 2) + 2.5);
-      const room = W - mm(2) - xRight;
-      const leftChars = Math.max(6, Math.floor((xRight - xLeft - mm(2)) / 16));
+      const room = W - mm(5) - xRight;
+      const textRoom = xRight - xLeft - mm(3);
+      const leftChars = Math.max(6, Math.floor(textRoom / 16));
       const top = Math.max(4, Math.round((H - 84) / 2));
       out.push(`TEXT ${xLeft},${top},"3",0,1,1,"${clean(l.brand.toUpperCase(), leftChars)}"`);
-      out.push(`TEXT ${xLeft},${top + 32},"2",0,1,1,"${clean(l.model, Math.floor((xRight - xLeft - mm(2)) / 12))}"`);
-      if (l.detail) out.push(`TEXT ${xLeft},${top + 60},"2",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), Math.floor((xRight - xLeft - mm(2)) / 12))}"`);
+      out.push(`TEXT ${xLeft},${top + 32},"2",0,1,1,"${clean(l.model, Math.floor(textRoom / 12))}"`);
+      if (l.detail) out.push(`TEXT ${xLeft},${top + 60},"2",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), Math.floor(textRoom / 12))}"`);
       const mrpY = Math.max(2, Math.round((H - 100) / 2));
       const narrow = modules(l.code) * 2 <= room ? 2 : 1;
       const barH = Math.max(24, H - (mrpY + 30) - 30);

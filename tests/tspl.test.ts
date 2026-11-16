@@ -45,3 +45,14 @@ test('with a 33 mm tail gap the text and the barcode still fit side by side with
   const barWidth = ((11 + 2) * 11 + 13) * 2;
   assert.ok(Number(bar![1]) + barWidth <= 100 * 8, 'barcode stays inside the label');
 });
+
+test('the model text stops at least 3 mm before the barcode and the barcode keeps 5 mm free at the right edge', () => {
+  const long = { ...label, model: 'Armani Sunglasses Extra Long Name', code: 'SG00001-003' };
+  const out = buildTspl({ ...opts, leftMargin: 33, labels: [long] });
+  const bar = out.match(/BARCODE (\d+),\d+,"128",\d+,1,0,(\d),\d,"SG00001-003"/)!;
+  const model = out.match(/TEXT (\d+),\d+,"2",0,1,1,"(Armani[^"]*)"/)!;
+  const barX = Number(bar[1]);
+  assert.ok(Number(model[1]) + model[2].length * 12 <= barX - 3 * 8, 'text ends 3 mm before the bars');
+  const barWidth = ((11 + 2) * 11 + 13) * Number(bar[2]);
+  assert.ok(barX + barWidth <= 100 * 8 - 5 * 8, 'barcode stays 5 mm from the right edge');
+});
