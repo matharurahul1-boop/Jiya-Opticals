@@ -7,9 +7,11 @@ import { unitCode } from '../lib/barcodes';
 import { code128Svg } from '../lib/code128';
 import { resolveTagBase, TAG_PRESETS, TagSettings } from '../lib/tags';
 import { buildTspl } from '../lib/tspl';
+import { buildTscBat, DEFAULT_TSC_PRINTER } from '../lib/tscBat';
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const SETTINGS_KEY = 'JIYA_TAG_SETTINGS_V2';
+const PRINTER_KEY = 'JIYA_TSC_PRINTER';
 
 const loadSettings = (): TagSettings => {
   try {
@@ -27,6 +29,9 @@ export const BarcodePrintModal: React.FC = () => {
   const [settings, setSettings] = useState<TagSettings>(loadSettings);
   // One print job at a time: a second click while the first is open would queue the same tags twice.
   const [printing, setPrinting] = useState(false);
+  // The printer's name exactly as Windows lists it (Settings > Printers), used by the one-click print file.
+  const [printer, setPrinter] = useState(() => { try { return localStorage.getItem(PRINTER_KEY) || DEFAULT_TSC_PRINTER; } catch { return DEFAULT_TSC_PRINTER; } });
+  const changePrinter = (name: string) => { setPrinter(name); try { localStorage.setItem(PRINTER_KEY, name); } catch { /* ignore */ } };
 
   const update = (patch: Partial<TagSettings>) => setSettings((prev) => {
     const next = { ...prev, ...patch };
@@ -68,17 +73,19 @@ export const BarcodePrintModal: React.FC = () => {
   };
 
   // A file in the printer's own language (TSPL) for TSC printers: sent straight to the printer, it needs no driver paper size.
-  const handleDownloadTsc = () => {
-    if (!barcodeOk) return;
+  const downloadJob = (text: string, extension: string) => {
     commitTags();
-    const text = buildTspl({ layout, width, height, gap, leftMargin, labels: tags.map((code) => ({ brand: product.brand || product.name, model, detail, shop: storeProfile.name, mrp: price, code })) });
     const url = URL.createObjectURL(new Blob([text], { type: 'application/octet-stream' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tags-${base.replace(/[^A-Za-z0-9_-]+/g, '-')}.prn`;
+    a.download = `tags-${base.replace(/[^A-Za-z0-9_-]+/g, '-')}.${extension}`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
+  const tsplJob = () => buildTspl({ layout, width, height, gap, leftMargin, labels: tags.map((code) => ({ brand: product.brand || product.name, model, detail, shop: storeProfile.name, mrp: price, code })) });
+  const handleDownloadTsc = () => { if (barcodeOk) downloadJob(tsplJob(), 'prn'); };
+  // Double-click the downloaded file and the tags go straight to the printer.
+  const handleDownloadBat = () => { if (barcodeOk) downloadJob(buildTscBat(tsplJob(), printer), 'bat'); };
 
   const handlePrint = () => {
     if (!barcodeOk || printing) return;
@@ -150,11 +157,17 @@ export const BarcodePrintModal: React.FC = () => {
             {layout === 'strip' && <label className="flex flex-col gap-0.5">{t("Left gap for tail (mm)")}<input type="number" min="0" max="40" className="border rounded px-2 py-1 w-20" value={leftMargin} onChange={e => update({ leftMargin: num(e.target.value, 0, 40, 10) })} /></label>}
           </div>
           <p className="text-stone-500">{t("Codes")}: {tags[0]}{tags.length > 1 ? ` … ${tags[tags.length - 1]}` : ''}{start < nextFree ? ` · ${t("reprint of earlier tags")}` : ''}</p>
-          <p className="text-stone-600">{t("In the print window choose your label printer and set its paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. Print one tag first to check it.")} {t("If extra blank labels come out after each tag, the printer's paper size is longer than the label (for example 4 × 6): set it to the size above in the printer's Preferences.")}</p>
-          <details className="text-stone-600">
-            <summary className="cursor-pointer font-semibold text-amber-900">{t("TSC printer (TTP-244 Pro): print straight to the printer")}</summary>
-            <div className="mt-1.5 space-y-1.5">
-              <label className="flex items-center gap-2">{t("Gap between labels (mm)")}<input type="number" min="0" max="10" step="0.5" className="border rounded px-2 py-1 w-16" value={gap} onChange={e => update({ gap: Math.min(10, Math.max(0, Number(e.target.value) || 0)) })} /></label>
+          <details open className="rounded-lg border border-amber-300 bg-white p-2.5 text-stone-700">
+            <summary className="cursor-pointer font-semibold text-amber-900">{t("TSC printer (TTP-244 Pro): print straight to the printer (recommended)")}</summary>
+            <div className="mt-2 space-y-2">
+              <p>{t("Printing from the browser uses the printer's Windows paper size (often 4 × 6), so one tag pushes out many blank labels. This route sends the label size, gap and barcode to the printer itself, so only your tags come out.")}</p>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-0.5">{t("Printer name in Windows")}<input className="border rounded px-2 py-1 w-52" value={printer} onChange={e => changePrinter(e.target.value)} /></label>
+                <label className="flex flex-col gap-0.5">{t("Gap between labels (mm)")}<input type="number" min="0" max="10" step="0.5" className="border rounded px-2 py-1 w-16" value={gap} onChange={e => update({ gap: Math.min(10, Math.max(0, Number(e.target.value) || 0)) })} /></label>
+                <button onClick={handleDownloadBat} disabled={!barcodeOk} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs">{t("Download one-click print file (.bat)")}</button>
+              </div>
+              <p>{t('Double-click the downloaded .bat file. If Chrome says the file may be harmful, choose "Keep". The tags print at once. The printer name must match Settings > Printers exactly.')}</p>
+              <p className="font-semibold text-amber-900">{t("Other ways:")}</p>
               <ol className="list-decimal pl-4 space-y-0.5">
                 <li>{t('Click "TSC file (.prn)". A file such as tags-FR00001.prn is saved.')}</li>
                 <li>{t('Open TSC Diagnostic Tool (free from tscprinters.com), pick your printer, go to "Command Tool", choose "Load File", select the .prn file and press Send.')}</li>
@@ -163,6 +176,7 @@ export const BarcodePrintModal: React.FC = () => {
               <p>{t("The label size, gap and barcode are set by the file, so the Windows paper size does not matter. If labels drift, run the printer's gap calibration once.")}</p>
             </div>
           </details>
+          <p className="text-stone-600">{t("Using the browser Print button instead? In the print window set the paper size to")} <strong>{width} × {height} mm</strong>, {t("margins None, scale 100%. If extra blank labels come out after each tag, the printer's paper size is longer than the label (for example 4 × 6): add a custom size of the above in the printer's Preferences, or use the one-click file.")}</p>
           {longCode && <p role="status" className="text-amber-800">{t("This code is long for a small tag. Use a wider label (70 mm or more) for a reliable scan.")}</p>}
           {!barcodeOk && <p role="alert" className="text-red-700">{t("This barcode has characters that cannot be printed as a tag. Edit the material's barcode.")}</p>}
         </div>
