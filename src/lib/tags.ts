@@ -23,16 +23,25 @@ export function nextTagCode(products: Product[], category: ProductCategory): str
 /**
  * The text a piece's tag code starts with. Short barcodes are used as they are. A long SKU would print as a
  * barcode too dense to scan on a small tag, so the material gets a short code (FR00001) instead; scanning
- * either one finds the same material. Materials whose tags were already printed keep their old base, so
- * reprints and sold pieces still match.
+ * either one finds the same material. A reprint of tags that were printed before the short codes keeps the old
+ * base, so those pieces still match; new pieces get the short code (old stickers keep scanning through the barcode).
+ *
+ * A base that another material (for example another colour of the same model) already uses would make every scan
+ * of either one ambiguous, so such a base is never used: the material gets a new, unused short code instead.
  */
-export function resolveTagBase(product: Product, products: Product[]): { base: string; assign?: string } {
-  if (product.barcode.length <= SHORT_BARCODE_MAX) return { base: product.barcode };
-  const rows = products.filter((p) => catalogKey(p) === catalogKey(product));
+export function resolveTagBase(product: Product, products: Product[], reprint = false): { base: string; assign?: string } {
+  const key = catalogKey(product);
+  const rows = products.filter((p) => catalogKey(p) === key);
+  const others = products.filter((p) => catalogKey(p) !== key);
+  const free = (code: string) => !others.some((p) => p.barcode === code || p.qrCode === code || p.tagCode === code);
+  if (product.barcode.length <= SHORT_BARCODE_MAX && free(product.barcode)) return { base: product.barcode };
   const existing = rows.find((r) => r.tagCode)?.tagCode;
-  if (existing) return { base: existing };
-  if (rows.some((r) => (r.nextSerial || 1) > 1)) return { base: product.barcode };
-  const code = nextTagCode(products, product.category);
+  if (existing && free(existing)) return { base: existing };
+  // Only a reprint of tags printed before the short codes keeps the long text on the stickers; new pieces get a short code.
+  if (!existing && reprint && rows.some((r) => (r.nextSerial || 1) > 1) && free(product.barcode)) return { base: product.barcode };
+  let code = nextTagCode(products, product.category);
+  const prefix = code.slice(0, 2);
+  for (let n = parseInt(code.slice(2), 10); !free(code); n++) code = `${prefix}${String(n + 1).padStart(5, '0')}`;
   return { base: code, assign: code };
 }
 

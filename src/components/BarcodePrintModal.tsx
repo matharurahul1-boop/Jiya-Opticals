@@ -55,13 +55,15 @@ export const BarcodePrintModal: React.FC = () => {
 
   if (!product) return null;
 
-  const { base, assign } = resolveTagBase(product, allProducts);
+  // New pieces always get the short code; only a reprint of earlier tags keeps the text already on those stickers.
+  const { base, assign } = resolveTagBase(product, allProducts, start < nextFree);
   const tags = Array.from({ length: count }, (_, i) => unitCode(base, start + i));
   const price = product.mrp || product.salePrice;
   const brand = (product.brand || product.name || '').toUpperCase();
   const model = (product.modelNo || (product.brand ? product.name : '') || '').trim();
-  const detail = [product.color, product.size].map((x) => (x || '').trim()).filter(Boolean).join('   ')
-    || (product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.expiry && `EXP ${product.expiry}`].filter(Boolean).join('  ') : '');
+  const detail = product.category === 'Contact Lens'
+    ? [product.power && `PWR ${product.power}`, product.color, product.baseCurve && `BC ${product.baseCurve}`, product.expiry && `EXP ${product.expiry}`].map((x) => (x || '').toString().trim()).filter(Boolean).join('  ')
+    : [product.color, product.size].map((x) => (x || '').trim()).filter(Boolean).join('   ');
   const { layout, width, height, leftMargin, gap } = settings;
   const density = settings.density ?? 8;
   let barcodeOk = true;
@@ -111,7 +113,7 @@ export const BarcodePrintModal: React.FC = () => {
       : tags.map(code => `<div class="label std"><p class="shop">${escapeHtml(storeProfile.name)}</p><p class="name">${escapeHtml([`${product.brand} ${product.modelNo}`.trim() || product.name, product.color?.trim() ? `Colour ${product.color.trim()}` : ''].filter(Boolean).join(' · '))}</p><div class="bars">${code128Svg(code, 40)}</div><p class="code">${escapeHtml(code)}</p><p class="mrp">MRP &#8377;${price}</p></div>`).join('');
     const css = `@page{size:${width}mm ${height}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif;color:#000}p{margin:0;white-space:nowrap;overflow:hidden}.label{width:${width}mm;height:${pageH}mm;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid}.label:last-child{break-after:auto;page-break-after:auto}.bars svg{display:block;width:100%;height:100%}`
       + (layout === 'strip'
-        ? `.label{display:flex;flex-direction:column;padding:0.6mm 5mm 0.4mm ${leftMargin}mm;gap:.4mm}.top{display:flex;align-items:baseline;gap:2mm}.brand{font-size:8.5pt;font-weight:bold;letter-spacing:.2px}.model{font-size:8pt;flex:1;min-width:0}.mrp{font-size:8.5pt;font-weight:bold;font-family:'Courier New',monospace}.bars{flex:1;min-height:0}.foot{display:flex;justify-content:space-between;gap:2mm}.code,.detail{font:7pt 'Courier New',monospace}.detail{white-space:pre}`
+        ? `.label{display:flex;flex-direction:column;padding:0.6mm 5mm 0.4mm ${leftMargin}mm;gap:.4mm}.top{display:flex;align-items:baseline;gap:2mm}.brand{font-size:8.5pt;font-weight:bold;letter-spacing:.2px}.model{font-size:8pt;flex:1;min-width:0}.mrp{font-size:8.5pt;font-weight:bold;font-family:'Courier New',monospace}.bars{flex:1;min-height:0}.foot{display:flex;justify-content:space-between;gap:2mm}.code{font:7pt 'Courier New',monospace}.detail{font:bold 8.5pt 'Courier New',monospace;white-space:pre}`
         : `.std{padding:1.5mm 2mm;text-align:center;display:flex;flex-direction:column;justify-content:space-between}.shop{font-size:6pt;font-weight:bold;text-transform:uppercase}.name{font-size:7pt}.std .bars{flex:1;min-height:0;margin:.5mm 0}.code{font:7pt monospace;letter-spacing:.3px}.mrp{font-size:8pt;font-weight:bold}`);
     frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><title>Tags</title><style>${css}</style></head><body>${labels}</body></html>`;
     document.body.appendChild(frame);
@@ -197,7 +199,7 @@ export const BarcodePrintModal: React.FC = () => {
                   <div className="flex-1 min-h-0" dangerouslySetInnerHTML={{ __html: code128Svg(code, 40).replace('<svg ', '<svg style="width:100%;height:100%;display:block" ') }} />
                   <div className="flex justify-between font-mono leading-tight" style={{ fontSize: '7pt', gap: '2mm' }}>
                     <span>{code}</span>
-                    <span className="whitespace-pre">{detail}</span>
+                    <span className="whitespace-pre font-bold" style={{ fontSize: '8.5pt' }}>{detail}</span>
                   </div>
                 </div>
               ))}

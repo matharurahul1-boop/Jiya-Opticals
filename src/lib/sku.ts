@@ -1,3 +1,6 @@
+/** Contact lens power as a short SKU part: -2.50 -> N250, +1.25 -> P125. */
+export const contactPowerKey = (power?: string) => (power || '').trim().replace(/^-/, 'N').replace(/^\+/, 'P').replace(/[^A-Za-z0-9]+/g, '').toUpperCase().slice(0, 8);
+
 const clean = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 /** Start of every generated SKU: the first word of the store name ("Jiya Opticals" -> "JIYA"). */
@@ -12,7 +15,7 @@ export const isPlaceholderSku = (code: string) => /^890\d{9}$/.test(code.trim())
  * A contact lens with several MRPs gets the MRP at the end, so each price stays a separate, scannable item.
  */
 export function suggestSku(
-  m: { prefix: string; category: string; brand: string; modelNo: string; name: string; color: string; mrp?: number },
+  m: { prefix: string; category: string; brand: string; modelNo: string; name: string; color: string; mrp?: number; power?: string },
   taken: Iterable<string> = []
 ): string {
   const isContact = m.category === 'Contact Lens';
@@ -23,6 +26,7 @@ export function suggestSku(
     clean(m.brand).slice(0, 14),
     model || clean(m.name).slice(0, 16),
     isContact ? '' : clean(m.color).slice(0, 14),
+    isContact ? contactPowerKey(m.power) : '',
     isContact && m.mrp && m.mrp > 0 ? `M${Math.round(m.mrp)}` : '',
   ].filter(Boolean);
   const base = parts.join('-');

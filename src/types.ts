@@ -96,6 +96,8 @@ export interface Product {
   /** Contact lens details. */
   baseCurve?: string;
   diameter?: string;
+  /** Contact lens power, e.g. -2.50 (each power is its own item with its own stock). */
+  power?: string;
   /** Lenses in one box. */
   packSize?: number;
   /** Expiry month, YYYY-MM. */

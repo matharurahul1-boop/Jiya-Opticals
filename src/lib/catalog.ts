@@ -36,7 +36,7 @@ export function updateCatalogProduct(products:Product[], changed:Product):Produc
   const previous=products.find(p=>p.id===changed.id);
   if(!previous) throw Error('Material no longer exists. Reload inventory.');
   if(previous.shopId && previous.shopId!=='all' && changed.shopId!==previous.shopId) throw Error('Use stock transfer to move material between shops.');
-  const shared={barcode:changed.barcode,qrCode:changed.qrCode,name:changed.name,category:changed.category,brand:changed.brand,modelNo:changed.modelNo,color:changed.color,frameType:changed.frameType,size:changed.size,hsnCode:changed.hsnCode,gstRate:changed.gstRate,mrp:changed.mrp,salePrice:changed.salePrice};
+  const shared={barcode:changed.barcode,qrCode:changed.qrCode,name:changed.name,category:changed.category,brand:changed.brand,modelNo:changed.modelNo,color:changed.color,frameType:changed.frameType,size:changed.size,hsnCode:changed.hsnCode,gstRate:changed.gstRate,mrp:changed.mrp,salePrice:changed.salePrice,power:changed.power};
   return products.map(p=>catalogKey(p)!==catalogKey(previous)?p:p.id===changed.id?{...changed,catalogId:catalogKey(previous)}:{...p,...shared});
 }
 

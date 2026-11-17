@@ -51,8 +51,9 @@ export function buildTspl(o: TsplOptions): string {
       out.push(`TEXT ${mrpX},${top},"3",0,1,1,"${mrpText}"`);
       out.push(`BARCODE ${xBar},${barY},"128",${barH},1,0,${narrow},${narrow},"${clean(l.code, 40)}"`);
       const detailX = xBar + l.code.length * 16 + mm(3);
-      const detailChars = Math.floor((W - mm(5) - detailX) / 12);
-      if (l.detail && detailChars >= 4) out.push(`TEXT ${detailX},${barY + barH + 6},"2",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), detailChars)}"`);
+      // The colour (and size) is what tells two tags of one model apart, so it is printed in the larger font.
+      const detailChars = Math.floor((W - mm(5) - detailX) / 16);
+      if (l.detail && detailChars >= 4) out.push(`TEXT ${detailX},${barY + barH + 4},"3",0,1,1,"${clean(l.detail.replace(/\s+/g, ' '), detailChars)}"`);
     } else {
       const narrow = modules(l.code) * 2 <= W - mm(4) ? 2 : 1;
       const barW = modules(l.code) * narrow;

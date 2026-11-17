@@ -35,3 +35,16 @@ test('lens variant key is short and readable', async () => {
   assert.equal(isLensCategory('Eyewear Lens'), true);
   assert.equal(isLensCategory('Frames'), false);
 });
+
+test('each contact lens power is its own SKU', async () => {
+  const { contactPowerKey } = await import('../src/lib/sku');
+  assert.equal(contactPowerKey('-2.50'), 'N250');
+  assert.equal(contactPowerKey('+1.25'), 'P125');
+  assert.equal(contactPowerKey(''), '');
+  const base = { prefix: 'JIYA', category: 'Contact Lens', brand: 'Alcon', modelNo: 'Air Optix', name: 'Air Optix', color: '', mrp: 1499 };
+  const minus = suggestSku({ ...base, power: '-2.50' });
+  const plus = suggestSku({ ...base, power: '+1.25' });
+  assert.equal(minus, 'JIYA-CONTACT-LENS-ALCON-AIR-OPTIX-N250-M1499');
+  assert.notEqual(minus, plus);
+  assert.equal(suggestSku(base), 'JIYA-CONTACT-LENS-ALCON-AIR-OPTIX-M1499', 'no power keeps the old SKU');
+});

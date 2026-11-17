@@ -738,12 +738,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode; ownerId?: string
     }));
   };
 
-  // Gives a material its short tag code (the same on every shop row) the first time its tags are printed.
+  // Gives a material its short tag code (the same on every shop row). Asked for the first time its tags are printed,
+  // or when its old base was shared with another colour and a fresh code is needed.
   const ensureTagCode = (productId: string, code: string) => {
     const row = products.find((p) => p.id === productId);
     if (!row) return;
     const key = catalogKey(row);
-    setProducts((prev) => (prev.some((p) => catalogKey(p) === key && p.tagCode) ? prev : prev.map((p) => (catalogKey(p) === key ? { ...p, tagCode: code } : p))));
+    setProducts((prev) => prev.map((p) => (catalogKey(p) === key ? { ...p, tagCode: code } : p)));
   };
 
   const adjustStock = (id: string, newQty: number) => {

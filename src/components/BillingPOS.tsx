@@ -218,7 +218,7 @@ export const BillingPOS: React.FC = () => {
         igstAmount: 0,
         totalAmount: price,
         frameModel: product.modelNo,
-        lensDetails: (product.category === 'Eyewear Lens' || product.category === 'Goggles Lens') ? [product.lensType, product.lensIndex && `Index ${product.lensIndex}`, product.coating, product.powerRange].filter(Boolean).join(' · ') || undefined : product.category === 'Contact Lens' ? [product.baseCurve && `BC ${product.baseCurve}`, product.diameter && `Dia ${product.diameter}`, product.packSize ? `${product.packSize} lenses/box` : '', product.expiry && `Exp ${product.expiry}`, product.batchNo && `Batch ${product.batchNo}`].filter(Boolean).join(' · ') || undefined : undefined,
+        lensDetails: (product.category === 'Eyewear Lens' || product.category === 'Goggles Lens') ? [product.lensType, product.lensIndex && `Index ${product.lensIndex}`, product.coating, product.powerRange].filter(Boolean).join(' · ') || undefined : product.category === 'Contact Lens' ? [product.power && `Power ${product.power}`, product.baseCurve && `BC ${product.baseCurve}`, product.diameter && `Dia ${product.diameter}`, product.packSize ? `${product.packSize} lenses/box` : '', product.expiry && `Exp ${product.expiry}`, product.batchNo && `Batch ${product.batchNo}`].filter(Boolean).join(' · ') || undefined : undefined,
         unitCodes: unit ? [unit] : undefined
       };
       setCartItems([...cartItems, newItem]);
